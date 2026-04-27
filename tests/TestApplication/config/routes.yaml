@@ -1,0 +1,5 @@
+webgriffe_sylius_mailchimp_admin:
+    resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/admin.yaml"
+
+webgriffe_sylius_mailchimp_shop:
+    resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/shop.yaml"
