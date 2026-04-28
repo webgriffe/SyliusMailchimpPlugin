@@ -36,6 +36,7 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
         $container->setParameter('webgriffe_sylius_mailchimp.member_default_status', $config['member_default_status']);
         $container->setParameter('webgriffe_sylius_mailchimp.webhook_secret', $config['webhook_secret']);
         $container->setParameter('webgriffe_sylius_mailchimp.send_unpaid_orders_as_carts', $config['send_unpaid_orders_as_carts']);
+        $container->setParameter('webgriffe_sylius_mailchimp.command_lock_enable', $config['command_lock_enable']);
         $container->setParameter('webgriffe_sylius_mailchimp.mapper.product.image_type', $config['mapper']['product']['image_type']);
         $container->setParameter('webgriffe_sylius_mailchimp.mapper.product.image_filter', $config['mapper']['product']['image_filter']);
 

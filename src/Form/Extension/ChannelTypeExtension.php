@@ -11,9 +11,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 
-/**
- * @template-extends AbstractTypeExtension<array<string, mixed>>
- */
 final class ChannelTypeExtension extends AbstractTypeExtension
 {
     /** @param array<string, mixed> $options */

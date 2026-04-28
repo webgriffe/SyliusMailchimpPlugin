@@ -44,6 +44,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Model\*" />
                 <!-- Repository traits are extension points used by integrator code -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Doctrine\ORM\*" />
+                <!-- Repository interfaces are extension points -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Repository\*" />
                 <!-- Client service is wired via DI container alias -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Client\*" />
                 <!-- Provider/Resolver classes are wired via DI container -->
@@ -63,7 +65,16 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Updater\*" />
                 <!-- Form extension classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Form\*" />
+                <!-- Command classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Command\*" />
             </errorLevel>
         </UnusedClass>
+        <!-- Symfony/Sylius base types are not annotated as generic; suppress for extension types -->
+        <MissingTemplateParam>
+            <errorLevel type="suppress">
+                <directory name="src/Form" />
+                <directory name="src/Repository" />
+            </errorLevel>
+        </MissingTemplateParam>
     </issueHandlers>
 </psalm>
