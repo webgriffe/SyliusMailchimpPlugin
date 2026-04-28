@@ -1,4 +1,4 @@
-{% set customer = _context.resource %}
+{% set customer = hookable_metadata.context.customer %}
 {% if customer is defined and customer.mailchimpId is not null or customer.mailchimpSyncedAt is not null or customer.mailchimpError is not null %}
 <div class="ui segment">
     <h4 class="ui header">

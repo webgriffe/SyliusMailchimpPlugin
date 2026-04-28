@@ -2,5 +2,5 @@ sylius_twig_hooks:
     hooks:
         'sylius_admin.dashboard.index.content':
             mailchimp_widget:
-                template: '@WebgriffeSyliusMailchimp/admin/dashboard/widget.html.twig'
+                template: '@WebgriffeSyliusMailchimpPlugin/admin/dashboard/widget.html.twig'
                 priority: 50

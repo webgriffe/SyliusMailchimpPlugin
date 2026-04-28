@@ -2,10 +2,10 @@ sylius_twig_hooks:
     hooks:
         'sylius_admin.channel.create.content.form.sections':
             mailchimp:
-                template: '@WebgriffeSyliusMailchimp/admin/channel/form/sections/mailchimp.html.twig'
+                template: '@WebgriffeSyliusMailchimpPlugin/admin/channel/form/sections/mailchimp.html.twig'
                 priority: -100
 
         'sylius_admin.channel.update.content.form.sections':
             mailchimp:
-                template: '@WebgriffeSyliusMailchimp/admin/channel/form/sections/mailchimp.html.twig'
+                template: '@WebgriffeSyliusMailchimpPlugin/admin/channel/form/sections/mailchimp.html.twig'
                 priority: -100
