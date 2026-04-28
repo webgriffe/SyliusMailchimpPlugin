@@ -22,6 +22,18 @@
         </pluginClass>
     </plugins>
     <issueHandlers>
+        <!-- Public API methods are called by downstream code or later commits -->
+        <PossiblyUnusedMethod>
+            <errorLevel type="suppress">
+                <directory name="src" />
+            </errorLevel>
+        </PossiblyUnusedMethod>
+        <!-- Public API properties (readonly on VOs) are accessed by downstream code or later commits -->
+        <PossiblyUnusedProperty>
+            <errorLevel type="suppress">
+                <directory name="src" />
+            </errorLevel>
+        </PossiblyUnusedProperty>
         <UnusedClass>
             <errorLevel type="suppress">
                 <!-- Plugin entry-point classes are referenced by string in bundles.php -->
