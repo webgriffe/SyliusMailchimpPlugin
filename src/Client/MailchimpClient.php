@@ -10,10 +10,12 @@ use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\NotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Order;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\OrderLine;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Store;
 
@@ -241,11 +243,11 @@ final class MailchimpClient implements MailchimpClientInterface
             sprintf('%secommerce/stores/%s/carts/%s', $this->baseUrl, $storeId, $cart->id),
             [
                 'id' => $cart->id,
-                'customer' => ['id' => $cart->customerId],
+                'customer' => $this->serializeEcommerceCustomer($cart->customer),
                 'checkout_url' => $cart->checkoutUrl,
                 'currency_code' => $cart->currencyCode,
                 'order_total' => $cart->orderTotal,
-                'lines' => [],
+                'lines' => array_map([$this, 'serializeCartLine'], $cart->lines),
             ],
             $cart->id,
         );
@@ -268,15 +270,24 @@ final class MailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertOrder(string $storeId, Order $order): void
     {
+        $payload = [
+            'id' => $order->id,
+            'customer' => $this->serializeEcommerceCustomer($order->customer),
+            'currency_code' => $order->currencyCode,
+            'order_total' => $order->orderTotal,
+            'tax_total' => $order->taxTotal,
+            'shipping_total' => $order->shippingTotal,
+            'discount_total' => $order->discountTotal,
+            'lines' => array_map([$this, 'serializeOrderLine'], $order->lines),
+        ];
+
+        if ($order->processedAt !== null) {
+            $payload['processed_at_foreign'] = $order->processedAt->format(\DateTimeInterface::ATOM);
+        }
+
         $this->upsertEcommerceResource(
             sprintf('%secommerce/stores/%s/orders/%s', $this->baseUrl, $storeId, $order->id),
-            [
-                'id' => $order->id,
-                'customer' => ['id' => $order->customerId],
-                'currency_code' => $order->currencyCode,
-                'order_total' => $order->orderTotal,
-                'lines' => [],
-            ],
+            $payload,
             $order->id,
         );
     }
@@ -300,13 +311,7 @@ final class MailchimpClient implements MailchimpClientInterface
     {
         $this->upsertEcommerceResource(
             sprintf('%secommerce/stores/%s/customers/%s', $this->baseUrl, $storeId, $customer->id),
-            [
-                'id' => $customer->id,
-                'email_address' => $customer->emailAddress,
-                'first_name' => $customer->firstName,
-                'last_name' => $customer->lastName,
-                'opt_in_status' => false,
-            ],
+            $this->serializeEcommerceCustomer($customer),
             $customer->id,
         );
     }
@@ -397,6 +402,59 @@ final class MailchimpClient implements MailchimpClientInterface
         }
 
         return $payload;
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeEcommerceCustomer(EcommerceCustomer $customer): array
+    {
+        $payload = [
+            'id' => $customer->id,
+            'email_address' => $customer->emailAddress,
+            'first_name' => $customer->firstName,
+            'last_name' => $customer->lastName,
+            'opt_in_status' => $customer->optInStatus,
+        ];
+
+        if ($customer->address !== null) {
+            $payload['address'] = [
+                'name' => $customer->address->name,
+                'address1' => $customer->address->address1,
+                'address2' => $customer->address->address2,
+                'city' => $customer->address->city,
+                'province' => $customer->address->province,
+                'province_code' => $customer->address->provinceCode,
+                'postal_code' => $customer->address->postalCode,
+                'country' => $customer->address->country,
+                'country_code' => $customer->address->countryCode,
+            ];
+        }
+
+        return $payload;
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeCartLine(CartLine $line): array
+    {
+        return [
+            'id' => $line->id,
+            'product_id' => $line->productId,
+            'product_variant_id' => $line->productVariantId,
+            'quantity' => $line->quantity,
+            'price' => $line->price,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeOrderLine(OrderLine $line): array
+    {
+        return [
+            'id' => $line->id,
+            'product_id' => $line->productId,
+            'product_variant_id' => $line->productVariantId,
+            'quantity' => $line->quantity,
+            'price' => $line->price,
+            'discount' => $line->discount,
+        ];
     }
 
     private function handleErrorResponse(int $statusCode, string $body, string $context): never

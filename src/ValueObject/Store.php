@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Webgriffe\SyliusMailchimpPlugin\ValueObject;
 
-/** Placeholder — full implementation in Fase 2 (Commit 15). */
 final class Store
 {
     public function __construct(
@@ -14,6 +13,9 @@ final class Store
         public readonly string $emailAddress,
         public readonly string $currencyCode,
         public readonly string $primaryLocale,
+        public readonly string $timezone = 'Europe/Rome',
+        public readonly string $phone = '',
+        public readonly string $address = '',
     ) {
     }
 }

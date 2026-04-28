@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace Webgriffe\SyliusMailchimpPlugin\ValueObject;
 
-final class Product
+final class ProductVariant
 {
-    /** @param ProductVariant[] $variants */
     public function __construct(
         public readonly string $id,
         public readonly string $title,
         public readonly string $url,
-        public readonly array $variants = [],
-        public readonly string $description = '',
-        public readonly string $type = '',
-        public readonly string $vendor = '',
+        public readonly string $sku = '',
+        public readonly float $price = 0.0,
+        public readonly int $inventoryQuantity = 0,
         public readonly string $imageUrl = '',
     ) {
     }
