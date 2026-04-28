@@ -11,7 +11,7 @@ use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 use Webgriffe\SyliusMailchimpPlugin\Message\Store\StoreCreate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 
-final class StoreEnqueuer
+final class StoreEnqueuer implements StoreEnqueuerInterface
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
@@ -20,6 +20,7 @@ final class StoreEnqueuer
     ) {
     }
 
+    #[\Override]
     public function enqueue(ChannelInterface&ChannelMailchimpAwareInterface $channel): void
     {
         $channelId = $channel->getId();

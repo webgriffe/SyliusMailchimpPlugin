@@ -12,6 +12,7 @@ use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
+use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -28,6 +29,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$storeMapper', service(StoreMapper::class))
         ->arg('$logger', service('monolog.logger.mailchimp'));
+    $services->alias(StoreEnqueuerInterface::class, StoreEnqueuer::class);
 
     $services->set(ProductEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
