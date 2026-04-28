@@ -1,0 +1,15 @@
+<div class="webgriffe-mailchimp-newsletter-checkbox field">
+    <div class="ui checkbox">
+        <input
+            type="checkbox"
+            id="mailchimp_newsletter_opt_in"
+            name="mailchimp_newsletter_opt_in"
+            value="1"
+            class="js-mailchimp-newsletter-checkbox"
+            data-subscribe-url="{{ path('webgriffe_sylius_mailchimp_newsletter_subscribe') }}"
+        />
+        <label for="mailchimp_newsletter_opt_in">
+            {{ 'webgriffe_sylius_mailchimp.ui.newsletter.opt_in_label'|trans }}
+        </label>
+    </div>
+</div>

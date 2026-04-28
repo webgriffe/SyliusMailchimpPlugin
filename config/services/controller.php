@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\WebhookController;
 use Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater;
 
@@ -21,5 +22,12 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$webhookSecret', param('webgriffe_sylius_mailchimp.webhook_secret'))
+        ->tag('controller.service_arguments');
+
+    $services->set(NewsletterController::class)
+        ->arg('$formFactory', service('form.factory'))
+        ->arg('$messageBus', service('messenger.default_bus'))
+        ->arg('$audienceContext', service('Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface'))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('controller.service_arguments');
 };

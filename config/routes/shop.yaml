@@ -1,0 +1,4 @@
+webgriffe_sylius_mailchimp_newsletter_subscribe:
+    path: /newsletter/subscribe
+    controller: Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController::subscribeAction
+    methods: [POST]

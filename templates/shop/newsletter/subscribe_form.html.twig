@@ -1,0 +1,14 @@
+<div class="webgriffe-mailchimp-newsletter">
+    <form
+        action="{{ path('webgriffe_sylius_mailchimp_newsletter_subscribe') }}"
+        method="post"
+        class="js-mailchimp-newsletter-form"
+        data-success-message="{{ 'webgriffe_sylius_mailchimp.ui.newsletter.subscribed_successfully'|trans }}"
+    >
+        {{ form_row(form.email) }}
+        <button type="submit" class="ui button primary">
+            {{ 'webgriffe_sylius_mailchimp.ui.newsletter.subscribe'|trans }}
+        </button>
+        <div class="js-mailchimp-newsletter-message" style="display:none;"></div>
+    </form>
+</div>

@@ -115,6 +115,7 @@ final class SyncMembersCommand extends Command
 
         $updatedLastDays = $input->getOption('updated-last-days');
         if ($updatedLastDays !== null) {
+            /** @var int|string $updatedLastDays */
             $since = new \DateTimeImmutable(sprintf('-%d days', (int) $updatedLastDays));
 
             return $this->customerRepository->findMailchimpSyncNeededSince($since);

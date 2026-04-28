@@ -1,0 +1,18 @@
+webgriffe_sylius_mailchimp:
+    ui:
+        mailchimp: 'Mailchimp'
+        newsletter:
+            subscribe: 'Iscriviti alla newsletter'
+            subscribed_successfully: 'Ti sei iscritto con successo alla nostra newsletter!'
+            opt_in_label: 'Iscriviti alla nostra newsletter'
+    form:
+        channel:
+            mailchimp_audience_id: 'ID Audience Mailchimp'
+            mailchimp_newsletter_positions: 'Posizioni opt-in newsletter'
+            newsletter_position:
+                checkout_addressing: 'Checkout - Step indirizzo'
+                checkout_complete: 'Checkout - Step conferma'
+                register: 'Form di registrazione'
+                my_account: 'Il mio account - Profilo'
+        newsletter:
+            email: 'Indirizzo email'
