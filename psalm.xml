@@ -44,6 +44,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Model\*" />
                 <!-- Repository traits are extension points used by integrator code -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Doctrine\ORM\*" />
+                <!-- Client service is wired via DI container alias -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Client\*" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>
