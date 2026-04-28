@@ -1,0 +1,6 @@
+sylius_twig_hooks:
+    hooks:
+        'sylius_admin.customer.show.content.sections':
+            mailchimp:
+                template: '@WebgriffeSyliusMailchimp/admin/customer/show/sections/mailchimp.html.twig'
+                priority: -100

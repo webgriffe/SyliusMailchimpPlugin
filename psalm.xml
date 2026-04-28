@@ -67,6 +67,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Form\*" />
                 <!-- Command classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Command\*" />
+                <!-- Twig extension/runtime classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Twig\*" />
             </errorLevel>
         </UnusedClass>
         <!-- Symfony/Sylius base types are not annotated as generic; suppress for extension types -->

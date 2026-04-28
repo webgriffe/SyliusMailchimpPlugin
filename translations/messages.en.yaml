@@ -5,6 +5,11 @@ webgriffe_sylius_mailchimp:
             subscribe: 'Subscribe to newsletter'
             subscribed_successfully: 'You have been successfully subscribed to our newsletter!'
             opt_in_label: 'Subscribe to our newsletter'
+        sync_status: 'Sync status'
+        mailchimp_id: 'Mailchimp ID'
+        synced_at: 'Last synced at'
+        sync_error: 'Sync error'
+        view_on_mailchimp: 'View on Mailchimp'
     form:
         channel:
             mailchimp_audience_id: 'Mailchimp Audience ID'

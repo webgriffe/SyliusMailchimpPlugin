@@ -1,0 +1,46 @@
+{% set customer = _context.resource %}
+{% if customer is defined and customer.mailchimpId is not null or customer.mailchimpSyncedAt is not null or customer.mailchimpError is not null %}
+<div class="ui segment">
+    <h4 class="ui header">
+        <i class="mail icon"></i>
+        {{ 'webgriffe_sylius_mailchimp.ui.mailchimp'|trans }}
+    </h4>
+    <table class="ui definition table">
+        <tbody>
+            {% set badge = mailchimp_sync_badge(customer) %}
+            <tr>
+                <td>{{ 'webgriffe_sylius_mailchimp.ui.sync_status'|trans }}</td>
+                <td>
+                    <span class="ui {{ badge.color }} label">{{ badge.label }}</span>
+                </td>
+            </tr>
+            {% if customer.mailchimpId %}
+            <tr>
+                <td>{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_id'|trans }}</td>
+                <td>
+                    <code>{{ customer.mailchimpId }}</code>
+                    <a href="{{ mailchimp_member_url(customer.mailchimpId, customer.mailchimpId) }}" target="_blank" rel="noopener noreferrer" class="ui mini basic button" style="margin-left: 1em;">
+                        <i class="external alternate icon"></i>
+                        {{ 'webgriffe_sylius_mailchimp.ui.view_on_mailchimp'|trans }}
+                    </a>
+                </td>
+            </tr>
+            {% endif %}
+            {% if customer.mailchimpSyncedAt %}
+            <tr>
+                <td>{{ 'webgriffe_sylius_mailchimp.ui.synced_at'|trans }}</td>
+                <td>{{ customer.mailchimpSyncedAt|date('Y-m-d H:i:s') }}</td>
+            </tr>
+            {% endif %}
+            {% if customer.mailchimpError %}
+            <tr>
+                <td>{{ 'webgriffe_sylius_mailchimp.ui.sync_error'|trans }}</td>
+                <td class="negative">
+                    <small><code>{{ customer.mailchimpError|slice(0, 300) }}{% if customer.mailchimpError|length > 300 %}…{% endif %}</code></small>
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
