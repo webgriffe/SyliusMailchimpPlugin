@@ -49,6 +49,8 @@
                 <!-- Provider/Resolver classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Provider\*" />
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Resolver\*" />
+                <!-- Mapper classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Mapper\*" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>
