@@ -2,3 +2,8 @@ webgriffe_sylius_mailchimp_newsletter_subscribe:
     path: /newsletter/subscribe
     controller: Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController::subscribeAction
     methods: [POST]
+
+webgriffe_sylius_mailchimp_cart_restore:
+    path: /cart/restore/{tokenValue}
+    controller: Webgriffe\SyliusMailchimpPlugin\Controller\CartRecoveryController::restoreAction
+    methods: [GET]

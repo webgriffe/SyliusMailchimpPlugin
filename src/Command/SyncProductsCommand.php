@@ -115,9 +115,11 @@ final class SyncProductsCommand extends Command
                 /** @phpstan-ignore-next-line */
                 $since = new \DateTimeImmutable(sprintf('-%d days', (int) $updatedLastDays));
 
+                /** @phpstan-ignore-next-line */
                 return $this->productRepository->findMailchimpSyncableByChannelUpdatedSince($channelCode, $since);
             }
 
+            /** @phpstan-ignore-next-line */
             return $this->productRepository->findMailchimpSyncableByChannel($channelCode);
         }
 
