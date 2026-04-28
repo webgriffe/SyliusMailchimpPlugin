@@ -10,6 +10,11 @@ webgriffe_sylius_mailchimp:
         synced_at: 'Ultima sincronizzazione'
         sync_error: 'Errore sincronizzazione'
         view_on_mailchimp: 'Visualizza su Mailchimp'
+        mailchimp_sync_status: 'Stato Sincronizzazione Mailchimp'
+        members_synced: 'Membri sincronizzati'
+        members_error: 'Membri con errore'
+        members_never_synced: 'Membri mai sincronizzati'
+        carts_pending_sync: 'Carrelli da sincronizzare'
     form:
         channel:
             mailchimp_audience_id: 'ID Audience Mailchimp'

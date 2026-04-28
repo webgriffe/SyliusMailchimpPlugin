@@ -19,4 +19,8 @@ interface MailchimpOrderRepositoryInterface extends OrderRepositoryInterface
 
     /** @return object[] */
     public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since): array;
+
+    public function countMailchimpPendingCarts(): int;
+
+    public function countMailchimpPendingOrders(): int;
 }

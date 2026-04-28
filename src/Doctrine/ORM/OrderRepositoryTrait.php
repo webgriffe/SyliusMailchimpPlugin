@@ -55,4 +55,24 @@ trait OrderRepositoryTrait
             ->getResult()
         ;
     }
+
+    public function countMailchimpPendingCarts(): int
+    {
+        return (int) $this->createQueryBuilder('o')
+            ->select('COUNT(o)')
+            ->andWhere('o.mailchimpCartId IS NULL')
+            ->getQuery()
+            ->getSingleScalarResult()
+        ;
+    }
+
+    public function countMailchimpPendingOrders(): int
+    {
+        return (int) $this->createQueryBuilder('o')
+            ->select('COUNT(o)')
+            ->andWhere('o.mailchimpOrderId IS NULL')
+            ->getQuery()
+            ->getSingleScalarResult()
+        ;
+    }
 }

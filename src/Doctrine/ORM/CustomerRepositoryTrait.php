@@ -46,4 +46,35 @@ trait CustomerRepositoryTrait
             ->getResult()
         ;
     }
+
+    public function countMailchimpSyncedMembers(): int
+    {
+        return (int) $this->createQueryBuilder('o')
+            ->select('COUNT(o)')
+            ->andWhere('o.mailchimpId IS NOT NULL')
+            ->andWhere('o.mailchimpError IS NULL')
+            ->getQuery()
+            ->getSingleScalarResult()
+        ;
+    }
+
+    public function countMailchimpMembersWithError(): int
+    {
+        return (int) $this->createQueryBuilder('o')
+            ->select('COUNT(o)')
+            ->andWhere('o.mailchimpError IS NOT NULL')
+            ->getQuery()
+            ->getSingleScalarResult()
+        ;
+    }
+
+    public function countMailchimpNeverSyncedMembers(): int
+    {
+        return (int) $this->createQueryBuilder('o')
+            ->select('COUNT(o)')
+            ->andWhere('o.mailchimpId IS NULL')
+            ->getQuery()
+            ->getSingleScalarResult()
+        ;
+    }
 }

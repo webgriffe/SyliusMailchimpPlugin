@@ -1,0 +1,80 @@
+{# @WebgriffeSyliusMailchimp/admin/dashboard/widget.html.twig #}
+<div class="col-12 mb-3">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_sync_status'|trans }}</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-3 p-3">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-green text-white avatar">
+                                        {{ ux_icon('tabler:check') }}
+                                    </span>
+                                </div>
+                                <div class="col">
+                                    <div class="subheader">{{ 'webgriffe_sylius_mailchimp.ui.members_synced'|trans }}</div>
+                                    <div class="h2 mb-0">{{ mailchimp_members_synced_count() }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-red text-white avatar">
+                                        {{ ux_icon('tabler:alert-triangle') }}
+                                    </span>
+                                </div>
+                                <div class="col">
+                                    <div class="subheader">{{ 'webgriffe_sylius_mailchimp.ui.members_error'|trans }}</div>
+                                    <div class="h2 mb-0">{{ mailchimp_members_error_count() }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-yellow text-white avatar">
+                                        {{ ux_icon('tabler:clock') }}
+                                    </span>
+                                </div>
+                                <div class="col">
+                                    <div class="subheader">{{ 'webgriffe_sylius_mailchimp.ui.members_never_synced'|trans }}</div>
+                                    <div class="h2 mb-0">{{ mailchimp_members_never_synced_count() }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-blue text-white avatar">
+                                        {{ ux_icon('tabler:shopping-cart') }}
+                                    </span>
+                                </div>
+                                <div class="col">
+                                    <div class="subheader">{{ 'webgriffe_sylius_mailchimp.ui.carts_pending_sync'|trans }}</div>
+                                    <div class="h2 mb-0">{{ mailchimp_pending_carts_count() }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

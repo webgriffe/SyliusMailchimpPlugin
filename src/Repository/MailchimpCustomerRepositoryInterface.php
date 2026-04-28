@@ -20,4 +20,10 @@ interface MailchimpCustomerRepositoryInterface extends CustomerRepositoryInterfa
      * @return object[]
      */
     public function findMailchimpByIds(array $ids): array;
+
+    public function countMailchimpSyncedMembers(): int;
+
+    public function countMailchimpMembersWithError(): int;
+
+    public function countMailchimpNeverSyncedMembers(): int;
 }

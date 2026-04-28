@@ -10,6 +10,11 @@ webgriffe_sylius_mailchimp:
         synced_at: 'Last synced at'
         sync_error: 'Sync error'
         view_on_mailchimp: 'View on Mailchimp'
+        mailchimp_sync_status: 'Mailchimp Sync Status'
+        members_synced: 'Members synced'
+        members_error: 'Members with error'
+        members_never_synced: 'Members never synced'
+        carts_pending_sync: 'Carts pending sync'
     form:
         channel:
             mailchimp_audience_id: 'Mailchimp Audience ID'
