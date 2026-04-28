@@ -61,6 +61,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Controller\*" />
                 <!-- Updater classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Updater\*" />
+                <!-- Form extension classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Form\*" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>

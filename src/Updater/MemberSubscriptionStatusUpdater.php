@@ -23,6 +23,8 @@ final class MemberSubscriptionStatusUpdater
      * Updates a customer's Mailchimp subscription status based on the webhook event type.
      *
      * Supported types: subscribe, unsubscribe, profile, cleaned, upemail, campaign.
+     *
+     * @psalm-suppress UnusedParam
      */
     public function update(string $type, string $email, string $listId): void
     {
