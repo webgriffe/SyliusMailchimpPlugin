@@ -13,7 +13,7 @@ use Webgriffe\SyliusMailchimpPlugin\Resolver\MergeFieldsResolver;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\TagsResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 
-final class MemberMapper
+final class MemberMapper implements MemberMapperInterface
 {
     public function __construct(
         private readonly MemberStatusResolverInterface $statusResolver,
@@ -23,6 +23,7 @@ final class MemberMapper
     ) {
     }
 
+    #[\Override]
     public function map(CustomerInterface $customer, string $listId): Member
     {
         $email = $customer->getEmail();

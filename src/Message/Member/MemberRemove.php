@@ -1,0 +1,15 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Webgriffe\SyliusMailchimpPlugin\Message\Member;
+
+final class MemberRemove
+{
+    public function __construct(
+        public readonly int $customerId,
+        public readonly string $listId,
+        public readonly string $subscriberHash,
+    ) {
+    }
+}

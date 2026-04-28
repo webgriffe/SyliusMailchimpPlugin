@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapperInterface;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -13,4 +14,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$mergeFieldsResolver', service('Webgriffe\SyliusMailchimpPlugin\Resolver\MergeFieldsResolver'))
         ->arg('$tagsResolver', service('Webgriffe\SyliusMailchimpPlugin\Resolver\TagsResolverInterface'))
         ->arg('$eventDispatcher', service('event_dispatcher'));
+
+    $services->alias(MemberMapperInterface::class, MemberMapper::class);
 };
