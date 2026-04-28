@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
 use Webgriffe\SyliusMailchimpPlugin\Controller\CartRecoveryController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\WebhookController;
 use Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater;
-
-use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
-use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();

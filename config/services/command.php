@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
 use Webgriffe\SyliusMailchimpPlugin\Command\SyncAllCommand;
 use Webgriffe\SyliusMailchimpPlugin\Command\SyncCartsCommand;
 use Webgriffe\SyliusMailchimpPlugin\Command\SyncMembersCommand;
@@ -15,9 +16,6 @@ use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpProductRepositoryInterface;
-
-use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
-use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -36,7 +34,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->tag('console.command');
 
     $services->set(SyncProductsCommand::class)
-        ->arg('$productRepository', service(MailchimpProductRepositoryInterface::class))
+        ->arg('$productRepository', service('sylius.repository.product'))
         ->arg('$productEnqueuer', service(ProductEnqueuerInterface::class))
         ->arg('$commandLockEnable', param('webgriffe_sylius_mailchimp.command_lock_enable'))
         ->tag('console.command');

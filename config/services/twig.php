@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpCustomerRepositoryInterface;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
 use Webgriffe\SyliusMailchimpPlugin\Twig\MailchimpExtension;
@@ -16,8 +17,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(MailchimpRuntime::class)
         ->args([
-            service(MailchimpCustomerRepositoryInterface::class),
-            service(MailchimpOrderRepositoryInterface::class),
+            service('sylius.repository.customer'),
+            service('sylius.repository.order'),
         ])
         ->tag('twig.runtime');
 };

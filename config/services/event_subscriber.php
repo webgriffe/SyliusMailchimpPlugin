@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
+namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
-use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuerInterface;
-use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CustomerSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\OrderSubscriber;

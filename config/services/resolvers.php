@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContext;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
