@@ -18,3 +18,6 @@ parameters:
         -
             identifier: missingType.iterableValue
         - '/Parameter #1 \$configuration of method Symfony\\Component\\DependencyInjection\\Extension\\Extension::processConfiguration\(\) expects Symfony\\Component\\Config\\Definition\\ConfigurationInterface, Symfony\\Component\\Config\\Definition\\ConfigurationInterface\|null given\./'
+        # Configuration.php is excluded from analysis (causes crash), so its usage in Extension must be suppressed
+        - '/Instantiated class Webgriffe\\SyliusMailchimpPlugin\\DependencyInjection\\Configuration not found\./'
+        - '/Parameter #1 \$configuration of method Symfony\\Component\\DependencyInjection\\Extension\\Extension::processConfiguration\(\) expects Symfony\\Component\\Config\\Definition\\ConfigurationInterface, Webgriffe\\SyliusMailchimpPlugin\\DependencyInjection\\Configuration given\./'

@@ -11,6 +11,8 @@
         <directory name="src" />
         <ignoreFiles>
             <directory name="vendor" />
+            <!-- Makes Psalm crash (same as PHPStan) -->
+            <file name="src/DependencyInjection/Configuration.php" />
         </ignoreFiles>
     </projectFiles>
     <plugins>
@@ -19,4 +21,12 @@
             <containerXml>var/cache/test/Sylius_TestApplication_KernelTestDebugContainer.xml</containerXml>
         </pluginClass>
     </plugins>
+    <issueHandlers>
+        <UnusedClass>
+            <errorLevel type="suppress">
+                <!-- Plugin entry-point classes are referenced by string in bundles.php -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\WebgriffeSyliusMailchimpPlugin" />
+            </errorLevel>
+        </UnusedClass>
+    </issueHandlers>
 </psalm>
