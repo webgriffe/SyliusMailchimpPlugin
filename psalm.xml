@@ -63,6 +63,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Controller\*" />
                 <!-- Updater classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Updater\*" />
+                <!-- Menu listener classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Menu\*" />
                 <!-- Form extension classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Form\*" />
                 <!-- Command classes are wired via DI container -->

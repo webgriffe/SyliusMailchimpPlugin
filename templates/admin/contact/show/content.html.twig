@@ -1,0 +1,299 @@
+<div class="page-wrapper">
+    <div class="container-xl">
+        {# Flash messages #}
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ type == 'success' ? 'success' : (type == 'error' ? 'danger' : 'info') }} alert-dismissible">
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    {{ message|trans }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {# Page header #}
+        <div class="page-header d-print-none mt-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h2 class="page-title">
+                        {{ ux_icon('tabler:mail') }}
+                        {{ 'webgriffe_sylius_mailchimp.ui.mailchimp'|trans }} — {{ customer.email }}
+                    </h2>
+                </div>
+                <div class="col-auto ms-auto d-print-none">
+                    <a href="{{ path('sylius_admin_customer_show', {'id': customer.id}) }}" class="btn btn-secondary">
+                        {{ ux_icon('tabler:user') }}
+                        {{ 'webgriffe_sylius_mailchimp.ui.view_customer'|trans }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row row-cards">
+
+            {# Mailchimp sync data card #}
+            <div class="col-12 col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_sync_data'|trans }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-5">{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_id'|trans }}</dt>
+                            <dd class="col-sm-7">
+                                {% if customer.mailchimpId %}
+                                    <code>{{ customer.mailchimpId }}</code>
+                                    {% set badge = mailchimp_sync_badge(customer) %}
+                                    <span class="badge bg-{{ badge.color }}">{{ badge.label }}</span>
+                                    <a href="{{ mailchimp_member_url(customer.mailchimpId, customer.mailchimpId) }}" target="_blank" rel="noopener noreferrer" class="ms-1">
+                                        {{ ux_icon('tabler:external-link') }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-5">{{ 'webgriffe_sylius_mailchimp.ui.synced_at'|trans }}</dt>
+                            <dd class="col-sm-7">
+                                {% if customer.mailchimpSyncedAt %}
+                                    {{ customer.mailchimpSyncedAt|date('d/m/Y H:i') }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-5">{{ 'webgriffe_sylius_mailchimp.ui.sync_error'|trans }}</dt>
+                            <dd class="col-sm-7">
+                                {% if customer.mailchimpError %}
+                                    <span class="text-danger">{{ customer.mailchimpError }}</span>
+                                {% else %}
+                                    <span class="text-success">{{ ux_icon('tabler:check') }}</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            {# Customer info card #}
+            <div class="col-12 col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ 'webgriffe_sylius_mailchimp.ui.customer_info'|trans }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-5">{{ 'sylius.ui.email'|trans }}</dt>
+                            <dd class="col-sm-7">{{ customer.email }}</dd>
+
+                            <dt class="col-sm-5">{{ 'sylius.ui.first_name'|trans }}</dt>
+                            <dd class="col-sm-7">{{ customer.firstName ?: '—' }}</dd>
+
+                            <dt class="col-sm-5">{{ 'sylius.ui.last_name'|trans }}</dt>
+                            <dd class="col-sm-7">{{ customer.lastName ?: '—' }}</dd>
+
+                            <dt class="col-sm-5">{{ 'sylius.ui.phone_number'|trans }}</dt>
+                            <dd class="col-sm-7">{{ customer.phoneNumber ?: '—' }}</dd>
+
+                            <dt class="col-sm-5">{{ 'sylius.ui.subscribed_to_newsletter'|trans }}</dt>
+                            <dd class="col-sm-7">
+                                {% if customer.subscribedToNewsletter %}
+                                    <span class="badge bg-success">{{ 'sylius.ui.yes'|trans }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ 'sylius.ui.no'|trans }}</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            {# Orders table #}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ 'webgriffe_sylius_mailchimp.ui.orders'|trans }}</h3>
+                    </div>
+                    {% if orders|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table card-table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'sylius.ui.number'|trans }}</th>
+                                        <th>{{ 'sylius.ui.date'|trans }}</th>
+                                        <th>{{ 'sylius.ui.state'|trans }}</th>
+                                        <th>{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_order_id'|trans }}</th>
+                                        <th>{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_cart_id'|trans }}</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                        <tr>
+                                            <td><strong>#{{ order.number }}</strong></td>
+                                            <td>
+                                                {% if order.checkoutCompletedAt %}
+                                                    {{ order.checkoutCompletedAt|date('d/m/Y H:i') }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ order.state == 'fulfilled' ? 'success' : (order.state == 'cancelled' ? 'danger' : 'warning') }}">
+                                                    {{ ('sylius.ui.' ~ order.state)|trans }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if order.mailchimpOrderId %}
+                                                    <code class="text-success">{{ order.mailchimpOrderId }}</code>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if order.mailchimpCartId %}
+                                                    <code class="text-info">{{ order.mailchimpCartId }}</code>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ path('sylius_admin_order_show', {'id': order.id}) }}" class="btn btn-sm btn-secondary">
+                                                    {{ ux_icon('tabler:eye') }}
+                                                    {{ 'sylius.ui.show'|trans }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="card-body text-muted">
+                            {{ 'webgriffe_sylius_mailchimp.ui.no_orders'|trans }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Abandoned carts #}
+            {% if carts|length > 0 %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">{{ 'webgriffe_sylius_mailchimp.ui.abandoned_carts'|trans }}</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table card-table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'webgriffe_sylius_mailchimp.ui.cart_token'|trans }}</th>
+                                        <th>{{ 'webgriffe_sylius_mailchimp.ui.items_count'|trans }}</th>
+                                        <th>{{ 'sylius.ui.total'|trans }}</th>
+                                        <th>{{ 'sylius.ui.channel'|trans }}</th>
+                                        <th>{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_cart_id'|trans }}</th>
+                                        <th>{{ 'sylius.ui.date'|trans }}</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cart in carts %}
+                                        <tr>
+                                            <td><code>{{ cart.tokenValue }}</code></td>
+                                            <td>{{ cart.items|length }}</td>
+                                            <td>{{ cart.total / 100 | number_format(2) }} {{ cart.currencyCode }}</td>
+                                            <td>{{ cart.channel ? cart.channel.name : '—' }}</td>
+                                            <td>
+                                                {% if cart.mailchimpCartId %}
+                                                    <code class="text-info">{{ cart.mailchimpCartId }}</code>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ cart.updatedAt ? cart.updatedAt|date('d/m/Y H:i') : '—' }}</td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-secondary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#cart-modal-{{ cart.id }}">
+                                                    {{ ux_icon('tabler:shopping-cart') }}
+                                                    {{ 'webgriffe_sylius_mailchimp.ui.view_cart_details'|trans }}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {# Cart detail modals #}
+                {% for cart in carts %}
+                    <div class="modal modal-blur fade" id="cart-modal-{{ cart.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        {{ 'webgriffe_sylius_mailchimp.ui.cart_details'|trans }} — <code>{{ cart.tokenValue }}</code>
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-0">
+                                    {% if cart.items|length > 0 %}
+                                        <div class="table-responsive">
+                                            <table class="table table-vcenter card-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>{{ 'sylius.ui.product'|trans }}</th>
+                                                        <th>{{ 'sylius.ui.variant'|trans }}</th>
+                                                        <th class="text-center">{{ 'sylius.ui.quantity'|trans }}</th>
+                                                        <th class="text-end">{{ 'sylius.ui.unit_price'|trans }}</th>
+                                                        <th class="text-end">{{ 'sylius.ui.subtotal'|trans }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in cart.items %}
+                                                        <tr>
+                                                            <td>
+                                                                {% if item.variant and item.variant.product %}
+                                                                    {{ item.variant.product.name }}
+                                                                {% else %}
+                                                                    <span class="text-muted">—</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
+                                                                {% if item.variant %}
+                                                                    {{ item.variant.code }}
+                                                                {% else %}
+                                                                    <span class="text-muted">—</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td class="text-center">{{ item.quantity }}</td>
+                                                            <td class="text-end">{{ item.unitPrice / 100 | number_format(2) }} {{ cart.currencyCode }}</td>
+                                                            <td class="text-end">{{ item.total / 100 | number_format(2) }} {{ cart.currencyCode }}</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="4" class="text-end"><strong>{{ 'sylius.ui.total'|trans }}</strong></td>
+                                                        <td class="text-end"><strong>{{ cart.total / 100 | number_format(2) }} {{ cart.currencyCode }}</strong></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="p-4 text-muted">{{ 'webgriffe_sylius_mailchimp.ui.cart_empty'|trans }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'sylius.ui.close'|trans }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+        </div>{# /row-cards #}
+    </div>{# /container-xl #}
+</div>{# /page-wrapper #}

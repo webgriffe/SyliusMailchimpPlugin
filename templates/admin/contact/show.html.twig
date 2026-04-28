@@ -1,0 +1,11 @@
+{% extends '@SyliusAdmin/shared/layout/base.html.twig' %}
+
+{% block title %}{{ customer.email }} - {{ 'webgriffe_sylius_mailchimp.ui.mailchimp'|trans }} | {{ parent() }}{% endblock %}
+
+{% block body %}
+    {% hook ['webgriffe_sylius_mailchimp.contact.show', 'sylius_admin.common.show'] with {
+        customer: customer,
+        orders: orders,
+        carts: carts
+    } %}
+{% endblock %}

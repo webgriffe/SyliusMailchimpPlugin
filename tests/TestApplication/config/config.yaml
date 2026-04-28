@@ -2,6 +2,9 @@ imports:
     - { resource: "@WebgriffeSyliusMailchimpPlugin/config/config.yaml" }
     - { resource: "services_test.php" }
 
+webgriffe_sylius_mailchimp:
+    api_key: 'test-api-key-us1'
+
 twig:
     paths:
         '%kernel.project_dir%/../../../tests/TestApplication/templates': ~

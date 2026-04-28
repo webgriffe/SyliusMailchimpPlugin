@@ -23,4 +23,7 @@ interface MailchimpOrderRepositoryInterface extends OrderRepositoryInterface
     public function countMailchimpPendingCarts(): int;
 
     public function countMailchimpPendingOrders(): int;
+
+    /** @return object[] */
+    public function findAbandonedCartsByCustomer(\Sylius\Component\Core\Model\CustomerInterface $customer): array;
 }

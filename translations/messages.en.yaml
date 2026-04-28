@@ -1,6 +1,20 @@
 webgriffe_sylius_mailchimp:
     ui:
         mailchimp: 'Mailchimp'
+        contacts: 'Mailchimp Contacts'
+        view_customer: 'View customer'
+        mailchimp_sync_data: 'Mailchimp Sync Data'
+        customer_info: 'Customer Info'
+        orders: 'Orders'
+        no_orders: 'No orders found.'
+        mailchimp_order_id: 'Mailchimp Order ID'
+        mailchimp_cart_id: 'Mailchimp Cart ID'
+        abandoned_carts: 'Abandoned Carts'
+        cart_token: 'Cart token'
+        items_count: 'Items'
+        view_cart_details: 'Details'
+        cart_details: 'Cart details'
+        cart_empty: 'The cart is empty.'
         newsletter:
             subscribe: 'Subscribe to newsletter'
             subscribed_successfully: 'You have been successfully subscribed to our newsletter!'
@@ -15,6 +29,9 @@ webgriffe_sylius_mailchimp:
         members_error: 'Members with error'
         members_never_synced: 'Members never synced'
         carts_pending_sync: 'Carts pending sync'
+    menu:
+        admin:
+            mailchimp_contacts: 'Mailchimp Contacts'
     form:
         channel:
             mailchimp_audience_id: 'Mailchimp Audience ID'

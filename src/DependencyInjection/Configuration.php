@@ -21,8 +21,8 @@ final class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('api_key')
+                    ->isRequired()
                     ->cannotBeEmpty()
-                    ->defaultValue('')
                     ->info('Mailchimp API key (e.g. abc123-us1)')
                 ->end()
                 ->enumNode('member_default_status')

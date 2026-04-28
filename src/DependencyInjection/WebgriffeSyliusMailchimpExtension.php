@@ -49,6 +49,7 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
     {
         $this->prependDoctrineMigrations($container);
         $this->prependMonologChannel($container);
+        $this->prependGrid($container);
     }
 
     #[\Override]
@@ -79,6 +80,55 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
 
         $container->prependExtensionConfig('monolog', [
             'channels' => ['mailchimp'],
+        ]);
+    }
+
+    private function prependGrid(ContainerBuilder $container): void
+    {
+        if (!$container->hasExtension('sylius_grid')) {
+            return;
+        }
+
+        $container->prependExtensionConfig('sylius_grid', [
+            'grids' => [
+                'webgriffe_sylius_mailchimp_contact' => [
+                    'extends' => 'sylius_admin_customer',
+                    'fields' => [
+                        'mailchimpSyncedAt' => [
+                            'type' => 'twig',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.synced_at',
+                            'path' => 'mailchimpSyncedAt',
+                            'sortable' => true,
+                            'options' => [
+                                'template' => '@SyliusAdmin/shared/grid/field/date.html.twig',
+                            ],
+                        ],
+                        'mailchimpError' => [
+                            'type' => 'string',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.sync_error',
+                            'path' => 'mailchimpError',
+                        ],
+                    ],
+                    'actions' => [
+                        'main' => [
+                            'create' => ['enabled' => false],
+                        ],
+                        'item' => [
+                            'show_orders' => ['enabled' => false],
+                            'update' => ['enabled' => false],
+                            'show' => [
+                                'type' => 'show',
+                                'options' => [
+                                    'link' => [
+                                        'route' => 'webgriffe_sylius_mailchimp_contact_show',
+                                        'parameters' => ['id' => 'resource.id'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ]);
     }
 }

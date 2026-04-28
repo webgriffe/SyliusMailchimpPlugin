@@ -6,7 +6,8 @@ namespace Webgriffe\SyliusMailchimpPlugin\Model;
 
 interface ChannelMailchimpAwareInterface
 {
-    public const NEWSLETTER_POSITIONS = [
+    /** @var string[] */
+    public const array NEWSLETTER_POSITIONS = [
         'checkout_addressing',
         'checkout_complete',
         'register',

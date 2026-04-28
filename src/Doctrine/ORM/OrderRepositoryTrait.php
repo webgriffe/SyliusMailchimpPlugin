@@ -75,4 +75,18 @@ trait OrderRepositoryTrait
             ->getSingleScalarResult()
         ;
     }
+
+    /** @return object[] */
+    public function findAbandonedCartsByCustomer(\Sylius\Component\Core\Model\CustomerInterface $customer): array
+    {
+        return $this->createQueryBuilder('o')
+            ->andWhere('o.customer = :customer')
+            ->andWhere('o.state = :state')
+            ->setParameter('customer', $customer)
+            ->setParameter('state', \Sylius\Component\Order\Model\OrderInterface::STATE_CART)
+            ->orderBy('o.updatedAt', 'DESC')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }

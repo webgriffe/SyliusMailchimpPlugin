@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\CartRecoveryController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\WebhookController;
+use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
 use Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -35,5 +37,10 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$cartStorage', service('Sylius\Component\Core\Storage\CartStorageInterface'))
         ->arg('$channelContext', service('Sylius\Component\Channel\Context\ChannelContextInterface'))
         ->arg('$urlGenerator', service('router'))
+        ->tag('controller.service_arguments');
+
+    $services->set(ContactController::class)
+        ->arg('$customerRepository', service('sylius.repository.customer'))
+        ->arg('$orderRepository', service(MailchimpOrderRepositoryInterface::class))
         ->tag('controller.service_arguments');
 };
