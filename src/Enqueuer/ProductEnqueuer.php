@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Webgriffe\SyliusMailchimpPlugin\Enqueuer;
+
+use Psr\Log\LoggerInterface;
+use Sylius\Component\Core\Model\ChannelInterface;
+use Sylius\Component\Core\Model\ProductInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductCreate;
+use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductRemove;
+use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
+use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
+
+final class ProductEnqueuer
+{
+    public function __construct(
+        private readonly MessageBusInterface $messageBus,
+        private readonly LoggerInterface $logger,
+    ) {
+    }
+
+    public function enqueue(ProductInterface $product, bool $isNew = false): void
+    {
+        $productId = $product->getId();
+        if (!is_int($productId)) {
+            $this->logger->warning('[Mailchimp] Product has no integer ID, skipping ProductEnqueuer.');
+
+            return;
+        }
+
+        foreach ($product->getChannels() as $channel) {
+            if (!$channel instanceof ChannelInterface || !$channel instanceof ChannelMailchimpAwareInterface) {
+                continue;
+            }
+
+            $channelId = $channel->getId();
+            if (!is_int($channelId)) {
+                continue;
+            }
+
+            $locale = $channel->getDefaultLocale()?->getCode() ?? 'en';
+            $message = $isNew ? new ProductCreate($productId, $channelId, $locale) : new ProductUpdate($productId, $channelId, $locale);
+            $this->messageBus->dispatch($message);
+        }
+    }
+
+    public function enqueueRemoval(string $storeId, string $productId): void
+    {
+        $this->messageBus->dispatch(new ProductRemove($storeId, $productId));
+    }
+
+    public function buildProductId(ProductInterface $product): string
+    {
+        return IdSanitizer::sanitize((string) $product->getCode());
+    }
+}

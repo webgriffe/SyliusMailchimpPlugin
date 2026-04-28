@@ -3,8 +3,13 @@
 declare(strict_types=1);
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
+use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuer;
+use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuer;
+use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -15,4 +20,22 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'));
     $services->alias(MemberEnqueuerInterface::class, MemberEnqueuer::class);
+
+    $services->set(StoreEnqueuer::class)
+        ->arg('$messageBus', service('messenger.default_bus'))
+        ->arg('$storeMapper', service(StoreMapper::class))
+        ->arg('$logger', service('monolog.logger.mailchimp'));
+
+    $services->set(ProductEnqueuer::class)
+        ->arg('$messageBus', service('messenger.default_bus'))
+        ->arg('$logger', service('monolog.logger.mailchimp'));
+
+    $services->set(CartEnqueuer::class)
+        ->arg('$messageBus', service('messenger.default_bus'))
+        ->arg('$logger', service('monolog.logger.mailchimp'));
+
+    $services->set(OrderEnqueuer::class)
+        ->arg('$messageBus', service('messenger.default_bus'))
+        ->arg('$logger', service('monolog.logger.mailchimp'));
 };
+
