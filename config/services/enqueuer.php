@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
+use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -13,4 +14,5 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$audienceContext', service('Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface'))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'));
+    $services->alias(MemberEnqueuerInterface::class, MemberEnqueuer::class);
 };

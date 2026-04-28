@@ -15,7 +15,7 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
 
-final class MemberEnqueuer
+final class MemberEnqueuer implements MemberEnqueuerInterface
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
@@ -25,6 +25,7 @@ final class MemberEnqueuer
     ) {
     }
 
+    #[\Override]
     public function enqueue(CustomerInterface $customer): void
     {
         if (!$customer instanceof MailchimpAwareInterface) {
@@ -61,6 +62,7 @@ final class MemberEnqueuer
         $this->enqueueForList($customer, $customerId, $email, $listId);
     }
 
+    #[\Override]
     public function enqueueForList(CustomerInterface $customer, int $customerId, string $email, string $listId): void
     {
         if (!$customer instanceof MailchimpAwareInterface) {
@@ -83,6 +85,7 @@ final class MemberEnqueuer
         }
     }
 
+    #[\Override]
     public function enqueueRemoval(int $customerId, string $listId, string $email): void
     {
         $subscriberHash = md5(strtolower($email));

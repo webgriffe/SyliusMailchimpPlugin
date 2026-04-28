@@ -55,6 +55,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\MessageHandler\*" />
                 <!-- Enqueuer classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Enqueuer\*" />
+                <!-- EventSubscriber classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\EventSubscriber\*" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>
