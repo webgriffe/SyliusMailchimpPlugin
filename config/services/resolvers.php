@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContext;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\ChannelAudienceProvider;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\FnameLnameMergeFieldsProvider;
@@ -24,6 +25,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(AudienceContext::class)
         ->arg('$channelContext', service('sylius.context.channel'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class));
+    $services->alias(AudienceContextInterface::class, AudienceContext::class);
 
     // Member status
     $services->set(MemberStatusResolver::class)

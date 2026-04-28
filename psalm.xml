@@ -53,6 +53,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Mapper\*" />
                 <!-- MessageHandler classes are invoked by Messenger -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\MessageHandler\*" />
+                <!-- Enqueuer classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Enqueuer\*" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>

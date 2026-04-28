@@ -7,7 +7,7 @@ namespace Webgriffe\SyliusMailchimpPlugin\Provider;
 use Sylius\Component\Channel\Context\ChannelContextInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 
-final class AudienceContext
+final class AudienceContext implements AudienceContextInterface
 {
     public function __construct(
         private readonly ChannelContextInterface $channelContext,
@@ -15,6 +15,7 @@ final class AudienceContext
     ) {
     }
 
+    #[\Override]
     public function getAudienceId(): string
     {
         /** @var ChannelInterface $channel */
