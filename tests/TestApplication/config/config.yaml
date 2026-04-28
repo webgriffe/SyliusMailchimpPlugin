@@ -6,6 +6,34 @@ twig:
     paths:
         '%kernel.project_dir%/../../../tests/TestApplication/templates': ~
 
+
+sylius_channel:
+    resources:
+        channel:
+            classes:
+                model: Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel
+
+sylius_customer:
+    resources:
+        customer:
+            classes:
+                model: Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer
+                repository: Tests\Webgriffe\SyliusMailchimpPlugin\Repository\CustomerRepository
+
+sylius_product:
+    resources:
+        product:
+            classes:
+                repository: Tests\Webgriffe\SyliusMailchimpPlugin\Repository\ProductRepository
+
+sylius_order:
+    resources:
+        order:
+            classes:
+                model: Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order
+                repository: Tests\Webgriffe\SyliusMailchimpPlugin\Repository\OrderRepository
+
+
 # Remove if you do not need to extend entities
 doctrine:
     orm:
