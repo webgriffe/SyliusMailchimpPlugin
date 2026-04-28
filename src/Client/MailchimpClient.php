@@ -17,6 +17,7 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Order;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\OrderLine;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\ProductVariant;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Store;
 
 final class MailchimpClient implements MailchimpClientInterface
@@ -168,17 +169,28 @@ final class MailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertStore(string $storeId, Store $store): void
     {
+        $payload = [
+            'id' => $store->id,
+            'name' => $store->name,
+            'domain' => $store->domain,
+            'email_address' => $store->emailAddress,
+            'currency_code' => $store->currencyCode,
+            'primary_locale' => $store->primaryLocale,
+            'timezone' => $store->timezone,
+        ];
+
+        if ($store->phone !== '') {
+            $payload['phone'] = $store->phone;
+        }
+
+        if ($store->address !== '') {
+            $payload['address'] = ['address1' => $store->address];
+        }
+
         $url = sprintf('%secommerce/stores/%s', $this->baseUrl, $storeId);
         $response = $this->httpClient->request('PUT', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
-            'json' => [
-                'id' => $store->id,
-                'name' => $store->name,
-                'domain' => $store->domain,
-                'email_address' => $store->emailAddress,
-                'currency_code' => $store->currencyCode,
-                'primary_locale' => $store->primaryLocale,
-            ],
+            'json' => $payload,
         ]);
 
         $statusCode = $response->getStatusCode();
@@ -204,16 +216,24 @@ final class MailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertProduct(string $storeId, Product $product): void
     {
+        $payload = [
+            'id' => $product->id,
+            'title' => $product->title,
+            'url' => $product->url,
+            'description' => $product->description,
+            'type' => $product->type,
+            'vendor' => $product->vendor,
+            'variants' => array_map([$this, 'serializeProductVariant'], $product->variants),
+        ];
+
+        if ($product->imageUrl !== '') {
+            $payload['image_url'] = $product->imageUrl;
+        }
+
         $url = sprintf('%secommerce/stores/%s/products/%s', $this->baseUrl, $storeId, $product->id);
         $response = $this->httpClient->request('PUT', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
-            'json' => [
-                'id' => $product->id,
-                'title' => $product->title,
-                'url' => $product->url,
-                'description' => $product->description,
-                'variants' => [],
-            ],
+            'json' => $payload,
         ]);
 
         $statusCode = $response->getStatusCode();
@@ -399,6 +419,25 @@ final class MailchimpClient implements MailchimpClientInterface
 
         if ($member->ipSignup !== null) {
             $payload['ip_signup'] = $member->ipSignup;
+        }
+
+        return $payload;
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeProductVariant(ProductVariant $variant): array
+    {
+        $payload = [
+            'id' => $variant->id,
+            'title' => $variant->title,
+            'url' => $variant->url,
+            'sku' => $variant->sku,
+            'price' => $variant->price,
+            'inventory_quantity' => $variant->inventoryQuantity,
+        ];
+
+        if ($variant->imageUrl !== '') {
+            $payload['image_url'] = $variant->imageUrl;
         }
 
         return $payload;

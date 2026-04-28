@@ -221,6 +221,64 @@ final class MailchimpClientTest extends TestCase
         $this->client->upsertMember(self::LIST_ID, $member);
     }
 
+    public function test_upsert_store_calls_put_with_store_data(): void
+    {
+        $response = $this->mockResponse(200, '{}');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('PUT', $this->stringContains('ecommerce/stores/store-1'), $this->callback(
+                static fn (array $options): bool => isset($options['json']['currency_code']) && $options['json']['currency_code'] === 'EUR',
+            ))
+            ->willReturn($response);
+
+        $store = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Store('store-1', 'My Shop', 'myshop.com', 'admin@myshop.com', 'EUR', 'it_IT');
+        $this->client->upsertStore('store-1', $store);
+    }
+
+    public function test_upsert_product_includes_variants(): void
+    {
+        $response = $this->mockResponse(200, '{}');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('PUT', $this->stringContains('ecommerce/stores/store-1/products/prod-1'), $this->callback(
+                static fn (array $options): bool => count($options['json']['variants']) === 1
+                    && $options['json']['variants'][0]['id'] === 'var-1',
+            ))
+            ->willReturn($response);
+
+        $variant = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\ProductVariant('var-1', 'Red', 'https://example.com', 'SKU', 9.99);
+        $product = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Product('prod-1', 'T-Shirt', 'https://example.com', [$variant]);
+        $this->client->upsertProduct('store-1', $product);
+    }
+
+    public function test_upsert_cart_includes_customer_and_lines(): void
+    {
+        $response = $this->mockResponse(200, '{}');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('PUT', $this->stringContains('ecommerce/stores/store-1/carts/cart-1'), $this->callback(
+                static fn (array $options): bool => $options['json']['customer']['email_address'] === 'user@example.com'
+                    && count($options['json']['lines']) === 1,
+            ))
+            ->willReturn($response);
+
+        $customer = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer('cust-1', 'user@example.com');
+        $line = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine('line-1', 'prod-1', 'var-1', 1, 9.99);
+        $cart = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart('cart-1', $customer, 'https://example.com/checkout', 'EUR', 9.99, [$line]);
+        $this->client->upsertCart('store-1', $cart);
+    }
+
+    public function test_upsert_order_includes_processed_at_when_set(): void
+    {
+        $response = $this->mockResponse(200, '{}');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('PUT', $this->stringContains('ecommerce/stores/store-1/orders/order-1'), $this->callback(
+                static fn (array $options): bool => isset($options['json']['processed_at_foreign']),
+            ))
+            ->willReturn($response);
+
+        $customer = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer('cust-1', 'user@example.com');
+        $order = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Order('order-1', $customer, 'EUR', 99.0, [], processedAt: new \DateTimeImmutable('2025-01-01'));
+        $this->client->upsertOrder('store-1', $order);
+    }
+
     private function mockResponse(int $statusCode, string $body): MockObject&ResponseInterface
     {
         $response = $this->createMock(ResponseInterface::class);
