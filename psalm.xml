@@ -46,6 +46,9 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Doctrine\ORM\*" />
                 <!-- Client service is wired via DI container alias -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Client\*" />
+                <!-- Provider/Resolver classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Provider\*" />
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Resolver\*" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>
