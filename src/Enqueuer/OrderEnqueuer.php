@@ -15,7 +15,7 @@ use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
 
-final class OrderEnqueuer
+final class OrderEnqueuer implements OrderEnqueuerInterface
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
@@ -23,6 +23,7 @@ final class OrderEnqueuer
     ) {
     }
 
+    #[\Override]
     public function enqueue(OrderInterface $order, bool $isInRealTime = false): void
     {
         $orderId = $order->getId();
@@ -51,6 +52,7 @@ final class OrderEnqueuer
         }
     }
 
+    #[\Override]
     public function enqueueRemoval(OrderInterface $order): void
     {
         if (!$order instanceof MailchimpOrderAwareInterface) {

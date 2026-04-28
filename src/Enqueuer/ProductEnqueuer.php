@@ -14,7 +14,7 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
 
-final class ProductEnqueuer
+final class ProductEnqueuer implements ProductEnqueuerInterface
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
@@ -22,6 +22,7 @@ final class ProductEnqueuer
     ) {
     }
 
+    #[\Override]
     public function enqueue(ProductInterface $product, bool $isNew = false): void
     {
         $productId = $product->getId();
@@ -47,11 +48,13 @@ final class ProductEnqueuer
         }
     }
 
+    #[\Override]
     public function enqueueRemoval(string $storeId, string $productId): void
     {
         $this->messageBus->dispatch(new ProductRemove($storeId, $productId));
     }
 
+    #[\Override]
     public function buildProductId(ProductInterface $product): string
     {
         return IdSanitizer::sanitize((string) $product->getCode());
