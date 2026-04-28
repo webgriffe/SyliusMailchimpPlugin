@@ -1,1 +1,4 @@
-# Define your own admin routes here
+webgriffe_sylius_mailchimp_webhook:
+    path: /mailchimp/webhook
+    controller: Webgriffe\SyliusMailchimpPlugin\Controller\WebhookController
+    methods: [GET, POST]

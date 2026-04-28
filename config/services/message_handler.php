@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberRemoveHandler;
+use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberSubscriptionUpdateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberUpdateHandler;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -28,6 +29,11 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(MemberRemoveHandler::class)
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->tag('messenger.message_handler');
+
+    $services->set(MemberSubscriptionUpdateHandler::class)
+        ->arg('$updater', service('Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('messenger.message_handler');
 };
