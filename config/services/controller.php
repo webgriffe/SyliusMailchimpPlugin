@@ -8,7 +8,6 @@ use Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\CartRecoveryController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\WebhookController;
-use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
 use Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -41,6 +40,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(ContactController::class)
         ->arg('$customerRepository', service('sylius.repository.customer'))
-        ->arg('$orderRepository', service(MailchimpOrderRepositoryInterface::class))
+        ->arg('$orderRepository', service('sylius.repository.order'))
         ->tag('controller.service_arguments');
 };

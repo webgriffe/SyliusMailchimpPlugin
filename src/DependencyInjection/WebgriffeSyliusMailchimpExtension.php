@@ -98,7 +98,7 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
                             'type' => 'twig',
                             'label' => 'webgriffe_sylius_mailchimp.ui.synced_at',
                             'path' => 'mailchimpSyncedAt',
-                            'sortable' => true,
+                            'sortable' => null,
                             'options' => [
                                 'template' => '@SyliusAdmin/shared/grid/field/date.html.twig',
                             ],
@@ -111,11 +111,11 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
                     ],
                     'actions' => [
                         'main' => [
-                            'create' => ['enabled' => false],
+                            'create' => ['type' => 'create', 'enabled' => false],
                         ],
                         'item' => [
-                            'show_orders' => ['enabled' => false],
-                            'update' => ['enabled' => false],
+                            'show_orders' => ['type' => 'show', 'enabled' => false],
+                            'update' => ['type' => 'update', 'enabled' => false],
                             'show' => [
                                 'type' => 'show',
                                 'options' => [
