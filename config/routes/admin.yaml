@@ -4,7 +4,7 @@ webgriffe_sylius_mailchimp_webhook:
     methods: [GET, POST]
 
 webgriffe_sylius_mailchimp_contact_index:
-    path: /mailchimp/contacts
+    path: /admin/mailchimp/contacts
     methods: [GET]
     defaults:
         _controller: sylius.controller.customer::indexAction
@@ -17,7 +17,7 @@ webgriffe_sylius_mailchimp_contact_index:
                 hook_prefix: 'webgriffe_sylius_mailchimp.contact'
 
 webgriffe_sylius_mailchimp_contact_show:
-    path: /mailchimp/contacts/{id}
+    path: /admin/mailchimp/contacts/{id}
     methods: [GET]
     defaults:
         _controller: Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController::showAction
