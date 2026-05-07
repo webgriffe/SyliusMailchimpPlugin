@@ -1,3 +1,6 @@
+{% set customer = hookable_metadata.context.customer %}
+{% set orders = hookable_metadata.context.orders %}
+{% set carts = hookable_metadata.context.carts %}
 <div class="page-wrapper">
     <div class="container-xl">
         {# Flash messages #}

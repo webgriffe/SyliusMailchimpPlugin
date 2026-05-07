@@ -50,6 +50,7 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
         $this->prependDoctrineMigrations($container);
         $this->prependMonologChannel($container);
         $this->prependGrid($container);
+        $this->prependTwig($container);
     }
 
     #[\Override]
@@ -128,6 +129,19 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
                         ],
                     ],
                 ],
+            ],
+        ]);
+    }
+
+    private function prependTwig(ContainerBuilder $container): void
+    {
+        if (!$container->hasExtension('twig')) {
+            return;
+        }
+
+        $container->prependExtensionConfig('twig', [
+            'paths' => [
+                \dirname(__DIR__, 2) . '/templates' => 'WebgriffeSyliusMailchimp',
             ],
         ]);
     }

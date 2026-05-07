@@ -6,10 +6,12 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Controller\Admin;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Response;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
 
@@ -19,15 +21,19 @@ final class ContactControllerTest extends TestCase
 
     private MockObject&MailchimpOrderRepositoryInterface $orderRepository;
 
+    private MockObject&Environment $twig;
+
     private ContactController $controller;
 
     protected function setUp(): void
     {
         $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
         $this->orderRepository = $this->createMock(MailchimpOrderRepositoryInterface::class);
+        $this->twig = $this->createMock(Environment::class);
         $this->controller = new ContactController(
             $this->customerRepository,
             $this->orderRepository,
+            $this->twig,
         );
     }
 
@@ -49,7 +55,7 @@ final class ContactControllerTest extends TestCase
         $this->controller->showAction(1);
     }
 
-    public function test_it_loads_orders_and_carts_for_found_customer(): void
+    public function test_it_loads_orders_and_carts_and_renders_for_found_customer(): void
     {
         $customer = $this->createMock(CustomerInterface::class);
         $order = $this->createMock(OrderInterface::class);
@@ -62,14 +68,17 @@ final class ContactControllerTest extends TestCase
         $this->orderRepository->expects($this->once())->method('findAbandonedCartsByCustomer')
             ->with($customer)
             ->willReturn([$cart]);
+        $this->twig->expects($this->once())->method('render')
+            ->with('@WebgriffeSyliusMailchimp/admin/contact/show.html.twig', [
+                'customer' => $customer,
+                'orders' => [$order],
+                'carts' => [$cart],
+            ])
+            ->willReturn('<html>rendered</html>');
 
-        // The controller requires a DI container for rendering — verify data loading logic
-        // by confirming repositories are queried before the render call throws.
-        try {
-            $this->controller->showAction(42);
-        } catch (\Error $e) {
-            // Expected: AbstractController::render() requires a container (uninitialized property)
-            $this->assertStringContainsString('container', $e->getMessage());
-        }
+        $response = $this->controller->showAction(42);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame('<html>rendered</html>', $response->getContent());
     }
 }

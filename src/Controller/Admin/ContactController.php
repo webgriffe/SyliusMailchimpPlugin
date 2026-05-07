@@ -6,15 +6,17 @@ namespace Webgriffe\SyliusMailchimpPlugin\Controller\Admin;
 
 use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
 
-final class ContactController extends AbstractController
+final class ContactController
 {
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly MailchimpOrderRepositoryInterface $orderRepository,
+        private readonly Environment $twig,
     ) {
     }
 
@@ -23,16 +25,16 @@ final class ContactController extends AbstractController
         $customer = $this->customerRepository->find($id);
 
         if (!$customer instanceof CustomerInterface) {
-            throw $this->createNotFoundException(sprintf('Customer with ID %d not found.', $id));
+            throw new NotFoundHttpException(sprintf('Customer with ID %d not found.', $id));
         }
 
         $orders = $this->orderRepository->findByCustomer($customer);
         $carts = $this->orderRepository->findAbandonedCartsByCustomer($customer);
 
-        return $this->render('@WebgriffeSyliusMailchimp/admin/contact/show.html.twig', [
+        return new Response($this->twig->render('@WebgriffeSyliusMailchimp/admin/contact/show.html.twig', [
             'customer' => $customer,
             'orders' => $orders,
             'carts' => $carts,
-        ]);
+        ]));
     }
 }

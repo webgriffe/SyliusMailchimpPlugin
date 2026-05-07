@@ -41,5 +41,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ContactController::class)
         ->arg('$customerRepository', service('sylius.repository.customer'))
         ->arg('$orderRepository', service('sylius.repository.order'))
+        ->arg('$twig', service('twig'))
         ->tag('controller.service_arguments');
 };
