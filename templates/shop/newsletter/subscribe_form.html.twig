@@ -6,6 +6,7 @@
         data-success-message="{{ 'webgriffe_sylius_mailchimp.ui.newsletter.subscribed_successfully'|trans }}"
     >
         {{ form_row(form.email) }}
+        {{ form_rest(form) }}
         <button type="submit" class="ui button primary">
             {{ 'webgriffe_sylius_mailchimp.ui.newsletter.subscribe'|trans }}
         </button>
