@@ -63,7 +63,7 @@ final class OrderMapper
 
         $lineId = IdSanitizer::sanitize(sprintf('line-%s', (string) $item->getId()));
         $productId = IdSanitizer::sanitize($variant->getProduct()?->getCode() ?? '');
-        $variantId = IdSanitizer::sanitize(sprintf('%s_%s', $variant->getProduct()?->getCode() ?? '', $variant->getCode() ?? ''));
+        $variantId = IdSanitizer::sanitize($variant->getCode() ?? '');
         $discount = abs(round($item->getAdjustmentsTotalRecursively(AdjustmentInterface::ORDER_PROMOTION_ADJUSTMENT) / 100, 2));
 
         return new OrderLine(

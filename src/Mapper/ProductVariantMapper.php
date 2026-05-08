@@ -13,7 +13,7 @@ final class ProductVariantMapper
 {
     public function map(ProductVariantInterface $variant, ChannelInterface $channel, string $productUrl): ProductVariant
     {
-        $variantId = IdSanitizer::sanitize(sprintf('%s_%s', $variant->getProduct()?->getCode() ?? '', $variant->getCode() ?? ''));
+        $variantId = IdSanitizer::sanitize($variant->getCode() ?? '');
         $channelPricing = $variant->getChannelPricingForChannel($channel);
         $priceInCents = $channelPricing?->getPrice() ?? 0;
         $price = round($priceInCents / 100, 2);
