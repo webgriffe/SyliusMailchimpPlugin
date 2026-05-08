@@ -4,7 +4,7 @@ imports:
     - { resource: "services_test.php" }
 
 webgriffe_sylius_mailchimp:
-    api_key: 'test-api-key-us1'
+    api_key: '%env(MAILCHIMP_API_KEY)%'
 
 twig:
     paths:
