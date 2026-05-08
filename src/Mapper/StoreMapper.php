@@ -28,6 +28,7 @@ final class StoreMapper
             emailAddress: (string) $channel->getContactEmail(),
             currencyCode: $currencyCode,
             primaryLocale: $primaryLocale,
+            listId: (string) $channel->getMailchimpAudienceId(),
         );
     }
 }

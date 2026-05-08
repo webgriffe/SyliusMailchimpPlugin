@@ -13,6 +13,7 @@ final class Store
         public readonly string $emailAddress,
         public readonly string $currencyCode,
         public readonly string $primaryLocale,
+        public readonly string $listId = '',
         public readonly string $timezone = 'Europe/Rome',
         public readonly string $phone = '',
         public readonly string $address = '',

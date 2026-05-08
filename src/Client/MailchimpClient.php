@@ -187,11 +187,28 @@ final class MailchimpClient implements MailchimpClientInterface
             $payload['address'] = ['address1' => $store->address];
         }
 
-        $url = sprintf('%secommerce/stores/%s', $this->baseUrl, $storeId);
-        $response = $this->httpClient->request('PUT', $url, [
+        $getUrl = sprintf('%secommerce/stores/%s', $this->baseUrl, $storeId);
+        $getResponse = $this->httpClient->request('GET', $getUrl, [
             'auth_basic' => ['anystring', $this->getApiKey()],
-            'json' => $payload,
         ]);
+
+        $getStatus = $getResponse->getStatusCode();
+        if ($getStatus === 404) {
+            if ($store->listId !== '') {
+                $payload['list_id'] = $store->listId;
+            }
+            $createUrl = sprintf('%secommerce/stores', $this->baseUrl);
+            $response = $this->httpClient->request('POST', $createUrl, [
+                'auth_basic' => ['anystring', $this->getApiKey()],
+                'json' => $payload,
+            ]);
+        } else {
+            unset($payload['id']);
+            $response = $this->httpClient->request('PATCH', $getUrl, [
+                'auth_basic' => ['anystring', $this->getApiKey()],
+                'json' => $payload,
+            ]);
+        }
 
         $statusCode = $response->getStatusCode();
         if ($statusCode >= 400) {
