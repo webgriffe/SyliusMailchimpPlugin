@@ -12,6 +12,8 @@ trait OrderRepositoryTrait
     {
         return $this->createQueryBuilder($alias)
             ->andWhere(sprintf('%s.mailchimpCartId IS NULL', $alias))
+            ->andWhere(sprintf('%s.state = :cartState', $alias))
+            ->setParameter('cartState', \Sylius\Component\Order\Model\OrderInterface::STATE_CART)
         ;
     }
 

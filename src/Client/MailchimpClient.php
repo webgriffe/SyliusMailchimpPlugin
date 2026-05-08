@@ -276,18 +276,38 @@ final class MailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertCart(string $storeId, Cart $cart): void
     {
-        $this->upsertEcommerceResource(
-            sprintf('%secommerce/stores/%s/carts/%s', $this->baseUrl, $storeId, $cart->id),
-            [
-                'id' => $cart->id,
-                'customer' => $this->serializeEcommerceCustomer($cart->customer),
-                'checkout_url' => $cart->checkoutUrl,
-                'currency_code' => $cart->currencyCode,
-                'order_total' => $cart->orderTotal,
-                'lines' => array_map([$this, 'serializeCartLine'], $cart->lines),
-            ],
-            $cart->id,
-        );
+        $payload = [
+            'id' => $cart->id,
+            'customer' => $this->serializeEcommerceCustomer($cart->customer),
+            'checkout_url' => $cart->checkoutUrl,
+            'currency_code' => $cart->currencyCode,
+            'order_total' => $cart->orderTotal,
+            'lines' => array_map([$this, 'serializeCartLine'], $cart->lines),
+        ];
+
+        $cartUrl = sprintf('%secommerce/stores/%s/carts/%s', $this->baseUrl, $storeId, $cart->id);
+        $getResponse = $this->httpClient->request('GET', $cartUrl, [
+            'auth_basic' => ['anystring', $this->getApiKey()],
+        ]);
+
+        if ($getResponse->getStatusCode() === 404) {
+            $createUrl = sprintf('%secommerce/stores/%s/carts', $this->baseUrl, $storeId);
+            $response = $this->httpClient->request('POST', $createUrl, [
+                'auth_basic' => ['anystring', $this->getApiKey()],
+                'json' => $payload,
+            ]);
+        } else {
+            unset($payload['id']);
+            $response = $this->httpClient->request('PATCH', $cartUrl, [
+                'auth_basic' => ['anystring', $this->getApiKey()],
+                'json' => $payload,
+            ]);
+        }
+
+        $statusCode = $response->getStatusCode();
+        if ($statusCode >= 400) {
+            $this->handleErrorResponse($statusCode, $response->getContent(false), $cart->id);
+        }
     }
 
     #[\Override]
