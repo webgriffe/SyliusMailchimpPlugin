@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webgriffe\SyliusMailchimpPlugin\Command;
 
+use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -27,6 +28,7 @@ final class SyncCartsCommand extends Command
         private readonly MailchimpOrderRepositoryInterface $orderRepository,
         private readonly CartEnqueuerInterface $cartEnqueuer,
         private readonly bool $commandLockEnable,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct();
     }
@@ -59,6 +61,7 @@ final class SyncCartsCommand extends Command
 
         $enqueued = 0;
         $skipped = 0;
+        $failed = 0;
 
         foreach ($orders as $order) {
             if (!$order instanceof OrderInterface) {
@@ -67,11 +70,19 @@ final class SyncCartsCommand extends Command
                 continue;
             }
 
-            $this->cartEnqueuer->enqueue($order);
-            ++$enqueued;
+            try {
+                $this->cartEnqueuer->enqueue($order);
+                ++$enqueued;
+            } catch (\Throwable $e) {
+                ++$failed;
+                $this->logger->error('[Mailchimp] Failed to sync cart for order #{id}: {message}', [
+                    'id' => $order->getId(),
+                    'message' => $e->getMessage(),
+                ]);
+            }
         }
 
-        $io->success(sprintf('Enqueued %d, skipped %d out of %d cart(s).', $enqueued, $skipped, $total));
+        $io->success(sprintf('Enqueued %d, skipped %d, failed %d out of %d cart(s).', $enqueued, $skipped, $failed, $total));
 
         $this->release();
 

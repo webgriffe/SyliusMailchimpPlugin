@@ -43,12 +43,14 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$orderRepository', service('sylius.repository.order'))
         ->arg('$cartEnqueuer', service(CartEnqueuerInterface::class))
         ->arg('$commandLockEnable', param('webgriffe_sylius_mailchimp.command_lock_enable'))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('console.command');
 
     $services->set(SyncOrdersCommand::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
         ->arg('$orderEnqueuer', service(OrderEnqueuerInterface::class))
         ->arg('$commandLockEnable', param('webgriffe_sylius_mailchimp.command_lock_enable'))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('console.command');
 
     $services->set(SyncAllCommand::class)
