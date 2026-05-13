@@ -6,6 +6,7 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Command;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 use Webgriffe\SyliusMailchimpPlugin\Command\SyncCartsCommand;
@@ -28,6 +29,7 @@ final class SyncCartsCommandTest extends TestCase
             $this->orderRepository,
             $this->cartEnqueuer,
             false,
+            new NullLogger(),
         );
     }
 

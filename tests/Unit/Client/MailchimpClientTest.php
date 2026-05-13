@@ -221,14 +221,37 @@ final class MailchimpClientTest extends TestCase
         $this->client->upsertMember(self::LIST_ID, $member);
     }
 
-    public function test_upsert_store_calls_put_with_store_data(): void
+    public function test_upsert_store_posts_on_404(): void
     {
-        $response = $this->mockResponse(200, '{}');
-        $this->httpClient->expects($this->once())->method('request')
-            ->with('PUT', $this->stringContains('ecommerce/stores/store-1'), $this->callback(
-                static fn (array $options): bool => isset($options['json']['currency_code']) && $options['json']['currency_code'] === 'EUR',
-            ))
-            ->willReturn($response);
+        $notFound = $this->mockResponse(404, '{"status":404}');
+        $created = $this->mockResponse(200, '{}');
+
+        $this->httpClient->expects($this->exactly(2))->method('request')
+            ->willReturnCallback(function (string $method) use ($notFound, $created): ResponseInterface {
+                if ($method === 'GET') {
+                    return $notFound;
+                }
+
+                return $created;
+            });
+
+        $store = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Store('store-1', 'My Shop', 'myshop.com', 'admin@myshop.com', 'EUR', 'it_IT', 'list-1');
+        $this->client->upsertStore('store-1', $store);
+    }
+
+    public function test_upsert_store_patches_on_existing(): void
+    {
+        $existing = $this->mockResponse(200, '{"id":"store-1"}');
+        $updated = $this->mockResponse(200, '{}');
+
+        $this->httpClient->expects($this->exactly(2))->method('request')
+            ->willReturnCallback(function (string $method) use ($existing, $updated): ResponseInterface {
+                if ($method === 'GET') {
+                    return $existing;
+                }
+
+                return $updated;
+            });
 
         $store = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Store('store-1', 'My Shop', 'myshop.com', 'admin@myshop.com', 'EUR', 'it_IT');
         $this->client->upsertStore('store-1', $store);
@@ -249,15 +272,45 @@ final class MailchimpClientTest extends TestCase
         $this->client->upsertProduct('store-1', $product);
     }
 
-    public function test_upsert_cart_includes_customer_and_lines(): void
+    public function test_upsert_cart_posts_on_404(): void
     {
-        $response = $this->mockResponse(200, '{}');
-        $this->httpClient->expects($this->once())->method('request')
-            ->with('PUT', $this->stringContains('ecommerce/stores/store-1/carts/cart-1'), $this->callback(
-                static fn (array $options): bool => $options['json']['customer']['email_address'] === 'user@example.com'
-                    && count($options['json']['lines']) === 1,
-            ))
-            ->willReturn($response);
+        $notFound = $this->mockResponse(404, '{"status":404}');
+        $created = $this->mockResponse(200, '{}');
+
+        $capturedPost = null;
+        $this->httpClient->expects($this->exactly(2))->method('request')
+            ->willReturnCallback(static function (string $method, string $url, array $options) use ($notFound, $created, &$capturedPost): ResponseInterface {
+                if ($method === 'GET') {
+                    return $notFound;
+                }
+
+                $capturedPost = $options['json'] ?? [];
+
+                return $created;
+            });
+
+        $customer = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer('cust-1', 'user@example.com');
+        $line = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine('line-1', 'prod-1', 'var-1', 1, 9.99);
+        $cart = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart('cart-1', $customer, 'https://example.com/checkout', 'EUR', 9.99, [$line]);
+        $this->client->upsertCart('store-1', $cart);
+
+        $this->assertSame('user@example.com', $capturedPost['customer']['email_address'] ?? null);
+        $this->assertCount(1, $capturedPost['lines'] ?? []);
+    }
+
+    public function test_upsert_cart_patches_on_existing(): void
+    {
+        $existing = $this->mockResponse(200, '{"id":"cart-1"}');
+        $updated = $this->mockResponse(200, '{}');
+
+        $this->httpClient->expects($this->exactly(2))->method('request')
+            ->willReturnCallback(static function (string $method) use ($existing, $updated): ResponseInterface {
+                if ($method === 'GET') {
+                    return $existing;
+                }
+
+                return $updated;
+            });
 
         $customer = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer('cust-1', 'user@example.com');
         $line = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine('line-1', 'prod-1', 'var-1', 1, 9.99);

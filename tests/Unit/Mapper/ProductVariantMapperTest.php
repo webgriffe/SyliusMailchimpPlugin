@@ -38,7 +38,7 @@ final class ProductVariantMapperTest extends TestCase
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com/products/tshirt');
 
-        $this->assertSame('TSHIRT_TSHIRT-L', $pv->id);
+        $this->assertSame('TSHIRT-L', $pv->id);
         $this->assertSame('T-Shirt - L', $pv->title);
         $this->assertSame('https://example.com/products/tshirt', $pv->url);
         $this->assertSame('TSHIRT-L', $pv->sku);
@@ -78,7 +78,7 @@ final class ProductVariantMapperTest extends TestCase
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com');
 
-        $this->assertSame('_VARIANT-1', $pv->id);
+        $this->assertSame('VARIANT-1', $pv->id);
         $this->assertSame('VARIANT-1', $pv->sku);
     }
 }

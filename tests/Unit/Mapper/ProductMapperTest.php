@@ -55,7 +55,7 @@ final class ProductMapperTest extends TestCase
         $this->assertSame('https://example.com/products/cool-tshirt', $mapped->url);
         $this->assertSame('A cool t-shirt', $mapped->description);
         $this->assertCount(1, $mapped->variants);
-        $this->assertSame('TSHIRT_TSHIRT-L', $mapped->variants[0]->id);
+        $this->assertSame('TSHIRT-L', $mapped->variants[0]->id);
     }
 
     public function testFallsBackToHostnameWhenNoSlug(): void
