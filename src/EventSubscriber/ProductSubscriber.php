@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webgriffe\SyliusMailchimpPlugin\EventSubscriber;
 
+use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -16,6 +17,7 @@ final class ProductSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly ProductEnqueuerInterface $productEnqueuer,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -36,6 +38,7 @@ final class ProductSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $this->logger->debug('[Mailchimp] onProductPostCreate: product #{id}.', ['id' => $product->getId()]);
         $this->productEnqueuer->enqueue($product, isNew: true);
     }
 
@@ -46,6 +49,7 @@ final class ProductSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $this->logger->debug('[Mailchimp] onProductPostUpdate: product #{id}.', ['id' => $product->getId()]);
         $this->productEnqueuer->enqueue($product, isNew: false);
     }
 
@@ -56,6 +60,7 @@ final class ProductSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $this->logger->debug('[Mailchimp] onProductPreDelete: product #{id}.', ['id' => $product->getId()]);
         foreach ($product->getChannels() as $channel) {
             if (!$channel instanceof ChannelInterface || !$channel instanceof ChannelMailchimpAwareInterface) {
                 continue;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webgriffe\SyliusMailchimpPlugin\EventSubscriber;
 
+use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
@@ -16,6 +17,7 @@ final class OrderSubscriber implements EventSubscriberInterface
         private readonly CartEnqueuerInterface $cartEnqueuer,
         private readonly OrderEnqueuerInterface $orderEnqueuer,
         private readonly bool $sendUnpaidOrdersAsCarts,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -36,6 +38,11 @@ final class OrderSubscriber implements EventSubscriberInterface
         }
 
         $state = $order->getState();
+        $this->logger->debug('[Mailchimp] onOrderPostUpdate: order #{id} state={state}.', [
+            'id' => $order->getId(),
+            'state' => $state,
+        ]);
+
         if ($state === OrderInterface::STATE_CART) {
             $this->cartEnqueuer->enqueue($order);
 
@@ -54,6 +61,7 @@ final class OrderSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $this->logger->debug('[Mailchimp] onOrderPostComplete: order #{id}.', ['id' => $order->getId()]);
         $this->cartEnqueuer->enqueueRemoval($order);
         $this->orderEnqueuer->enqueue($order, isInRealTime: true);
     }

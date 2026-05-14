@@ -44,6 +44,11 @@ final class ProductEnqueuer implements ProductEnqueuerInterface
 
             $locale = $channel->getDefaultLocale()?->getCode() ?? 'en';
             $message = $isNew ? new ProductCreate($productId, $channelId, $locale) : new ProductUpdate($productId, $channelId, $locale);
+            $this->logger->debug('[Mailchimp] Dispatching {type} for product #{id} in channel #{channel}.', [
+                'type' => $isNew ? 'ProductCreate' : 'ProductUpdate',
+                'id' => $productId,
+                'channel' => $channelId,
+            ]);
             $this->messageBus->dispatch($message);
         }
     }
@@ -51,6 +56,7 @@ final class ProductEnqueuer implements ProductEnqueuerInterface
     #[\Override]
     public function enqueueRemoval(string $storeId, string $productId): void
     {
+        $this->logger->debug('[Mailchimp] Dispatching ProductRemove for product {id} in store {store}.', ['id' => $productId, 'store' => $storeId]);
         $this->messageBus->dispatch(new ProductRemove($storeId, $productId));
     }
 

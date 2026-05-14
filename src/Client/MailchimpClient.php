@@ -131,6 +131,8 @@ final class MailchimpClient implements MailchimpClientInterface
     public function getMemberTags(string $listId, string $subscriberHash): array
     {
         $url = sprintf('%slists/%s/members/%s/tags', $this->baseUrl, $listId, $subscriberHash);
+        $this->logger->debug('[Mailchimp] GET {url}', ['url' => $url]);
+
         $response = $this->httpClient->request('GET', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
@@ -143,8 +145,11 @@ final class MailchimpClient implements MailchimpClientInterface
 
         /** @var array{tags?: array<array{name: string}>} $data */
         $data = json_decode($body, true);
+        $names = array_column($data['tags'] ?? [], 'name');
 
-        return array_column($data['tags'] ?? [], 'name');
+        $this->logger->debug('[Mailchimp] Fetched {count} tag(s) for member {hash}.', ['count' => count($names), 'hash' => $subscriberHash]);
+
+        return $names;
     }
 
     #[\Override]
@@ -155,6 +160,8 @@ final class MailchimpClient implements MailchimpClientInterface
             'tags' => array_map(static fn (string $tag): array => ['name' => $tag, 'status' => 'active'], $tags),
         ];
 
+        $this->logger->debug('[Mailchimp] POST {url}', ['url' => $url, 'payload' => $payload]);
+
         $response = $this->httpClient->request('POST', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
             'json' => $payload,
@@ -164,6 +171,8 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $subscriberHash);
         }
+
+        $this->logger->info('[Mailchimp] Member tags updated for {hash}.', ['hash' => $subscriberHash]);
     }
 
     #[\Override]
@@ -188,6 +197,8 @@ final class MailchimpClient implements MailchimpClientInterface
         }
 
         $getUrl = sprintf('%secommerce/stores/%s', $this->baseUrl, $storeId);
+        $this->logger->debug('[Mailchimp] GET {url}', ['url' => $getUrl]);
+
         $getResponse = $this->httpClient->request('GET', $getUrl, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
@@ -198,12 +209,16 @@ final class MailchimpClient implements MailchimpClientInterface
                 $payload['list_id'] = $store->listId;
             }
             $createUrl = sprintf('%secommerce/stores', $this->baseUrl);
+            $this->logger->debug('[Mailchimp] POST {url}', ['url' => $createUrl, 'payload' => $payload]);
+
             $response = $this->httpClient->request('POST', $createUrl, [
                 'auth_basic' => ['anystring', $this->getApiKey()],
                 'json' => $payload,
             ]);
         } else {
             unset($payload['id']);
+            $this->logger->debug('[Mailchimp] PATCH {url}', ['url' => $getUrl, 'payload' => $payload]);
+
             $response = $this->httpClient->request('PATCH', $getUrl, [
                 'auth_basic' => ['anystring', $this->getApiKey()],
                 'json' => $payload,
@@ -214,12 +229,16 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $storeId);
         }
+
+        $this->logger->info('[Mailchimp] Store {id} upserted.', ['id' => $storeId]);
     }
 
     #[\Override]
     public function removeStore(string $storeId): void
     {
         $url = sprintf('%secommerce/stores/%s', $this->baseUrl, $storeId);
+        $this->logger->debug('[Mailchimp] DELETE {url}', ['url' => $url]);
+
         $response = $this->httpClient->request('DELETE', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
@@ -228,6 +247,8 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode !== 204 && $statusCode !== 404 && $statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $storeId);
         }
+
+        $this->logger->info('[Mailchimp] Store {id} removed.', ['id' => $storeId]);
     }
 
     #[\Override]
@@ -248,6 +269,8 @@ final class MailchimpClient implements MailchimpClientInterface
         }
 
         $url = sprintf('%secommerce/stores/%s/products/%s', $this->baseUrl, $storeId, $product->id);
+        $this->logger->debug('[Mailchimp] PUT {url}', ['url' => $url, 'payload' => $payload]);
+
         $response = $this->httpClient->request('PUT', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
             'json' => $payload,
@@ -257,12 +280,16 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $product->id);
         }
+
+        $this->logger->info('[Mailchimp] Product {id} upserted in store {store}.', ['id' => $product->id, 'store' => $storeId]);
     }
 
     #[\Override]
     public function removeProduct(string $storeId, string $productId): void
     {
         $url = sprintf('%secommerce/stores/%s/products/%s', $this->baseUrl, $storeId, $productId);
+        $this->logger->debug('[Mailchimp] DELETE {url}', ['url' => $url]);
+
         $response = $this->httpClient->request('DELETE', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
@@ -271,6 +298,8 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode !== 204 && $statusCode !== 404 && $statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $productId);
         }
+
+        $this->logger->info('[Mailchimp] Product {id} removed from store {store}.', ['id' => $productId, 'store' => $storeId]);
     }
 
     #[\Override]
@@ -286,18 +315,24 @@ final class MailchimpClient implements MailchimpClientInterface
         ];
 
         $cartUrl = sprintf('%secommerce/stores/%s/carts/%s', $this->baseUrl, $storeId, $cart->id);
+        $this->logger->debug('[Mailchimp] GET {url}', ['url' => $cartUrl]);
+
         $getResponse = $this->httpClient->request('GET', $cartUrl, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
 
         if ($getResponse->getStatusCode() === 404) {
             $createUrl = sprintf('%secommerce/stores/%s/carts', $this->baseUrl, $storeId);
+            $this->logger->debug('[Mailchimp] POST {url}', ['url' => $createUrl, 'payload' => $payload]);
+
             $response = $this->httpClient->request('POST', $createUrl, [
                 'auth_basic' => ['anystring', $this->getApiKey()],
                 'json' => $payload,
             ]);
         } else {
             unset($payload['id']);
+            $this->logger->debug('[Mailchimp] PATCH {url}', ['url' => $cartUrl, 'payload' => $payload]);
+
             $response = $this->httpClient->request('PATCH', $cartUrl, [
                 'auth_basic' => ['anystring', $this->getApiKey()],
                 'json' => $payload,
@@ -308,12 +343,16 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $cart->id);
         }
+
+        $this->logger->info('[Mailchimp] Cart {id} upserted in store {store}.', ['id' => $cart->id, 'store' => $storeId]);
     }
 
     #[\Override]
     public function removeCart(string $storeId, string $cartId): void
     {
         $url = sprintf('%secommerce/stores/%s/carts/%s', $this->baseUrl, $storeId, $cartId);
+        $this->logger->debug('[Mailchimp] DELETE {url}', ['url' => $url]);
+
         $response = $this->httpClient->request('DELETE', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
@@ -322,6 +361,8 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode !== 204 && $statusCode !== 404 && $statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $cartId);
         }
+
+        $this->logger->info('[Mailchimp] Cart {id} removed from store {store}.', ['id' => $cartId, 'store' => $storeId]);
     }
 
     #[\Override]
@@ -377,6 +418,8 @@ final class MailchimpClient implements MailchimpClientInterface
     public function ping(): void
     {
         $url = sprintf('%sping', $this->baseUrl);
+        $this->logger->debug('[Mailchimp] GET {url} (ping)', ['url' => $url]);
+
         $response = $this->httpClient->request('GET', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
@@ -385,6 +428,8 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode >= 400) {
             throw ClientException::fromResponse($statusCode, $response->getContent(false));
         }
+
+        $this->logger->info('[Mailchimp] Ping successful.');
     }
 
     /**
@@ -394,6 +439,8 @@ final class MailchimpClient implements MailchimpClientInterface
     public function getAudiences(): array
     {
         $url = sprintf('%slists?count=100', $this->baseUrl);
+        $this->logger->debug('[Mailchimp] GET {url}', ['url' => $url]);
+
         $response = $this->httpClient->request('GET', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
         ]);
@@ -407,15 +454,21 @@ final class MailchimpClient implements MailchimpClientInterface
         /** @var array{lists?: array<array{id: string, name: string}>} $data */
         $data = json_decode($body, true);
 
-        return array_values(array_map(
+        $result = array_values(array_map(
             static fn (array $list): array => ['id' => $list['id'], 'name' => $list['name']],
             $data['lists'] ?? [],
         ));
+
+        $this->logger->debug('[Mailchimp] Fetched {count} audience(s).', ['count' => count($result)]);
+
+        return $result;
     }
 
     /** @param array<string, mixed> $payload */
     private function upsertEcommerceResource(string $url, array $payload, string $resourceId): void
     {
+        $this->logger->debug('[Mailchimp] PUT {url}', ['url' => $url, 'payload' => $payload]);
+
         $response = $this->httpClient->request('PUT', $url, [
             'auth_basic' => ['anystring', $this->getApiKey()],
             'json' => $payload,
@@ -425,6 +478,8 @@ final class MailchimpClient implements MailchimpClientInterface
         if ($statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $resourceId);
         }
+
+        $this->logger->info('[Mailchimp] Resource {id} upserted.', ['id' => $resourceId]);
     }
 
     /** @return array<string, mixed> */

@@ -72,6 +72,7 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
         $existingMailchimpId = $customer->getMailchimpId();
         if ($existingMailchimpId !== null && $existingMailchimpId !== '') {
             $this->messageBus->dispatch(new MemberUpdate($customerId, $listId));
+            $this->logger->debug('[Mailchimp] Dispatched MemberUpdate for customer #{id}.', ['id' => $customerId]);
 
             return;
         }
@@ -80,8 +81,10 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
         $remoteMember = $this->mailchimpClient->getMember($listId, $subscriberHash);
         if ($remoteMember !== null) {
             $this->messageBus->dispatch(new MemberUpdate($customerId, $listId));
+            $this->logger->debug('[Mailchimp] Dispatched MemberUpdate for customer #{id} (existing remote member).', ['id' => $customerId]);
         } else {
             $this->messageBus->dispatch(new MemberCreate($customerId, $listId));
+            $this->logger->debug('[Mailchimp] Dispatched MemberCreate for customer #{id}.', ['id' => $customerId]);
         }
     }
 
@@ -89,6 +92,7 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     public function enqueueRemoval(int $customerId, string $listId, string $email): void
     {
         $subscriberHash = md5(strtolower($email));
+        $this->logger->debug('[Mailchimp] Dispatching MemberRemove for customer #{id}.', ['id' => $customerId]);
         $this->messageBus->dispatch(new MemberRemove($customerId, $listId, $subscriberHash));
     }
 }

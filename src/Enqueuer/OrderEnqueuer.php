@@ -47,8 +47,10 @@ final class OrderEnqueuer implements OrderEnqueuerInterface
 
         if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpOrderId() !== null) {
             $this->messageBus->dispatch(new OrderUpdate($orderId, $channelId));
+            $this->logger->debug('[Mailchimp] Dispatched OrderUpdate for order #{id}.', ['id' => $orderId]);
         } else {
             $this->messageBus->dispatch(new OrderCreate($orderId, $channelId, $isInRealTime));
+            $this->logger->debug('[Mailchimp] Dispatched OrderCreate for order #{id}.', ['id' => $orderId]);
         }
     }
 
@@ -70,6 +72,7 @@ final class OrderEnqueuer implements OrderEnqueuerInterface
         }
 
         $storeId = IdSanitizer::sanitize((string) $channel->getCode());
+        $this->logger->debug('[Mailchimp] Dispatching OrderRemove for order {orderId} in store {store}.', ['orderId' => $mailchimpOrderId, 'store' => $storeId]);
         $this->messageBus->dispatch(new OrderRemove($storeId, $mailchimpOrderId));
     }
 }

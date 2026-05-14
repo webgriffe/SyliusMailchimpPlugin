@@ -81,6 +81,14 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
 
         $container->prependExtensionConfig('monolog', [
             'channels' => ['mailchimp'],
+            'handlers' => [
+                'mailchimp' => [
+                    'type' => 'stream',
+                    'path' => '%kernel.logs_dir%/mailchimp.log',
+                    'level' => 'debug',
+                    'channels' => ['mailchimp'],
+                ],
+            ],
         ]);
     }
 

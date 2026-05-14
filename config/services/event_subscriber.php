@@ -30,10 +30,12 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$cartEnqueuer', service(CartEnqueuerInterface::class))
         ->arg('$orderEnqueuer', service(OrderEnqueuerInterface::class))
         ->arg('$sendUnpaidOrdersAsCarts', param('webgriffe_sylius_mailchimp.send_unpaid_orders_as_carts'))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('kernel.event_subscriber');
 
     $services->set(ProductSubscriber::class)
         ->arg('$productEnqueuer', service(ProductEnqueuerInterface::class))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('kernel.event_subscriber');
 };
 
