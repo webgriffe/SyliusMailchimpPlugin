@@ -35,11 +35,5 @@ webgriffe_sylius_mailchimp:
     form:
         channel:
             mailchimp_audience_id: 'Mailchimp Audience ID'
-            mailchimp_newsletter_positions: 'Newsletter opt-in positions'
-            newsletter_position:
-                checkout_addressing: 'Checkout - Address step'
-                checkout_complete: 'Checkout - Complete step'
-                register: 'Registration form'
-                my_account: 'My account - Profile'
         newsletter:
             email: 'Email address'

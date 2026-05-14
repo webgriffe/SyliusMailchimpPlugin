@@ -29,25 +29,4 @@ final class ChannelMailchimpAwareTraitTest extends TestCase
 
         self::assertSame('abc123xyz', $this->subject->getMailchimpAudienceId());
     }
-
-    public function test_mailchimp_newsletter_positions_defaults_to_empty_array(): void
-    {
-        self::assertSame([], $this->subject->getMailchimpNewsletterPositions());
-    }
-
-    public function test_it_sets_and_gets_mailchimp_newsletter_positions(): void
-    {
-        $positions = ['checkout_addressing', 'register'];
-        $this->subject->setMailchimpNewsletterPositions($positions);
-
-        self::assertSame($positions, $this->subject->getMailchimpNewsletterPositions());
-    }
-
-    public function test_it_accepts_all_valid_newsletter_positions(): void
-    {
-        $positions = ['checkout_addressing', 'checkout_complete', 'register', 'my_account'];
-        $this->subject->setMailchimpNewsletterPositions($positions);
-
-        self::assertSame($positions, $this->subject->getMailchimpNewsletterPositions());
-    }
 }
