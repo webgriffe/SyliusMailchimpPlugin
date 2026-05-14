@@ -1,0 +1,15 @@
+default:
+    suites:
+        webgriffe_mailchimp_newsletter_registration:
+            contexts:
+                - sylius.behat.context.hook.doctrine_orm
+                - sylius.behat.context.hook.session
+                - sylius.behat.context.setup.channel
+                - sylius.behat.context.setup.locale
+                - sylius.behat.context.transform.shared_storage
+                - sylius.behat.context.ui.shop.locale
+                - sylius.behat.context.ui.shop.registration
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpRegistrationContext
+            filters:
+                tags: "@mailchimp&&@ui"

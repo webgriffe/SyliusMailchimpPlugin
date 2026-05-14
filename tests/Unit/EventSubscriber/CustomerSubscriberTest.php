@@ -67,10 +67,20 @@ final class CustomerSubscriberTest extends TestCase
         $this->assertArrayHasKey('sylius.customer.post_update', $events);
     }
 
-    public function test_enqueues_customer_on_post_register(): void
+    public function test_enqueues_customer_on_post_register_when_subscribed_to_newsletter(): void
     {
         $customer = $this->createMock(CustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(true);
         $this->memberEnqueuer->expects($this->once())->method('enqueue')->with($customer);
+
+        $this->subscriber->onCustomerPostRegister(new GenericEvent($customer));
+    }
+
+    public function test_skips_enqueue_on_post_register_when_not_subscribed_to_newsletter(): void
+    {
+        $customer = $this->createMock(CustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $this->memberEnqueuer->expects($this->never())->method('enqueue');
 
         $this->subscriber->onCustomerPostRegister(new GenericEvent($customer));
     }
