@@ -1,10 +1,5 @@
 sylius_twig_hooks:
     hooks:
-        'sylius_shop.account.register.content.form':
-            mailchimp_newsletter_checkbox:
-                template: '@WebgriffeSyliusMailchimpPlugin/shop/newsletter/checkbox.html.twig'
-                priority: -100
-
         'sylius_shop.checkout.address.content.form':
             mailchimp_newsletter_checkbox:
                 template: '@WebgriffeSyliusMailchimpPlugin/shop/newsletter/checkbox.html.twig'
