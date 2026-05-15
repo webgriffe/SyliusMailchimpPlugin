@@ -18,7 +18,12 @@ trait CustomerRepositoryTrait
     /** @return object[] */
     public function findMailchimpSyncNeeded(): array
     {
-        return $this->createMailchimpSyncNeededQueryBuilder('o')->getQuery()->getResult();
+        return $this->createMailchimpSyncNeededQueryBuilder('o')
+            ->andWhere('o.subscribedToNewsletter = :subscribed')
+            ->setParameter('subscribed', true)
+            ->getQuery()
+            ->getResult()
+        ;
     }
 
     /** @return object[] */
@@ -26,7 +31,9 @@ trait CustomerRepositoryTrait
     {
         return $this->createMailchimpSyncNeededQueryBuilder('o')
             ->orWhere('o.updatedAt >= :since')
+            ->andWhere('o.subscribedToNewsletter = :subscribed')
             ->setParameter('since', $since)
+            ->setParameter('subscribed', true)
             ->getQuery()
             ->getResult()
         ;

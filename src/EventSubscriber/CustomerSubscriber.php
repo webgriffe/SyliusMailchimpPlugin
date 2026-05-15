@@ -114,9 +114,17 @@ final class CustomerSubscriber implements EventSubscriberInterface
             $this->messageBus->dispatch(new MemberRemove($customerId, $listId, $subscriberHash));
 
             $newEmail = $customer->getEmail();
-            if ($newEmail !== null && $newEmail !== '') {
+            if ($newEmail !== null && $newEmail !== '' && $customer->isSubscribedToNewsletter()) {
                 $this->messageBus->dispatch(new MemberCreate($customerId, $listId));
             }
+
+            return;
+        }
+
+        if (!$customer->isSubscribedToNewsletter()) {
+            $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id} on update: not subscribed to newsletter.', [
+                'id' => $customerId,
+            ]);
 
             return;
         }

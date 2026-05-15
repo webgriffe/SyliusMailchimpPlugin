@@ -49,9 +49,19 @@ final class MemberEnqueuerTest extends TestCase
         );
     }
 
+    public function test_skips_when_customer_not_subscribed_to_newsletter(): void
+    {
+        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $this->messageBus->expects($this->never())->method('dispatch');
+
+        $this->enqueuer->enqueue($customer);
+    }
+
     public function test_skips_when_customer_is_not_mailchimp_aware(): void
     {
         $customer = $this->createMock(CustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(true);
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($customer);
@@ -60,6 +70,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_skips_when_customer_has_no_integer_id(): void
     {
         $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(true);
         $customer->method('getId')->willReturn(null);
         $this->messageBus->expects($this->never())->method('dispatch');
 
@@ -69,6 +80,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_skips_when_customer_has_no_email(): void
     {
         $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(true);
         $customer->method('getId')->willReturn(1);
         $customer->method('getEmail')->willReturn(null);
         $this->messageBus->expects($this->never())->method('dispatch');
@@ -85,7 +97,6 @@ final class MemberEnqueuerTest extends TestCase
 
         $this->enqueuer->enqueue($customer);
     }
-
     public function test_dispatches_member_create_when_no_mailchimp_id_and_no_remote_member(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null);
@@ -150,6 +161,7 @@ final class MemberEnqueuerTest extends TestCase
         $customer->method('getId')->willReturn($id);
         $customer->method('getEmail')->willReturn($email);
         $customer->method('getMailchimpId')->willReturn($mailchimpId);
+        $customer->method('isSubscribedToNewsletter')->willReturn(true);
 
         return $customer;
     }

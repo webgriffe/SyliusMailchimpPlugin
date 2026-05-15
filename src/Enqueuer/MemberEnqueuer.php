@@ -28,6 +28,14 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     #[\Override]
     public function enqueue(CustomerInterface $customer): void
     {
+        if (!$customer->isSubscribedToNewsletter()) {
+            $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id}: not subscribed to newsletter.', [
+                'id' => $customer->getId(),
+            ]);
+
+            return;
+        }
+
         if (!$customer instanceof MailchimpAwareInterface) {
             $this->logger->warning('[Mailchimp] Customer is not MailchimpAwareInterface, skipping enqueue.');
 

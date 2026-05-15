@@ -49,6 +49,12 @@ final class MemberCreateHandler
             return;
         }
 
+        if (!$customer->isSubscribedToNewsletter()) {
+            $this->logger->debug('[Mailchimp] Customer #{id} is not subscribed to newsletter, skipping MemberCreate.', ['id' => $message->customerId]);
+
+            return;
+        }
+
         try {
             $member = $this->memberMapper->map($customer, $message->listId);
             $mailchimpId = $this->mailchimpClient->upsertMember($message->listId, $member);

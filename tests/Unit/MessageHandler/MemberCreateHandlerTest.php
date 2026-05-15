@@ -68,9 +68,21 @@ final class MemberCreateHandlerTest extends TestCase
         ($this->handler)(new MemberCreate(1, 'list-id'));
     }
 
+    public function test_skips_when_customer_not_subscribed_to_newsletter(): void
+    {
+        $customer = $this->createMock(TestCustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $this->customerRepository->method('find')->willReturn($customer);
+        $this->memberMapper->expects($this->never())->method('map');
+        $this->mailchimpClient->expects($this->never())->method('upsertMember');
+
+        ($this->handler)(new MemberCreate(1, 'list-id'));
+    }
+
     public function test_upserts_member_and_updates_customer(): void
     {
         $customer = $this->createMock(TestCustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(true);
         $this->customerRepository->method('find')->willReturn($customer);
 
         $member = new Member('test@example.com', 'subscribed', new MergeFields('', ''));
@@ -88,6 +100,7 @@ final class MemberCreateHandlerTest extends TestCase
     public function test_stores_error_on_compliance_state_exception(): void
     {
         $customer = $this->createMock(TestCustomerInterface::class);
+        $customer->method('isSubscribedToNewsletter')->willReturn(true);
         $this->customerRepository->method('find')->willReturn($customer);
 
         $member = new Member('test@example.com', 'subscribed', new MergeFields('', ''));
