@@ -9,15 +9,10 @@ use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Core\Model\CustomerInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CustomerSubscriber;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
-
-interface TestMailchimpCustomerInterface extends CustomerInterface, MailchimpAwareInterface
-{
-}
 
 final class CustomerSubscriberTest extends TestCase
 {
@@ -53,20 +48,10 @@ final class CustomerSubscriberTest extends TestCase
         $this->assertArrayHasKey('sylius.customer.post_update', $events);
     }
 
-    public function test_enqueues_customer_on_post_register_when_subscribed_to_newsletter(): void
+    public function test_enqueues_customer_on_post_register(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
         $this->memberEnqueuer->expects($this->once())->method('enqueue')->with($customer);
-
-        $this->subscriber->onCustomerPostRegister(new GenericEvent($customer));
-    }
-
-    public function test_skips_enqueue_on_post_register_when_not_subscribed_to_newsletter(): void
-    {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
-        $this->memberEnqueuer->expects($this->never())->method('enqueue');
 
         $this->subscriber->onCustomerPostRegister(new GenericEvent($customer));
     }
@@ -80,9 +65,8 @@ final class CustomerSubscriberTest extends TestCase
 
     public function test_enqueues_update_when_no_email_change(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(42);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        self::setId($customer, 42);
 
         $this->unitOfWork->method('getEntityChangeSet')->willReturn([]);
 
@@ -92,25 +76,10 @@ final class CustomerSubscriberTest extends TestCase
         $this->subscriber->onCustomerPostUpdate(new GenericEvent($customer));
     }
 
-    public function test_skips_enqueue_on_post_update_when_not_subscribed_to_newsletter(): void
-    {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(42);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
-
-        $this->unitOfWork->method('getEntityChangeSet')->willReturn([]);
-
-        $this->memberEnqueuer->expects($this->never())->method('enqueue');
-
-        $this->subscriber->onCustomerPreUpdate(new GenericEvent($customer));
-        $this->subscriber->onCustomerPostUpdate(new GenericEvent($customer));
-    }
-
     public function test_dispatches_remove_and_create_when_email_changed(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('getId')->willReturn(42);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        self::setId($customer, 42);
 
         $this->unitOfWork->method('getEntityChangeSet')->willReturn([
             'email' => ['old@example.com', 'new@example.com'],
@@ -126,9 +95,8 @@ final class CustomerSubscriberTest extends TestCase
 
     public function test_does_not_dispatch_create_when_new_email_is_empty(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('getId')->willReturn(42);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        self::setId($customer, 42);
 
         $this->unitOfWork->method('getEntityChangeSet')->willReturn([
             'email' => ['old@example.com', ''],
@@ -142,31 +110,18 @@ final class CustomerSubscriberTest extends TestCase
         $this->subscriber->onCustomerPostUpdate(new GenericEvent($customer));
     }
 
-    public function test_does_not_dispatch_create_when_email_changed_but_not_subscribed_to_newsletter(): void
-    {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('getId')->willReturn(42);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
-
-        $this->unitOfWork->method('getEntityChangeSet')->willReturn([
-            'email' => ['old@example.com', 'new@example.com'],
-        ]);
-
-        $this->memberEnqueuer->expects($this->once())
-            ->method('enqueueEmailChange')
-            ->with($customer, 'old@example.com');
-
-        $this->subscriber->onCustomerPreUpdate(new GenericEvent($customer));
-        $this->subscriber->onCustomerPostUpdate(new GenericEvent($customer));
-    }
-
     public function test_ignores_non_integer_id_on_pre_update(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(null);
+        $customer = new Customer();
 
         $this->unitOfWork->expects($this->never())->method('getEntityChangeSet');
 
         $this->subscriber->onCustomerPreUpdate(new GenericEvent($customer));
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
     }
 }

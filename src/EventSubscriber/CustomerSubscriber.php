@@ -40,12 +40,6 @@ final class CustomerSubscriber implements EventSubscriberInterface
             return;
         }
 
-        if (!$customer->isSubscribedToNewsletter()) {
-            $this->logger->debug('[Mailchimp] Skipping enqueue for customer on registration: not subscribed to newsletter.');
-
-            return;
-        }
-
         $this->memberEnqueuer->enqueue($customer);
     }
 
@@ -86,14 +80,6 @@ final class CustomerSubscriber implements EventSubscriberInterface
             unset($this->emailBeforeUpdate[$customerId]);
 
             $this->memberEnqueuer->enqueueEmailChange($customer, $oldEmail);
-
-            return;
-        }
-
-        if (!$customer->isSubscribedToNewsletter()) {
-            $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id} on update: not subscribed to newsletter.', [
-                'id' => $customerId,
-            ]);
 
             return;
         }
