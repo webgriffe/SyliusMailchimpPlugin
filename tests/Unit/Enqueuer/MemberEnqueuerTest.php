@@ -10,20 +10,16 @@ use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
-
-interface TestMailchimpCustomerInterface extends CustomerInterface, MailchimpAwareInterface
-{
-}
 
 final class MemberEnqueuerTest extends TestCase
 {
@@ -49,15 +45,6 @@ final class MemberEnqueuerTest extends TestCase
         );
     }
 
-    public function test_skips_when_customer_not_subscribed_to_newsletter(): void
-    {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
-        $this->messageBus->expects($this->never())->method('dispatch');
-
-        $this->enqueuer->enqueue($customer);
-    }
-
     public function test_skips_when_customer_is_not_mailchimp_aware(): void
     {
         $customer = $this->createMock(CustomerInterface::class);
@@ -69,9 +56,8 @@ final class MemberEnqueuerTest extends TestCase
 
     public function test_skips_when_customer_has_no_integer_id(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
-        $customer->method('getId')->willReturn(null);
+        $customer = new Customer();
+        $customer->setSubscribedToNewsletter(true);
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($customer);
@@ -79,10 +65,9 @@ final class MemberEnqueuerTest extends TestCase
 
     public function test_skips_when_customer_has_no_email(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn(null);
+        $customer = new Customer();
+        $customer->setSubscribedToNewsletter(true);
+        self::setId($customer, 1);
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($customer);
@@ -97,6 +82,16 @@ final class MemberEnqueuerTest extends TestCase
 
         $this->enqueuer->enqueue($customer);
     }
+
+    public function test_skips_when_customer_has_no_mailchimp_id_and_is_not_subscribed_to_nl(): void
+    {
+        $customer = $this->buildCustomer(1, 'test@example.com', null, false);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->messageBus->expects($this->never())->method('dispatch');
+
+        $this->enqueuer->enqueue($customer);
+    }
+
     public function test_dispatches_member_create_when_no_mailchimp_id_and_no_remote_member(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null);
@@ -126,7 +121,20 @@ final class MemberEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($customer);
     }
 
-    public function test_dispatches_member_update_when_mailchimp_id_already_set(): void
+    public function test_dispatches_member_update_when_mailchimp_id_already_set_and_not_subscribed_to_nl(): void
+    {
+        $customer = $this->buildCustomer(1, 'test@example.com', 'existing-mailchimp-id', false);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+
+        $this->messageBus->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(MemberUpdate::class))
+            ->willReturn(new Envelope(new MemberUpdate(1, 'list-abc')));
+
+        $this->enqueuer->enqueue($customer);
+    }
+
+    public function test_dispatches_member_update_when_mailchimp_id_already_set_and_subscribed_to_nl(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', 'existing-mailchimp-id');
         $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
@@ -161,12 +169,7 @@ final class MemberEnqueuerTest extends TestCase
 
     public function test_enqueue_email_change_dispatches_only_remove_when_not_subscribed(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('new@example.com');
-        $customer->method('getMailchimpId')->willReturn(null);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
-
+        $customer = $this->buildCustomer(1, 'new@example.com', null, false);
         $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
 
         $dispatched = [];
@@ -220,23 +223,33 @@ final class MemberEnqueuerTest extends TestCase
         $this->messageBus->expects($this->once())
             ->method('dispatch')
             ->with($this->callback(
-                static fn (MemberRemove $msg): bool => $msg->subscriberHash === $expectedHash
-                    && $msg->listId === 'list-abc'
-                    && $msg->customerId === 1,
+                static fn (MemberRemove $msg): bool => $msg->subscriberHash === $expectedHash &&
+                    $msg->listId === 'list-abc' &&
+                    $msg->customerId === 1,
             ))
             ->willReturn(new Envelope(new MemberRemove(1, 'list-abc', $expectedHash)));
 
         $this->enqueuer->enqueueRemoval(1, 'list-abc', 'test@example.com');
     }
 
-    private function buildCustomer(int $id, string $email, ?string $mailchimpId): TestMailchimpCustomerInterface
+    private function buildCustomer(int $id, string $email, ?string $mailchimpId = null, bool $subscribedToNewsletter = true): Customer
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('getId')->willReturn($id);
-        $customer->method('getEmail')->willReturn($email);
-        $customer->method('getMailchimpId')->willReturn($mailchimpId);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        self::setId($customer, $id);
+        if ($email !== '') {
+            $customer->setEmail($email);
+        }
+        if ($mailchimpId !== null) {
+            $customer->setMailchimpId($mailchimpId);
+        }
+        $customer->setSubscribedToNewsletter($subscribedToNewsletter);
 
         return $customer;
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
     }
 }

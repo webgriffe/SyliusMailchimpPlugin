@@ -28,14 +28,6 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     #[\Override]
     public function enqueue(CustomerInterface $customer): void
     {
-        if (!$customer->isSubscribedToNewsletter()) {
-            $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id}: not subscribed to newsletter.', [
-                'id' => $customer->getId(),
-            ]);
-
-            return;
-        }
-
         $context = $this->resolveAudienceContext($customer, 'enqueue');
         if ($context === null) {
             return;
@@ -55,6 +47,14 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     public function enqueueForList(CustomerInterface $customer, int $customerId, string $email, string $listId): void
     {
         if (!$customer instanceof MailchimpAwareInterface) {
+            return;
+        }
+
+        if (!$this->canBeEnqueued($customer)) {
+            $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id}: mailchimp id null or not subscribed to newsletter.', [
+                'id' => $customer->getId(),
+            ]);
+
             return;
         }
 
@@ -87,7 +87,11 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
 
         $this->enqueueRemoval($context['customerId'], $context['listId'], $oldEmail);
 
-        if (!$customer->isSubscribedToNewsletter()) {
+        if (!$this->canBeEnqueued($customer)) {
+            $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id}: mailchimp id null or not subscribed to newsletter.', [
+                'id' => $customer->getId(),
+            ]);
+
             return;
         }
 
@@ -141,5 +145,13 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
         }
 
         return ['customerId' => $customerId, 'listId' => $listId];
+    }
+
+    /**
+     * Do not sync customer never synced with Mailchimp or actually subscribed to NL
+     */
+    private function canBeEnqueued(MailchimpAwareInterface|CustomerInterface $customer): bool
+    {
+        return $customer->getMailchimpId() !== null || $customer->isSubscribedToNewsletter();
     }
 }
