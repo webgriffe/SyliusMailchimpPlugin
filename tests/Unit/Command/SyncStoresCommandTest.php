@@ -9,13 +9,9 @@ use PHPUnit\Framework\TestCase;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Resource\Repository\RepositoryInterface;
 use Symfony\Component\Console\Tester\CommandTester;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Command\SyncStoresCommand;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuerInterface;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
-
-interface TestMailchimpChannelForStoreTest extends ChannelInterface, ChannelMailchimpAwareInterface
-{
-}
 
 final class SyncStoresCommandTest extends TestCase
 {
@@ -38,7 +34,7 @@ final class SyncStoresCommandTest extends TestCase
 
     public function test_enqueues_mailchimp_aware_channels(): void
     {
-        $channel = $this->createMock(TestMailchimpChannelForStoreTest::class);
+        $channel = new Channel();
         $this->channelRepository->method('findAll')->willReturn([$channel]);
 
         $this->storeEnqueuer->expects(self::once())->method('enqueue')->with($channel);

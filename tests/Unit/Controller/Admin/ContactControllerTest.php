@@ -6,10 +6,10 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Controller\Admin;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\Response;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController;

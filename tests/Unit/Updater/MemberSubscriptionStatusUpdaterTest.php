@@ -10,12 +10,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater;
-
-interface TestMailchimpCustomerInterface extends CustomerInterface, MailchimpAwareInterface
-{
-}
 
 final class MemberSubscriptionStatusUpdaterTest extends TestCase
 {
@@ -55,53 +51,56 @@ final class MemberSubscriptionStatusUpdaterTest extends TestCase
 
     public function test_sets_mailchimp_id_on_subscribe(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
-        $customer->method('getEmail')->willReturn('user@example.com');
+        $customer = new Customer();
+        $customer->setEmail('user@example.com');
         $this->customerRepository->method('findOneBy')->willReturn($customer);
-
-        $expectedHash = md5('user@example.com');
-        $customer->expects($this->once())->method('setMailchimpId')->with($expectedHash);
-        $customer->expects($this->once())->method('setMailchimpSyncedAt');
-        $customer->expects($this->once())->method('setMailchimpError')->with(null);
         $this->entityManager->expects($this->once())->method('flush');
 
         $this->updater->update('subscribe', 'user@example.com', 'list-abc');
+
+        $expectedHash = md5('user@example.com');
+        $this->assertSame($expectedHash, $customer->getMailchimpId());
+        $this->assertNotNull($customer->getMailchimpSyncedAt());
+        $this->assertNull($customer->getMailchimpError());
     }
 
     public function test_clears_mailchimp_id_on_unsubscribe(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer = new Customer();
+        $customer->setMailchimpId('some-id');
         $this->customerRepository->method('findOneBy')->willReturn($customer);
-
-        $customer->expects($this->once())->method('setMailchimpId')->with(null);
-        $customer->expects($this->once())->method('setMailchimpSyncedAt');
-        $customer->expects($this->once())->method('setMailchimpError')->with(null);
         $this->entityManager->expects($this->once())->method('flush');
 
         $this->updater->update('unsubscribe', 'user@example.com', 'list-abc');
+
+        $this->assertNull($customer->getMailchimpId());
+        $this->assertNotNull($customer->getMailchimpSyncedAt());
+        $this->assertNull($customer->getMailchimpError());
     }
 
     public function test_clears_mailchimp_id_on_cleaned(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer = new Customer();
+        $customer->setMailchimpId('some-id');
         $this->customerRepository->method('findOneBy')->willReturn($customer);
-
-        $customer->expects($this->once())->method('setMailchimpId')->with(null);
         $this->entityManager->expects($this->once())->method('flush');
 
         $this->updater->update('cleaned', 'user@example.com', 'list-abc');
+
+        $this->assertNull($customer->getMailchimpId());
     }
 
     public function test_updates_synced_at_on_profile_update(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer = new Customer();
+        $customer->setMailchimpId('existing-id');
         $this->customerRepository->method('findOneBy')->willReturn($customer);
-
-        $customer->expects($this->never())->method('setMailchimpId');
-        $customer->expects($this->once())->method('setMailchimpSyncedAt');
-        $customer->expects($this->once())->method('setMailchimpError')->with(null);
         $this->entityManager->expects($this->once())->method('flush');
 
         $this->updater->update('profile', 'user@example.com', 'list-abc');
+
+        $this->assertSame('existing-id', $customer->getMailchimpId());
+        $this->assertNotNull($customer->getMailchimpSyncedAt());
+        $this->assertNull($customer->getMailchimpError());
     }
 }

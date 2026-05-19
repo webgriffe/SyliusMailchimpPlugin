@@ -13,7 +13,7 @@ final class ChannelMailchimpAwareTraitTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->subject = new class () {
+        $this->subject = new class() {
             use ChannelMailchimpAwareTrait;
         };
     }

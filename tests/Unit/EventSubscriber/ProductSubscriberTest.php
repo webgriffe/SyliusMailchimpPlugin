@@ -4,21 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\EventSubscriber;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductInterface;
-use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\ProductSubscriber;
-
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
-
-interface TestMailchimpChannelInterface extends ChannelInterface, ChannelMailchimpAwareInterface
-{
-}
 
 final class ProductSubscriberTest extends TestCase
 {
@@ -75,10 +70,10 @@ final class ProductSubscriberTest extends TestCase
 
     public function testOnProductPreDeleteEnqueuesRemovalForEachMailchimpChannel(): void
     {
-        $channel1 = $this->createMock(TestMailchimpChannelInterface::class);
-        $channel1->method('getCode')->willReturn('CHANNEL_1');
-        $channel2 = $this->createMock(TestMailchimpChannelInterface::class);
-        $channel2->method('getCode')->willReturn('CHANNEL_2');
+        $channel1 = new Channel();
+        $channel1->setCode('CHANNEL_1');
+        $channel2 = new Channel();
+        $channel2->setCode('CHANNEL_2');
 
         $product = $this->createMock(ProductInterface::class);
         $product->method('getChannels')->willReturn(new ArrayCollection([$channel1, $channel2]));

@@ -6,16 +6,14 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Enqueuer;
 
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Core\Model\ChannelInterface;
-use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartUpdate;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 
 final class CartEnqueuerTest extends TestCase
 {
@@ -31,8 +29,8 @@ final class CartEnqueuerTest extends TestCase
 
     public function testEnqueueDispatchesCartCreateWhenNoMailchimpCartId(): void
     {
-        $channel = $this->createChannelMock(id: 1, code: 'WEB');
-        $order = $this->createOrderMock(id: 5, channel: $channel, mailchimpCartId: null);
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: null);
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -44,8 +42,8 @@ final class CartEnqueuerTest extends TestCase
 
     public function testEnqueueDispatchesCartUpdateWhenMailchimpCartIdExists(): void
     {
-        $channel = $this->createChannelMock(id: 1, code: 'WEB');
-        $order = $this->createOrderMock(id: 5, channel: $channel, mailchimpCartId: 'existing-cart-id');
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: 'existing-cart-id');
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -57,8 +55,8 @@ final class CartEnqueuerTest extends TestCase
 
     public function testEnqueueRemovalDispatchesCartRemove(): void
     {
-        $channel = $this->createChannelMock(id: 1, code: 'WEB');
-        $order = $this->createOrderMock(id: 5, channel: $channel, mailchimpCartId: 'cart-token-abc');
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: 'cart-token-abc');
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -70,34 +68,38 @@ final class CartEnqueuerTest extends TestCase
 
     public function testEnqueueRemovalSkipsWhenNoCartId(): void
     {
-        $channel = $this->createChannelMock(id: 1, code: 'WEB');
-        $order = $this->createOrderMock(id: 5, channel: $channel, mailchimpCartId: null);
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: null);
 
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueueRemoval($order);
     }
 
-    /** @return OrderInterface&MailchimpOrderAwareInterface */
-    private function createOrderMock(int $id, ChannelInterface $channel, ?string $mailchimpCartId): OrderInterface&MailchimpOrderAwareInterface
+    private function createOrder(int $id, Channel $channel, ?string $mailchimpCartId): Order
     {
-        /** @var OrderInterface&MailchimpOrderAwareInterface $order */
-        $order = $this->createMockForIntersectionOfInterfaces([OrderInterface::class, MailchimpOrderAwareInterface::class]);
-        $order->method('getId')->willReturn($id);
-        $order->method('getChannel')->willReturn($channel);
-        $order->method('getMailchimpCartId')->willReturn($mailchimpCartId);
+        $order = new Order();
+        self::setId($order, $id);
+        $order->setChannel($channel);
+        if ($mailchimpCartId !== null) {
+            $order->setMailchimpCartId($mailchimpCartId);
+        }
 
         return $order;
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
-    private function createChannelMock(int $id, string $code): ChannelInterface&ChannelMailchimpAwareInterface
+    private function createChannel(int $id, string $code): Channel
     {
-        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
-        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
-        $channel->method('getId')->willReturn($id);
-        $channel->method('getCode')->willReturn($code);
+        $channel = new Channel();
+        self::setId($channel, $id);
+        $channel->setCode($code);
 
         return $channel;
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
     }
 }

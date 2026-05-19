@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Resolver;
 
 use PHPUnit\Framework\TestCase;
-use Sylius\Component\Core\Model\CustomerInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\FnameLnameMergeFieldsProvider;
 
 final class FnameLnameMergeFieldsProviderTest extends TestCase
@@ -19,9 +19,9 @@ final class FnameLnameMergeFieldsProviderTest extends TestCase
 
     public function test_provides_fname_and_lname_from_customer(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getFirstName')->willReturn('John');
-        $customer->method('getLastName')->willReturn('Doe');
+        $customer = new Customer();
+        $customer->setFirstName('John');
+        $customer->setLastName('Doe');
 
         $fields = $this->provider->provide($customer);
 
@@ -31,9 +31,7 @@ final class FnameLnameMergeFieldsProviderTest extends TestCase
 
     public function test_provides_empty_strings_when_names_are_null(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getFirstName')->willReturn(null);
-        $customer->method('getLastName')->willReturn(null);
+        $customer = new Customer();
 
         $fields = $this->provider->provide($customer);
 

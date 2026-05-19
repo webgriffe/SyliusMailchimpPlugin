@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\MessageHandler\Product;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Channel\Repository\ChannelRepositoryInterface;
-use Sylius\Component\Core\Model\ChannelInterface;
-use Sylius\Component\Core\Model\ProductInterface;
-use Sylius\Component\Core\Model\ProductTranslationInterface;
+use Sylius\Component\Core\Model\Product;
+use Sylius\Component\Core\Model\ProductTranslation;
 use Sylius\Component\Core\Repository\ProductRepositoryInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
@@ -22,7 +21,6 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductUpdateHandler;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 
 final class ProductHandlersTest extends TestCase
 {
@@ -47,8 +45,8 @@ final class ProductHandlersTest extends TestCase
 
     public function testProductCreateCallsUpsertProduct(): void
     {
-        $product = $this->createProductMock();
-        $channel = $this->createChannelMock('WEB');
+        $product = $this->createProduct();
+        $channel = $this->createChannel('WEB');
         $this->productRepository->method('find')->with(10)->willReturn($product);
         $this->channelRepository->method('find')->with(1)->willReturn($channel);
         $this->mailchimpClient->expects($this->once())->method('upsertProduct');
@@ -82,8 +80,8 @@ final class ProductHandlersTest extends TestCase
 
     public function testProductUpdateCallsUpsertProduct(): void
     {
-        $product = $this->createProductMock();
-        $channel = $this->createChannelMock('WEB');
+        $product = $this->createProduct();
+        $channel = $this->createChannel('WEB');
         $this->productRepository->method('find')->willReturn($product);
         $this->channelRepository->method('find')->willReturn($channel);
         $this->mailchimpClient->expects($this->once())->method('upsertProduct');
@@ -117,32 +115,30 @@ final class ProductHandlersTest extends TestCase
         $handler(new ProductRemove('WEB', 'TSHIRT'));
     }
 
-    private function createProductMock(): ProductInterface
+    private function createProduct(): Product
     {
-        $translation = $this->createMock(ProductTranslationInterface::class);
-        $translation->method('getSlug')->willReturn('tshirt');
-        $translation->method('getName')->willReturn('T-Shirt');
-        $translation->method('getDescription')->willReturn('A t-shirt');
+        $translation = new ProductTranslation();
+        $translation->setLocale('en_US');
+        $translation->setSlug('tshirt');
+        $translation->setName('T-Shirt');
+        $translation->setDescription('A t-shirt');
 
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('TSHIRT');
-        $product->method('getTranslation')->willReturn($translation);
-        $product->method('getVariants')->willReturn(new ArrayCollection([]));
+        $product = new Product();
+        $product->setCode('TSHIRT');
+        $product->setCurrentLocale('en_US');
+        $product->setFallbackLocale('en_US');
+        $product->addTranslation($translation);
 
         return $product;
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
-    private function createChannelMock(string $code): ChannelInterface&ChannelMailchimpAwareInterface
+    private function createChannel(string $code): Channel
     {
-        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
-        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
-        $channel->method('getCode')->willReturn($code);
-        $channel->method('getName')->willReturn('Test Store');
-        $channel->method('getHostname')->willReturn('https://example.com');
-        $channel->method('getContactEmail')->willReturn('test@example.com');
-        $channel->method('getLocales')->willReturn(new ArrayCollection([]));
-        $channel->method('getCurrencies')->willReturn(new ArrayCollection([]));
+        $channel = new Channel();
+        $channel->setCode($code);
+        $channel->setName('Test Store');
+        $channel->setHostname('https://example.com');
+        $channel->setContactEmail('test@example.com');
 
         return $channel;
     }

@@ -10,18 +10,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberCreate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberCreateHandler;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
-
-interface TestCustomerInterface extends CustomerInterface, MailchimpAwareInterface
-{
-}
 
 final class MemberCreateHandlerTest extends TestCase
 {
@@ -70,8 +66,7 @@ final class MemberCreateHandlerTest extends TestCase
 
     public function test_skips_when_customer_not_subscribed_to_newsletter(): void
     {
-        $customer = $this->createMock(TestCustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
         $this->customerRepository->method('find')->willReturn($customer);
         $this->memberMapper->expects($this->never())->method('map');
         $this->mailchimpClient->expects($this->never())->method('upsertMember');
@@ -81,36 +76,36 @@ final class MemberCreateHandlerTest extends TestCase
 
     public function test_upserts_member_and_updates_customer(): void
     {
-        $customer = $this->createMock(TestCustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        $customer->setSubscribedToNewsletter(true);
         $this->customerRepository->method('find')->willReturn($customer);
 
         $member = new Member('test@example.com', 'subscribed', new MergeFields('', ''));
         $this->memberMapper->method('map')->willReturn($member);
         $this->mailchimpClient->method('upsertMember')->willReturn('newmailchimpid');
-
-        $customer->expects($this->once())->method('setMailchimpId')->with('newmailchimpid');
-        $customer->expects($this->once())->method('setMailchimpSyncedAt');
-        $customer->expects($this->once())->method('setMailchimpError')->with(null);
         $this->entityManager->expects($this->once())->method('flush');
 
         ($this->handler)(new MemberCreate(1, 'list-id'));
+
+        $this->assertSame('newmailchimpid', $customer->getMailchimpId());
+        $this->assertNotNull($customer->getMailchimpSyncedAt());
+        $this->assertNull($customer->getMailchimpError());
     }
 
     public function test_stores_error_on_compliance_state_exception(): void
     {
-        $customer = $this->createMock(TestCustomerInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        $customer->setSubscribedToNewsletter(true);
         $this->customerRepository->method('find')->willReturn($customer);
 
         $member = new Member('test@example.com', 'subscribed', new MergeFields('', ''));
         $this->memberMapper->method('map')->willReturn($member);
         $this->mailchimpClient->method('upsertMember')
             ->willThrowException(ComplianceStateException::forEmail('test@example.com'));
-
-        $customer->expects($this->once())->method('setMailchimpError')->with($this->stringContains('compliance'));
         $this->entityManager->expects($this->once())->method('flush');
 
         ($this->handler)(new MemberCreate(1, 'list-id'));
+
+        $this->assertStringContainsString('compliance', (string) $customer->getMailchimpError());
     }
 }

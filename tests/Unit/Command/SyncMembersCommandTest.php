@@ -9,14 +9,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Symfony\Component\Console\Tester\CommandTester;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Command\SyncMembersCommand;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpCustomerRepositoryInterface;
-
-interface TestMailchimpCustomerInterface extends CustomerInterface, MailchimpAwareInterface
-{
-}
 
 final class SyncMembersCommandTest extends TestCase
 {
@@ -40,7 +36,7 @@ final class SyncMembersCommandTest extends TestCase
 
     public function test_syncs_all_when_no_options(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer = new Customer();
         $this->customerRepository->expects($this->once())->method('findMailchimpSyncNeeded')
             ->willReturn([$customer]);
 
@@ -54,7 +50,7 @@ final class SyncMembersCommandTest extends TestCase
 
     public function test_syncs_by_ids_when_customer_ids_option_provided(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer = new Customer();
         $this->customerRepository->expects($this->once())->method('findMailchimpByIds')
             ->with([1, 2])
             ->willReturn([$customer]);
@@ -69,7 +65,7 @@ final class SyncMembersCommandTest extends TestCase
 
     public function test_syncs_since_date_when_updated_last_days_option_provided(): void
     {
-        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer = new Customer();
         $this->customerRepository->expects($this->once())->method('findMailchimpSyncNeededSince')
             ->willReturn([$customer]);
 

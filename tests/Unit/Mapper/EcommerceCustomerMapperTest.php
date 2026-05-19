@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 
 use PHPUnit\Framework\TestCase;
+use Sylius\Component\Core\Model\Address;
 use Sylius\Component\Core\Model\AddressInterface;
-use Sylius\Component\Core\Model\CustomerInterface;
-use Sylius\Component\Core\Model\OrderInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 
 final class EcommerceCustomerMapperTest extends TestCase
@@ -21,26 +22,26 @@ final class EcommerceCustomerMapperTest extends TestCase
 
     public function testMapsOrderWithCustomerAndBillingAddress(): void
     {
-        $address = $this->createMock(AddressInterface::class);
-        $address->method('getFirstName')->willReturn('John');
-        $address->method('getLastName')->willReturn('Doe');
-        $address->method('getStreet')->willReturn('123 Main St');
-        $address->method('getCity')->willReturn('New York');
-        $address->method('getPostcode')->willReturn('10001');
-        $address->method('getCountryCode')->willReturn('US');
-        $address->method('getProvinceName')->willReturn('New York');
-        $address->method('getProvinceCode')->willReturn('NY');
+        $address = new Address();
+        $address->setFirstName('John');
+        $address->setLastName('Doe');
+        $address->setStreet('123 Main St');
+        $address->setCity('New York');
+        $address->setPostcode('10001');
+        $address->setCountryCode('US');
+        $address->setProvinceName('New York');
+        $address->setProvinceCode('NY');
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(42);
-        $customer->method('getEmail')->willReturn('john@example.com');
-        $customer->method('getFirstName')->willReturn('John');
-        $customer->method('getLastName')->willReturn('Doe');
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        self::setId($customer, 42);
+        $customer->setEmail('john@example.com');
+        $customer->setFirstName('John');
+        $customer->setLastName('Doe');
+        $customer->setSubscribedToNewsletter(true);
 
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn($address);
+        $order = new Order();
+        $order->setCustomer($customer);
+        $order->setBillingAddress($address);
 
         $ecommerceCustomer = $this->mapper->mapFromOrder($order);
 
@@ -57,10 +58,8 @@ final class EcommerceCustomerMapperTest extends TestCase
 
     public function testMapsOrderWithoutCustomer(): void
     {
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getCustomer')->willReturn(null);
-        $order->method('getBillingAddress')->willReturn(null);
-        $order->method('getId')->willReturn(99);
+        $order = new Order();
+        self::setId($order, 99);
 
         $ecommerceCustomer = $this->mapper->mapFromOrder($order);
 
@@ -84,20 +83,23 @@ final class EcommerceCustomerMapperTest extends TestCase
         $address->method('getProvinceName')->willReturn(null);
         $address->method('getProvinceCode')->willReturn(null);
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('test@example.com');
-        $customer->method('getFirstName')->willReturn(null);
-        $customer->method('getLastName')->willReturn(null);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('test@example.com');
 
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn($address);
+        $order = new Order();
+        $order->setCustomer($customer);
+        $order->setBillingAddress($address);
 
         $ecommerceCustomer = $this->mapper->mapFromOrder($order);
 
         $this->assertNotNull($ecommerceCustomer->address);
         $this->assertSame('', $ecommerceCustomer->address->name);
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
     }
 }

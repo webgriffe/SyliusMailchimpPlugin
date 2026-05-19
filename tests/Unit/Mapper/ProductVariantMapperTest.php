@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 
 use PHPUnit\Framework\TestCase;
-use Sylius\Component\Core\Model\ChannelInterface;
-use Sylius\Component\Core\Model\ChannelPricingInterface;
-use Sylius\Component\Core\Model\ProductInterface;
-use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Core\Model\ChannelPricing;
+use Sylius\Component\Core\Model\Product;
+use Sylius\Component\Core\Model\ProductTranslation;
+use Sylius\Component\Core\Model\ProductVariant;
+use Sylius\Component\Product\Model\ProductVariantTranslation;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
 
 final class ProductVariantMapperTest extends TestCase
@@ -22,24 +24,38 @@ final class ProductVariantMapperTest extends TestCase
 
     public function testMapsVariantWithPricing(): void
     {
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('TSHIRT');
+        $productTranslation = new ProductTranslation();
+        $productTranslation->setLocale('en_US');
+        $productTranslation->setName('T-Shirt');
 
-        $pricing = $this->createMock(ChannelPricingInterface::class);
-        $pricing->method('getPrice')->willReturn(2999);
+        $product = new Product();
+        $product->setCode('TSHIRT');
+        $product->setCurrentLocale('en_US');
+        $product->setFallbackLocale('en_US');
+        $product->addTranslation($productTranslation);
 
-        $channel = $this->createMock(ChannelInterface::class);
+        $channel = new Channel();
+        $channel->setCode('WEB');
 
-        $variant = $this->createMock(ProductVariantInterface::class);
-        $variant->method('getProduct')->willReturn($product);
-        $variant->method('getCode')->willReturn('TSHIRT-L');
-        $variant->method('getDescriptor')->willReturn('T-Shirt - L');
-        $variant->method('getChannelPricingForChannel')->with($channel)->willReturn($pricing);
+        $pricing = new ChannelPricing();
+        $pricing->setChannelCode('WEB');
+        $pricing->setPrice(2999);
+
+        $variantTranslation = new ProductVariantTranslation();
+        $variantTranslation->setLocale('en_US');
+
+        $variant = new ProductVariant();
+        $variant->setCode('TSHIRT-L');
+        $variant->setCurrentLocale('en_US');
+        $variant->setFallbackLocale('en_US');
+        $variant->addTranslation($variantTranslation);
+        $variant->addChannelPricing($pricing);
+        $product->addVariant($variant);
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com/products/tshirt');
 
         $this->assertSame('TSHIRT-L', $pv->id);
-        $this->assertSame('T-Shirt - L', $pv->title);
+        $this->assertSame('T-Shirt (TSHIRT-L)', $pv->title);
         $this->assertSame('https://example.com/products/tshirt', $pv->url);
         $this->assertSame('TSHIRT-L', $pv->sku);
         $this->assertSame(29.99, $pv->price);
@@ -47,16 +63,28 @@ final class ProductVariantMapperTest extends TestCase
 
     public function testFallsBackToZeroPriceWhenNoPricing(): void
     {
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('PROD');
+        $productTranslation = new ProductTranslation();
+        $productTranslation->setLocale('en_US');
+        $productTranslation->setName('Product');
 
-        $channel = $this->createMock(ChannelInterface::class);
+        $product = new Product();
+        $product->setCode('PROD');
+        $product->setCurrentLocale('en_US');
+        $product->setFallbackLocale('en_US');
+        $product->addTranslation($productTranslation);
 
-        $variant = $this->createMock(ProductVariantInterface::class);
-        $variant->method('getProduct')->willReturn($product);
-        $variant->method('getCode')->willReturn('PROD-DEFAULT');
-        $variant->method('getDescriptor')->willReturn('Product');
-        $variant->method('getChannelPricingForChannel')->with($channel)->willReturn(null);
+        $channel = new Channel();
+        $channel->setCode('WEB');
+
+        $variantTranslation = new ProductVariantTranslation();
+        $variantTranslation->setLocale('en_US');
+
+        $variant = new ProductVariant();
+        $variant->setCode('PROD-DEFAULT');
+        $variant->setCurrentLocale('en_US');
+        $variant->setFallbackLocale('en_US');
+        $variant->addTranslation($variantTranslation);
+        $product->addVariant($variant);
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com/products/prod');
 
@@ -65,16 +93,28 @@ final class ProductVariantMapperTest extends TestCase
 
     public function testHandlesNullProductCode(): void
     {
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn(null);
+        $productTranslation = new ProductTranslation();
+        $productTranslation->setLocale('en_US');
+        $productTranslation->setName('Unnamed Product');
 
-        $channel = $this->createMock(ChannelInterface::class);
+        $product = new Product();
+        $product->setCurrentLocale('en_US');
+        $product->setFallbackLocale('en_US');
+        $product->addTranslation($productTranslation);
 
-        $variant = $this->createMock(ProductVariantInterface::class);
-        $variant->method('getProduct')->willReturn($product);
-        $variant->method('getCode')->willReturn('VARIANT-1');
-        $variant->method('getDescriptor')->willReturn('Variant 1');
-        $variant->method('getChannelPricingForChannel')->willReturn(null);
+        $channel = new Channel();
+        $channel->setCode('WEB');
+
+        $variantTranslation = new ProductVariantTranslation();
+        $variantTranslation->setLocale('en_US');
+        $variantTranslation->setName('Variant 1');
+
+        $variant = new ProductVariant();
+        $variant->setCode('VARIANT-1');
+        $variant->setCurrentLocale('en_US');
+        $variant->setFallbackLocale('en_US');
+        $variant->addTranslation($variantTranslation);
+        $product->addVariant($variant);
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com');
 

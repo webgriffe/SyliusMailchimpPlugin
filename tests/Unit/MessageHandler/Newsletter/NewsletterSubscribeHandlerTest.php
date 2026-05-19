@@ -39,8 +39,8 @@ final class NewsletterSubscribeHandlerTest extends TestCase
             ->with(
                 'list-abc',
                 $this->callback(static function (Member $member): bool {
-                    return $member->emailAddress === 'user@example.com'
-                        && $member->status === 'subscribed';
+                    return $member->emailAddress === 'user@example.com' &&
+                        $member->status === 'subscribed';
                 }),
             );
 

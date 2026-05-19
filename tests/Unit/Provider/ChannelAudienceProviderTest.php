@@ -6,13 +6,9 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Provider;
 
 use PHPUnit\Framework\TestCase;
 use Sylius\Component\Core\Model\ChannelInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\ChannelAudienceProvider;
-
-interface TestMailchimpChannelInterface extends ChannelInterface, ChannelMailchimpAwareInterface
-{
-}
 
 final class ChannelAudienceProviderTest extends TestCase
 {
@@ -37,7 +33,9 @@ final class ChannelAudienceProviderTest extends TestCase
     {
         $this->expectException(AudienceNotFoundException::class);
 
-        $channel = $this->createMailchimpChannelMock(null);
+        $channel = new Channel();
+        $channel->setMailchimpAudienceId(null);
+
         $this->provider->getAudienceId($channel);
     }
 
@@ -45,25 +43,19 @@ final class ChannelAudienceProviderTest extends TestCase
     {
         $this->expectException(AudienceNotFoundException::class);
 
-        $channel = $this->createMailchimpChannelMock('');
+        $channel = new Channel();
+        $channel->setMailchimpAudienceId('');
+
         $this->provider->getAudienceId($channel);
     }
 
     public function test_returns_audience_id_when_configured(): void
     {
-        $channel = $this->createMailchimpChannelMock('abc123');
+        $channel = new Channel();
+        $channel->setMailchimpAudienceId('abc123');
 
         $result = $this->provider->getAudienceId($channel);
 
         $this->assertSame('abc123', $result);
-    }
-
-    private function createMailchimpChannelMock(?string $audienceId): TestMailchimpChannelInterface
-    {
-        $channel = $this->createMock(TestMailchimpChannelInterface::class);
-        $channel->method('getCode')->willReturn('WEB');
-        $channel->method('getMailchimpAudienceId')->willReturn($audienceId);
-
-        return $channel;
     }
 }

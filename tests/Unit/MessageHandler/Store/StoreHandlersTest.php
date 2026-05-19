@@ -78,7 +78,6 @@ final class StoreHandlersTest extends TestCase
         $handler(new StoreRemove('web-store'));
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
     private function createChannelMock(int $id, string $code): ChannelInterface&ChannelMailchimpAwareInterface
     {
         /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */

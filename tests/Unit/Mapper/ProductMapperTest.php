@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
-use Sylius\Component\Core\Model\ChannelInterface;
-use Sylius\Component\Core\Model\ChannelPricingInterface;
-use Sylius\Component\Core\Model\ProductInterface;
-use Sylius\Component\Core\Model\ProductTranslationInterface;
-use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Core\Model\ChannelPricing;
+use Sylius\Component\Core\Model\Product;
+use Sylius\Component\Core\Model\ProductTranslation;
+use Sylius\Component\Core\Model\ProductVariant;
+use Sylius\Component\Product\Model\ProductVariantTranslation;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
 
@@ -25,28 +25,36 @@ final class ProductMapperTest extends TestCase
 
     public function testMapsProductWithVariants(): void
     {
-        $channel = $this->createMock(ChannelInterface::class);
-        $channel->method('getHostname')->willReturn('https://example.com');
+        $channel = new Channel();
+        $channel->setCode('WEB');
+        $channel->setHostname('https://example.com');
 
-        $translation = $this->createMock(ProductTranslationInterface::class);
-        $translation->method('getSlug')->willReturn('cool-tshirt');
-        $translation->method('getName')->willReturn('Cool T-Shirt');
-        $translation->method('getDescription')->willReturn('A cool t-shirt');
+        $pricing = new ChannelPricing();
+        $pricing->setChannelCode('WEB');
+        $pricing->setPrice(1999);
 
-        $pricing = $this->createMock(ChannelPricingInterface::class);
-        $pricing->method('getPrice')->willReturn(1999);
+        $translation = new ProductTranslation();
+        $translation->setLocale('en_US');
+        $translation->setSlug('cool-tshirt');
+        $translation->setName('Cool T-Shirt');
+        $translation->setDescription('A cool t-shirt');
 
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('TSHIRT');
+        $product = new Product();
+        $product->setCode('TSHIRT');
+        $product->setCurrentLocale('en_US');
+        $product->setFallbackLocale('en_US');
+        $product->addTranslation($translation);
 
-        $variant = $this->createMock(ProductVariantInterface::class);
-        $variant->method('getProduct')->willReturn($product);
-        $variant->method('getCode')->willReturn('TSHIRT-L');
-        $variant->method('getDescriptor')->willReturn('T-Shirt L');
-        $variant->method('getChannelPricingForChannel')->willReturn($pricing);
+        $variantTranslation = new ProductVariantTranslation();
+        $variantTranslation->setLocale('en_US');
 
-        $product->method('getTranslation')->with('en_US')->willReturn($translation);
-        $product->method('getVariants')->willReturn(new ArrayCollection([$variant]));
+        $variant = new ProductVariant();
+        $variant->setCode('TSHIRT-L');
+        $variant->setCurrentLocale('en_US');
+        $variant->setFallbackLocale('en_US');
+        $variant->addTranslation($variantTranslation);
+        $variant->addChannelPricing($pricing);
+        $product->addVariant($variant);
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 
@@ -60,18 +68,19 @@ final class ProductMapperTest extends TestCase
 
     public function testFallsBackToHostnameWhenNoSlug(): void
     {
-        $channel = $this->createMock(ChannelInterface::class);
-        $channel->method('getHostname')->willReturn('https://example.com/');
+        $channel = new Channel();
+        $channel->setHostname('https://example.com/');
 
-        $translation = $this->createMock(ProductTranslationInterface::class);
-        $translation->method('getSlug')->willReturn(null);
-        $translation->method('getName')->willReturn('Product');
-        $translation->method('getDescription')->willReturn('');
+        $translation = new ProductTranslation();
+        $translation->setLocale('en_US');
+        $translation->setName('Product');
+        $translation->setDescription('');
 
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('PROD');
-        $product->method('getTranslation')->willReturn($translation);
-        $product->method('getVariants')->willReturn(new ArrayCollection([]));
+        $product = new Product();
+        $product->setCode('PROD');
+        $product->setCurrentLocale('en_US');
+        $product->setFallbackLocale('en_US');
+        $product->addTranslation($translation);
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 
@@ -80,18 +89,20 @@ final class ProductMapperTest extends TestCase
 
     public function testMapsProductWithNoVariants(): void
     {
-        $channel = $this->createMock(ChannelInterface::class);
-        $channel->method('getHostname')->willReturn('https://example.com');
+        $channel = new Channel();
+        $channel->setHostname('https://example.com');
 
-        $translation = $this->createMock(ProductTranslationInterface::class);
-        $translation->method('getSlug')->willReturn('product');
-        $translation->method('getName')->willReturn('Product');
-        $translation->method('getDescription')->willReturn('');
+        $translation = new ProductTranslation();
+        $translation->setLocale('en_US');
+        $translation->setSlug('product');
+        $translation->setName('Product');
+        $translation->setDescription('');
 
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('PROD');
-        $product->method('getTranslation')->willReturn($translation);
-        $product->method('getVariants')->willReturn(new ArrayCollection([]));
+        $product = new Product();
+        $product->setCode('PROD');
+        $product->setCurrentLocale('en_US');
+        $product->setFallbackLocale('en_US');
+        $product->addTranslation($translation);
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 

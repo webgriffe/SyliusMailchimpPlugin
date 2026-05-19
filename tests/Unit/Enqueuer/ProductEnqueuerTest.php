@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Enqueuer;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Core\Model\ChannelInterface;
+use Sylius\Component\Core\Model\Product;
 use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Locale\Model\LocaleInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 
 final class ProductEnqueuerTest extends TestCase
 {
@@ -32,8 +31,8 @@ final class ProductEnqueuerTest extends TestCase
 
     public function testEnqueueNewProductDispatchesProductCreate(): void
     {
-        $channel = $this->createChannelMock(id: 1);
-        $product = $this->createProductMock(id: 10, channels: [$channel]);
+        $channel = $this->createChannel(id: 1);
+        $product = $this->createProduct(id: 10, channels: [$channel]);
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -45,8 +44,8 @@ final class ProductEnqueuerTest extends TestCase
 
     public function testEnqueueExistingProductDispatchesProductUpdate(): void
     {
-        $channel = $this->createChannelMock(id: 1);
-        $product = $this->createProductMock(id: 10, channels: [$channel]);
+        $channel = $this->createChannel(id: 1);
+        $product = $this->createProduct(id: 10, channels: [$channel]);
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -58,9 +57,9 @@ final class ProductEnqueuerTest extends TestCase
 
     public function testEnqueueDispatchesForEachMailchimpChannel(): void
     {
-        $channel1 = $this->createChannelMock(id: 1);
-        $channel2 = $this->createChannelMock(id: 2);
-        $product = $this->createProductMock(id: 5, channels: [$channel1, $channel2]);
+        $channel1 = $this->createChannel(id: 1);
+        $channel2 = $this->createChannel(id: 2);
+        $product = $this->createProduct(id: 5, channels: [$channel1, $channel2]);
 
         $this->messageBus->expects($this->exactly(2))
             ->method('dispatch')
@@ -79,27 +78,33 @@ final class ProductEnqueuerTest extends TestCase
         $this->enqueuer->enqueueRemoval('WEB', 'TSHIRT');
     }
 
-    private function createProductMock(int $id, array $channels = []): ProductInterface
+    private function createProduct(int $id, array $channels = []): ProductInterface
     {
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getId')->willReturn($id);
-        $product->method('getCode')->willReturn('PROD-' . $id);
-        $product->method('getChannels')->willReturn(new ArrayCollection($channels));
+        $product = new Product();
+        self::setId($product, $id);
+        $product->setCode('PROD-' . $id);
+        foreach ($channels as $channel) {
+            $product->addChannel($channel);
+        }
 
         return $product;
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
-    private function createChannelMock(int $id): ChannelInterface&ChannelMailchimpAwareInterface
+    private function createChannel(int $id): Channel
     {
         $locale = $this->createMock(LocaleInterface::class);
         $locale->method('getCode')->willReturn('en_US');
 
-        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
-        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
-        $channel->method('getId')->willReturn($id);
-        $channel->method('getDefaultLocale')->willReturn($locale);
+        $channel = new Channel();
+        self::setId($channel, $id);
+        $channel->setDefaultLocale($locale);
 
         return $channel;
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
     }
 }

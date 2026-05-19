@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Enqueuer;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Core\Model\ChannelInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 use Webgriffe\SyliusMailchimpPlugin\Message\Store\StoreCreate;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 
 final class StoreEnqueuerTest extends TestCase
 {
@@ -29,7 +27,7 @@ final class StoreEnqueuerTest extends TestCase
 
     public function testEnqueueDispatchesStoreCreate(): void
     {
-        $channel = $this->createChannelMock(id: 1, code: 'WEB');
+        $channel = $this->createChannel(id: 1, code: 'WEB');
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -41,26 +39,32 @@ final class StoreEnqueuerTest extends TestCase
 
     public function testEnqueueSkipsWhenChannelHasNoIntId(): void
     {
-        $channel = $this->createChannelMock(id: null, code: 'WEB');
+        $channel = new Channel();
+        $channel->setCode('WEB');
+        $channel->setName('Test Store');
+        $channel->setHostname('https://example.com');
+        $channel->setContactEmail('test@example.com');
 
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($channel);
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
-    private function createChannelMock(int|null $id, string $code): ChannelInterface&ChannelMailchimpAwareInterface
+    private function createChannel(int $id, string $code): Channel
     {
-        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
-        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
-        $channel->method('getId')->willReturn($id);
-        $channel->method('getCode')->willReturn($code);
-        $channel->method('getName')->willReturn('Test Store');
-        $channel->method('getHostname')->willReturn('https://example.com');
-        $channel->method('getContactEmail')->willReturn('test@example.com');
-        $channel->method('getLocales')->willReturn(new ArrayCollection([]));
-        $channel->method('getCurrencies')->willReturn(new ArrayCollection([]));
+        $channel = new Channel();
+        self::setId($channel, $id);
+        $channel->setCode($code);
+        $channel->setName('Test Store');
+        $channel->setHostname('https://example.com');
+        $channel->setContactEmail('test@example.com');
 
         return $channel;
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
     }
 }

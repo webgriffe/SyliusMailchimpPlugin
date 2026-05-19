@@ -84,7 +84,6 @@ final class StoreMapperTest extends TestCase
         $this->assertSame('My-Channel-1', $store->id);
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
     private function createChannelMock(
         string $code = 'WEB',
         string $name = 'Web Store',

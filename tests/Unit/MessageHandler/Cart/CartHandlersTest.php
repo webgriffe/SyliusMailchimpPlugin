@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\MessageHandler\Cart;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Channel\Repository\ChannelRepositoryInterface;
-use Sylius\Component\Core\Model\ChannelInterface;
-use Sylius\Component\Core\Model\CustomerInterface;
-use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
@@ -23,8 +22,6 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartUpdateHandler;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 
 final class CartHandlersTest extends TestCase
 {
@@ -52,13 +49,11 @@ final class CartHandlersTest extends TestCase
 
     public function testCartCreateCallsUpsertCartAndPersistsId(): void
     {
-        $order = $this->createOrderMock(orderId: 5, tokenValue: 'cart-token-xyz');
-        $channel = $this->createChannelMock('WEB');
+        $order = $this->createOrder(orderId: 5, tokenValue: 'cart-token-xyz');
+        $channel = $this->createChannel('WEB');
         $this->orderRepository->method('find')->with(5)->willReturn($order);
         $this->channelRepository->method('find')->with(1)->willReturn($channel);
         $this->mailchimpClient->expects($this->once())->method('upsertCart');
-        $order->expects($this->once())->method('setMailchimpCartId')->with('cart-token-xyz');
-        $order->expects($this->once())->method('setMailchimpCartError')->with(null);
         $this->entityManager->expects($this->once())->method('flush');
 
         $handler = new CartCreateHandler(
@@ -71,6 +66,9 @@ final class CartHandlersTest extends TestCase
             new NullLogger(),
         );
         $handler(new CartCreate(5, 1));
+
+        $this->assertSame('cart-token-xyz', $order->getMailchimpCartId());
+        $this->assertNull($order->getMailchimpCartError());
     }
 
     public function testCartCreateSkipsWhenOrderNotFound(): void
@@ -92,8 +90,8 @@ final class CartHandlersTest extends TestCase
 
     public function testCartUpdateCallsUpsertCart(): void
     {
-        $order = $this->createOrderMock(orderId: 5, tokenValue: 'cart-token');
-        $channel = $this->createChannelMock('WEB');
+        $order = $this->createOrder(orderId: 5, tokenValue: 'cart-token');
+        $channel = $this->createChannel('WEB');
         $this->orderRepository->method('find')->willReturn($order);
         $this->channelRepository->method('find')->willReturn($channel);
         $this->mailchimpClient->expects($this->once())->method('upsertCart');
@@ -128,41 +126,42 @@ final class CartHandlersTest extends TestCase
         $handler(new CartRemove('WEB', 'cart-abc'));
     }
 
-    /** @return OrderInterface&MailchimpOrderAwareInterface */
-    private function createOrderMock(int $orderId, string $tokenValue): OrderInterface&MailchimpOrderAwareInterface
+    private function createOrder(int $orderId, string $tokenValue): Order
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('x@example.com');
-        $customer->method('getFirstName')->willReturn('');
-        $customer->method('getLastName')->willReturn('');
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('x@example.com');
 
-        /** @var OrderInterface&MailchimpOrderAwareInterface $order */
-        $order = $this->createMockForIntersectionOfInterfaces([OrderInterface::class, MailchimpOrderAwareInterface::class]);
-        $order->method('getId')->willReturn($orderId);
-        $order->method('getTokenValue')->willReturn($tokenValue);
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn(null);
-        $order->method('getCurrencyCode')->willReturn('EUR');
-        $order->method('getTotal')->willReturn(1000);
-        $order->method('getItems')->willReturn(new ArrayCollection([]));
+        $order = new Order();
+        self::setId($order, $orderId);
+        $order->setTokenValue($tokenValue);
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
+        self::setTotal($order, 1000);
 
         return $order;
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
-    private function createChannelMock(string $code): ChannelInterface&ChannelMailchimpAwareInterface
+    private function createChannel(string $code): Channel
     {
-        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
-        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
-        $channel->method('getCode')->willReturn($code);
-        $channel->method('getName')->willReturn('Test Store');
-        $channel->method('getHostname')->willReturn('https://example.com');
-        $channel->method('getContactEmail')->willReturn('test@example.com');
-        $channel->method('getLocales')->willReturn(new ArrayCollection([]));
-        $channel->method('getCurrencies')->willReturn(new ArrayCollection([]));
+        $channel = new Channel();
+        $channel->setCode($code);
+        $channel->setName('Test Store');
+        $channel->setHostname('https://example.com');
+        $channel->setContactEmail('test@example.com');
 
         return $channel;
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
+    }
+
+    private static function setTotal(Order $order, int $total): void
+    {
+        $ref = new \ReflectionProperty($order, 'total');
+        $ref->setValue($order, $total);
     }
 }

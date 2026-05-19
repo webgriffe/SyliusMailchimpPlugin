@@ -7,7 +7,7 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Sylius\Component\Core\Model\CustomerInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Event\MemberMappedEvent;
 use Webgriffe\SyliusMailchimpPlugin\Exception\MissingCustomerEmailException;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapper;
@@ -15,7 +15,6 @@ use Webgriffe\SyliusMailchimpPlugin\Resolver\MemberStatusResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\MergeFieldsProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\MergeFieldsResolver;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\TagsResolverInterface;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 
 final class MemberMapperTest extends TestCase
 {
@@ -50,9 +49,8 @@ final class MemberMapperTest extends TestCase
     {
         $this->expectException(MissingCustomerEmailException::class);
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getEmail')->willReturn(null);
-        $customer->method('getId')->willReturn(42);
+        $customer = new Customer();
+        self::setId($customer, 42);
 
         $this->mapper->map($customer, 'list-id');
     }
@@ -61,9 +59,9 @@ final class MemberMapperTest extends TestCase
     {
         $this->expectException(MissingCustomerEmailException::class);
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getEmail')->willReturn('');
-        $customer->method('getId')->willReturn(42);
+        $customer = new Customer();
+        self::setId($customer, 42);
+        $customer->setEmail('');
 
         $this->mapper->map($customer, 'list-id');
     }
@@ -74,10 +72,8 @@ final class MemberMapperTest extends TestCase
         $this->tagsResolver->method('resolve')->willReturn([]);
         $this->eventDispatcher->method('dispatch')->willReturnArgument(0);
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getEmail')->willReturn('john@example.com');
-        $customer->method('getFirstName')->willReturn('John');
-        $customer->method('getLastName')->willReturn('Doe');
+        $customer = new Customer();
+        $customer->setEmail('john@example.com');
 
         $member = $this->mapper->map($customer, 'list-abc');
 
@@ -92,8 +88,8 @@ final class MemberMapperTest extends TestCase
         $this->statusResolver->method('resolve')->willReturn('subscribed');
         $this->tagsResolver->method('resolve')->willReturn([]);
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getEmail')->willReturn('john@example.com');
+        $customer = new Customer();
+        $customer->setEmail('john@example.com');
 
         $this->eventDispatcher->expects($this->once())
             ->method('dispatch')
@@ -108,8 +104,8 @@ final class MemberMapperTest extends TestCase
         $this->statusResolver->method('resolve')->willReturn('subscribed');
         $this->tagsResolver->method('resolve')->willReturn([]);
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getEmail')->willReturn('john@example.com');
+        $customer = new Customer();
+        $customer->setEmail('john@example.com');
 
         $this->eventDispatcher->method('dispatch')->willReturnCallback(
             static function (MemberMappedEvent $event): MemberMappedEvent {
@@ -130,11 +126,17 @@ final class MemberMapperTest extends TestCase
         $this->tagsResolver->method('resolve')->willReturn(['VIP', 'Newsletter']);
         $this->eventDispatcher->method('dispatch')->willReturnArgument(0);
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getEmail')->willReturn('john@example.com');
+        $customer = new Customer();
+        $customer->setEmail('john@example.com');
 
         $member = $this->mapper->map($customer, 'list-abc');
 
         $this->assertSame(['VIP', 'Newsletter'], $member->tags);
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
     }
 }

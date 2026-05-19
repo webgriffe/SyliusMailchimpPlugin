@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\OrderSubscriber;
@@ -41,8 +42,7 @@ final class OrderSubscriberTest extends TestCase
 
     public function testOnOrderPostUpdateEnqueuesCartForCartState(): void
     {
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getState')->willReturn(OrderInterface::STATE_CART);
+        $order = new Order();
 
         $this->cartEnqueuer->expects(self::once())->method('enqueue')->with($order);
         $this->cartEnqueuer->expects(self::never())->method('enqueueRemoval');
@@ -53,8 +53,8 @@ final class OrderSubscriberTest extends TestCase
 
     public function testOnOrderPostUpdateIgnoresNewStateWhenSendUnpaidOrdersAsCartsDisabled(): void
     {
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getState')->willReturn(OrderInterface::STATE_NEW);
+        $order = new Order();
+        $order->setState(OrderInterface::STATE_NEW);
 
         $this->cartEnqueuer->expects(self::never())->method('enqueue');
 
@@ -63,8 +63,8 @@ final class OrderSubscriberTest extends TestCase
 
     public function testOnOrderPostUpdateEnqueuesCartForNewStateWhenSendUnpaidOrdersAsCartsEnabled(): void
     {
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getState')->willReturn(OrderInterface::STATE_NEW);
+        $order = new Order();
+        $order->setState(OrderInterface::STATE_NEW);
 
         $this->cartEnqueuer->expects(self::once())->method('enqueue')->with($order);
 
@@ -73,8 +73,8 @@ final class OrderSubscriberTest extends TestCase
 
     public function testOnOrderPostUpdateIgnoresFulfilledState(): void
     {
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getState')->willReturn(OrderInterface::STATE_FULFILLED);
+        $order = new Order();
+        $order->setState(OrderInterface::STATE_FULFILLED);
 
         $this->cartEnqueuer->expects(self::never())->method('enqueue');
 
@@ -91,7 +91,7 @@ final class OrderSubscriberTest extends TestCase
 
     public function testOnOrderPostCompleteEnqueuesCartRemovalAndOrder(): void
     {
-        $order = $this->createMock(OrderInterface::class);
+        $order = new Order();
 
         $this->cartEnqueuer->expects(self::once())->method('enqueueRemoval')->with($order);
         $this->orderEnqueuer->expects(self::once())->method('enqueue')->with($order, isInRealTime: true);

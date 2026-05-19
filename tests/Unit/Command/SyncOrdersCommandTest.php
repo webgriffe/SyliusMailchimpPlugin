@@ -7,8 +7,8 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Command;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\Console\Tester\CommandTester;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Command\SyncOrdersCommand;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
@@ -35,7 +35,7 @@ final class SyncOrdersCommandTest extends TestCase
 
     public function test_syncs_all_orders_when_no_options(): void
     {
-        $order = $this->createMock(OrderInterface::class);
+        $order = new Order();
         $this->orderRepository->expects(self::once())->method('findAll')->willReturn([$order]);
 
         $this->orderEnqueuer->expects(self::once())->method('enqueue')->with($order);
@@ -48,7 +48,7 @@ final class SyncOrdersCommandTest extends TestCase
 
     public function test_syncs_only_unsynced_orders_when_create_only_option_provided(): void
     {
-        $order = $this->createMock(OrderInterface::class);
+        $order = new Order();
         $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncNeeded')->willReturn([$order]);
 
         $this->orderEnqueuer->expects(self::once())->method('enqueue')->with($order);
@@ -61,7 +61,7 @@ final class SyncOrdersCommandTest extends TestCase
 
     public function test_syncs_orders_updated_since_when_updated_last_days_option_provided(): void
     {
-        $order = $this->createMock(OrderInterface::class);
+        $order = new Order();
         $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncNeededUpdatedSince')
             ->willReturn([$order]);
 

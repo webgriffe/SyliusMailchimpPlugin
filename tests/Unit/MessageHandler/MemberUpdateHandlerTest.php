@@ -8,19 +8,14 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberUpdateHandler;
-use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
-
-interface TestCustomerForUpdateInterface extends CustomerInterface, MailchimpAwareInterface
-{
-}
 
 final class MemberUpdateHandlerTest extends TestCase
 {
@@ -60,8 +55,7 @@ final class MemberUpdateHandlerTest extends TestCase
 
     public function test_skips_when_customer_not_subscribed_to_newsletter(): void
     {
-        $customer = $this->createMock(TestCustomerForUpdateInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
         $this->customerRepository->method('find')->willReturn($customer);
         $this->memberMapper->expects($this->never())->method('map');
         $this->mailchimpClient->expects($this->never())->method('upsertMember');
@@ -71,18 +65,18 @@ final class MemberUpdateHandlerTest extends TestCase
 
     public function test_upserts_member_and_updates_customer(): void
     {
-        $customer = $this->createMock(TestCustomerForUpdateInterface::class);
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        $customer->setSubscribedToNewsletter(true);
         $this->customerRepository->method('find')->willReturn($customer);
 
         $member = new Member('test@example.com', 'subscribed', new MergeFields('', ''));
         $this->memberMapper->method('map')->willReturn($member);
         $this->mailchimpClient->method('upsertMember')->willReturn('mailchimpid');
-
-        $customer->expects($this->once())->method('setMailchimpId')->with('mailchimpid');
-        $customer->expects($this->once())->method('setMailchimpSyncedAt');
         $this->entityManager->expects($this->once())->method('flush');
 
         ($this->handler)(new MemberUpdate(1, 'list-id'));
+
+        $this->assertSame('mailchimpid', $customer->getMailchimpId());
+        $this->assertNotNull($customer->getMailchimpSyncedAt());
     }
 }

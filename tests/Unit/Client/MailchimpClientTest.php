@@ -262,8 +262,8 @@ final class MailchimpClientTest extends TestCase
         $response = $this->mockResponse(200, '{}');
         $this->httpClient->expects($this->once())->method('request')
             ->with('PUT', $this->stringContains('ecommerce/stores/store-1/products/prod-1'), $this->callback(
-                static fn (array $options): bool => count($options['json']['variants']) === 1
-                    && $options['json']['variants'][0]['id'] === 'var-1',
+                static fn (array $options): bool => count($options['json']['variants']) === 1 &&
+                    $options['json']['variants'][0]['id'] === 'var-1',
             ))
             ->willReturn($response);
 

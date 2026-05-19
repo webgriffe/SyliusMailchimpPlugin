@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
-use Sylius\Component\Core\Model\ChannelInterface;
-use Sylius\Component\Core\Model\CustomerInterface;
-use Sylius\Component\Core\Model\OrderInterface;
-use Sylius\Component\Core\Model\OrderItemInterface;
-use Sylius\Component\Core\Model\ProductInterface;
-use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Core\Model\OrderItem;
+use Sylius\Component\Core\Model\Product;
+use Sylius\Component\Core\Model\ProductVariant;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
-use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 
 final class CartMapperTest extends TestCase
 {
@@ -27,35 +25,34 @@ final class CartMapperTest extends TestCase
 
     public function testMapsOrderToCart(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('john@example.com');
-        $customer->method('getFirstName')->willReturn('John');
-        $customer->method('getLastName')->willReturn('Doe');
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('john@example.com');
+        $customer->setFirstName('John');
+        $customer->setLastName('Doe');
 
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('TSHIRT');
+        $product = new Product();
+        $product->setCode('TSHIRT');
 
-        $variant = $this->createMock(ProductVariantInterface::class);
-        $variant->method('getCode')->willReturn('TSHIRT-L');
-        $variant->method('getProduct')->willReturn($product);
+        $variant = new ProductVariant();
+        $variant->setCode('TSHIRT-L');
+        $product->addVariant($variant);
 
-        $item = $this->createMock(OrderItemInterface::class);
-        $item->method('getId')->willReturn(10);
-        $item->method('getVariant')->willReturn($variant);
-        $item->method('getQuantity')->willReturn(2);
-        $item->method('getUnitPrice')->willReturn(1999);
+        $item = new OrderItem();
+        self::setId($item, 10);
+        $item->setVariant($variant);
+        $item->setUnitPrice(1999);
+        self::setQuantity($item, 2);
 
-        $channel = $this->createChannelMock('https://example.com');
+        $channel = new Channel();
+        $channel->setHostname('https://example.com');
 
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getTokenValue')->willReturn('abc123token');
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn(null);
-        $order->method('getCurrencyCode')->willReturn('EUR');
-        $order->method('getTotal')->willReturn(3998);
-        $order->method('getItems')->willReturn(new ArrayCollection([$item]));
+        $order = new Order();
+        $order->setTokenValue('abc123token');
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
+        $order->addItem($item);
+        self::setTotal($order, 3998);
 
         $cart = $this->mapper->map($order, $channel);
 
@@ -74,38 +71,41 @@ final class CartMapperTest extends TestCase
 
     public function testSkipsItemWithNoVariant(): void
     {
-        $item = $this->createMock(OrderItemInterface::class);
-        $item->method('getVariant')->willReturn(null);
+        $item = new OrderItem();
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('x@example.com');
-        $customer->method('getFirstName')->willReturn('');
-        $customer->method('getLastName')->willReturn('');
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('x@example.com');
 
-        $channel = $this->createChannelMock('https://example.com');
+        $channel = new Channel();
+        $channel->setHostname('https://example.com');
 
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getTokenValue')->willReturn('tok');
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn(null);
-        $order->method('getCurrencyCode')->willReturn('EUR');
-        $order->method('getTotal')->willReturn(0);
-        $order->method('getItems')->willReturn(new ArrayCollection([$item]));
+        $order = new Order();
+        $order->setTokenValue('tok');
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
+        $order->addItem($item);
 
         $cart = $this->mapper->map($order, $channel);
 
         $this->assertCount(0, $cart->lines);
     }
 
-    /** @return ChannelInterface&ChannelMailchimpAwareInterface */
-    private function createChannelMock(string $hostname): ChannelInterface&ChannelMailchimpAwareInterface
+    private static function setId(object $entity, int $id): void
     {
-        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
-        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
-        $channel->method('getHostname')->willReturn($hostname);
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
+    }
 
-        return $channel;
+    private static function setQuantity(OrderItem $item, int $quantity): void
+    {
+        $ref = new \ReflectionProperty($item, 'quantity');
+        $ref->setValue($item, $quantity);
+    }
+
+    private static function setTotal(Order $order, int $total): void
+    {
+        $ref = new \ReflectionProperty($order, 'total');
+        $ref->setValue($order, $total);
     }
 }

@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 
 use DateTimeImmutable;
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
-use Sylius\Component\Core\Model\AddressInterface;
+use Sylius\Component\Core\Model\Address;
 use Sylius\Component\Core\Model\AdjustmentInterface;
-use Sylius\Component\Core\Model\CustomerInterface;
-use Sylius\Component\Core\Model\OrderInterface;
-use Sylius\Component\Core\Model\OrderItemInterface;
-use Sylius\Component\Core\Model\ProductInterface;
-use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Core\Model\OrderItem;
+use Sylius\Component\Core\Model\Product;
+use Sylius\Component\Core\Model\ProductVariant;
+use Sylius\Component\Order\Model\Adjustment;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapper;
 
@@ -28,55 +28,67 @@ final class OrderMapperTest extends TestCase
 
     public function testMapsOrderToOrderVO(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('john@example.com');
-        $customer->method('getFirstName')->willReturn('John');
-        $customer->method('getLastName')->willReturn('Doe');
-        $customer->method('isSubscribedToNewsletter')->willReturn(true);
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('john@example.com');
+        $customer->setFirstName('John');
+        $customer->setLastName('Doe');
+        $customer->setSubscribedToNewsletter(true);
 
-        $product = $this->createMock(ProductInterface::class);
-        $product->method('getCode')->willReturn('TSHIRT');
+        $product = new Product();
+        $product->setCode('TSHIRT');
 
-        $variant = $this->createMock(ProductVariantInterface::class);
-        $variant->method('getCode')->willReturn('TSHIRT-L');
-        $variant->method('getProduct')->willReturn($product);
+        $variant = new ProductVariant();
+        $variant->setCode('TSHIRT-L');
+        $product->addVariant($variant);
 
-        $item = $this->createMock(OrderItemInterface::class);
-        $item->method('getId')->willReturn(5);
-        $item->method('getVariant')->willReturn($variant);
-        $item->method('getQuantity')->willReturn(1);
-        $item->method('getUnitPrice')->willReturn(2999);
-        $item->method('getAdjustmentsTotalRecursively')
-            ->with(AdjustmentInterface::ORDER_PROMOTION_ADJUSTMENT)
-            ->willReturn(-500);
+        $item = new OrderItem();
+        self::setId($item, 5);
+        $item->setVariant($variant);
+        $item->setUnitPrice(2999);
+        self::setQuantity($item, 1);
 
-        $billingAddress = $this->createMock(AddressInterface::class);
-        $billingAddress->method('getFirstName')->willReturn('John');
-        $billingAddress->method('getLastName')->willReturn('Doe');
-        $billingAddress->method('getStreet')->willReturn('123 Main St');
-        $billingAddress->method('getCity')->willReturn('New York');
-        $billingAddress->method('getPostcode')->willReturn('10001');
-        $billingAddress->method('getCountryCode')->willReturn('US');
-        $billingAddress->method('getProvinceName')->willReturn('New York');
-        $billingAddress->method('getProvinceCode')->willReturn('NY');
+        $itemPromoAdj = new Adjustment();
+        $itemPromoAdj->setType(AdjustmentInterface::ORDER_PROMOTION_ADJUSTMENT);
+        $itemPromoAdj->setAmount(-500);
+        $item->addAdjustment($itemPromoAdj);
+
+        $billingAddress = new Address();
+        $billingAddress->setFirstName('John');
+        $billingAddress->setLastName('Doe');
+        $billingAddress->setStreet('123 Main St');
+        $billingAddress->setCity('New York');
+        $billingAddress->setPostcode('10001');
+        $billingAddress->setCountryCode('US');
+        $billingAddress->setProvinceName('New York');
+        $billingAddress->setProvinceCode('NY');
 
         $processedAt = new DateTimeImmutable('2024-01-15 10:00:00');
 
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getId')->willReturn(42);
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn($billingAddress);
-        $order->method('getShippingAddress')->willReturn(null);
-        $order->method('getCurrencyCode')->willReturn('USD');
-        $order->method('getTotal')->willReturn(2999);
-        $order->method('getTaxTotal')->willReturn(300);
-        $order->method('getShippingTotal')->willReturn(500);
-        $order->method('getAdjustmentsTotalRecursively')
-            ->with(AdjustmentInterface::ORDER_PROMOTION_ADJUSTMENT)
-            ->willReturn(-200);
-        $order->method('getItems')->willReturn(new ArrayCollection([$item]));
-        $order->method('getCheckoutCompletedAt')->willReturn($processedAt);
+        $order = new Order();
+        self::setId($order, 42);
+        $order->setCustomer($customer);
+        $order->setBillingAddress($billingAddress);
+        $order->setCurrencyCode('USD');
+        $order->setCheckoutCompletedAt($processedAt);
+
+        $taxAdj = new Adjustment();
+        $taxAdj->setType(AdjustmentInterface::TAX_ADJUSTMENT);
+        $taxAdj->setAmount(300);
+        $order->addAdjustment($taxAdj);
+
+        $shippingAdj = new Adjustment();
+        $shippingAdj->setType(AdjustmentInterface::SHIPPING_ADJUSTMENT);
+        $shippingAdj->setAmount(500);
+        $order->addAdjustment($shippingAdj);
+
+        $orderPromoAdj = new Adjustment();
+        $orderPromoAdj->setType(AdjustmentInterface::ORDER_PROMOTION_ADJUSTMENT);
+        $orderPromoAdj->setAmount(300);
+        $order->addAdjustment($orderPromoAdj);
+
+        $order->addItem($item);
+        self::setTotal($order, 2999);
 
         $mapped = $this->mapper->map($order);
 
@@ -85,7 +97,7 @@ final class OrderMapperTest extends TestCase
         $this->assertSame('USD', $mapped->currencyCode);
         $this->assertSame(29.99, $mapped->orderTotal);
         $this->assertSame(3.0, $mapped->taxTotal);
-        $this->assertSame(5.0, $mapped->shippingTotal);
+        $this->assertSame(8.0, $mapped->shippingTotal);
         $this->assertSame(2.0, $mapped->discountTotal);
         $this->assertCount(1, $mapped->lines);
         $this->assertSame('line-5', $mapped->lines[0]->id);
@@ -99,25 +111,14 @@ final class OrderMapperTest extends TestCase
 
     public function testMapsOrderWithIsInRealTimeFlag(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('x@example.com');
-        $customer->method('getFirstName')->willReturn('');
-        $customer->method('getLastName')->willReturn('');
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('x@example.com');
 
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getId')->willReturn(1);
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn(null);
-        $order->method('getShippingAddress')->willReturn(null);
-        $order->method('getCurrencyCode')->willReturn('EUR');
-        $order->method('getTotal')->willReturn(0);
-        $order->method('getTaxTotal')->willReturn(0);
-        $order->method('getShippingTotal')->willReturn(0);
-        $order->method('getAdjustmentsTotalRecursively')->willReturn(0);
-        $order->method('getItems')->willReturn(new ArrayCollection([]));
-        $order->method('getCheckoutCompletedAt')->willReturn(null);
+        $order = new Order();
+        self::setId($order, 1);
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
 
         $mapped = $this->mapper->map($order, isInRealTime: true);
 
@@ -126,31 +127,38 @@ final class OrderMapperTest extends TestCase
 
     public function testSkipsItemWithNoVariant(): void
     {
-        $item = $this->createMock(OrderItemInterface::class);
-        $item->method('getVariant')->willReturn(null);
+        $item = new OrderItem();
 
-        $customer = $this->createMock(CustomerInterface::class);
-        $customer->method('getId')->willReturn(1);
-        $customer->method('getEmail')->willReturn('x@example.com');
-        $customer->method('getFirstName')->willReturn('');
-        $customer->method('getLastName')->willReturn('');
-        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('x@example.com');
 
-        $order = $this->createMock(OrderInterface::class);
-        $order->method('getId')->willReturn(1);
-        $order->method('getCustomer')->willReturn($customer);
-        $order->method('getBillingAddress')->willReturn(null);
-        $order->method('getShippingAddress')->willReturn(null);
-        $order->method('getCurrencyCode')->willReturn('EUR');
-        $order->method('getTotal')->willReturn(0);
-        $order->method('getTaxTotal')->willReturn(0);
-        $order->method('getShippingTotal')->willReturn(0);
-        $order->method('getAdjustmentsTotalRecursively')->willReturn(0);
-        $order->method('getItems')->willReturn(new ArrayCollection([$item]));
-        $order->method('getCheckoutCompletedAt')->willReturn(null);
+        $order = new Order();
+        self::setId($order, 1);
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
+        $order->addItem($item);
 
         $mapped = $this->mapper->map($order);
 
         $this->assertCount(0, $mapped->lines);
+    }
+
+    private static function setId(object $entity, int $id): void
+    {
+        $ref = new \ReflectionProperty($entity, 'id');
+        $ref->setValue($entity, $id);
+    }
+
+    private static function setQuantity(OrderItem $item, int $quantity): void
+    {
+        $ref = new \ReflectionProperty($item, 'quantity');
+        $ref->setValue($item, $quantity);
+    }
+
+    private static function setTotal(Order $order, int $total): void
+    {
+        $ref = new \ReflectionProperty($order, 'total');
+        $ref->setValue($order, $total);
     }
 }
