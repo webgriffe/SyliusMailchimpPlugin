@@ -8,6 +8,19 @@ use Doctrine\ORM\QueryBuilder;
 
 trait CustomerRepositoryTrait
 {
+    public function createMailchimpRelevantQueryBuilder(string $alias): QueryBuilder
+    {
+        return $this->createQueryBuilder($alias)
+            ->leftJoin(sprintf('%s.user', $alias), 'user')
+            ->andWhere(sprintf(
+                '%s.subscribedToNewsletter = :subscribed OR %s.mailchimpId IS NOT NULL',
+                $alias,
+                $alias,
+            ))
+            ->setParameter('subscribed', true)
+        ;
+    }
+
     public function createMailchimpSyncNeededQueryBuilder(string $alias): QueryBuilder
     {
         return $this->createQueryBuilder($alias)

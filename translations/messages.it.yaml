@@ -23,6 +23,7 @@ webgriffe_sylius_mailchimp:
         mailchimp_id: 'ID Mailchimp'
         synced_at: 'Ultima sincronizzazione'
         sync_error: 'Errore sincronizzazione'
+        subscribed_to_newsletter: 'Iscritto alla newsletter'
         view_on_mailchimp: 'Visualizza su Mailchimp'
         mailchimp_sync_status: 'Stato Sincronizzazione Mailchimp'
         members_synced: 'Membri sincronizzati'

@@ -101,12 +101,78 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
         $container->prependExtensionConfig('sylius_grid', [
             'grids' => [
                 'webgriffe_sylius_mailchimp_contact' => [
-                    'extends' => 'sylius_admin_customer',
+                    'driver' => [
+                        'name' => 'doctrine/orm',
+                        'options' => [
+                            'class' => '%sylius.model.customer.class%',
+                            'repository' => [
+                                'method' => 'createMailchimpRelevantQueryBuilder',
+                                'arguments' => ['o'],
+                            ],
+                        ],
+                    ],
+                    'sorting' => ['createdAt' => 'desc'],
+                    'limits' => [50, 25, 100],
                     'fields' => [
+                        'email' => [
+                            'type' => 'twig',
+                            'label' => 'sylius.ui.email',
+                            'sortable' => null,
+                            'options' => [
+                                'template' => '@SyliusAdmin/shared/grid/field/name.html.twig',
+                            ],
+                        ],
+                        'lastName' => [
+                            'type' => 'string',
+                            'label' => 'sylius.ui.last_name',
+                            'sortable' => null,
+                        ],
+                        'firstName' => [
+                            'type' => 'string',
+                            'label' => 'sylius.ui.first_name',
+                            'sortable' => null,
+                        ],
+                        'createdAt' => [
+                            'type' => 'twig',
+                            'label' => 'sylius.ui.registration_date',
+                            'sortable' => null,
+                            'options' => [
+                                'template' => '@SyliusAdmin/shared/grid/field/date.html.twig',
+                            ],
+                        ],
+                        'enabled' => [
+                            'type' => 'twig',
+                            'label' => 'sylius.ui.enabled',
+                            'path' => '.',
+                            'options' => [
+                                'template' => '@SyliusAdmin/customer/grid/field/enabled.html.twig',
+                                'vars' => ['th_class' => 'w-1 text-center'],
+                            ],
+                        ],
+                        'verified' => [
+                            'type' => 'twig',
+                            'label' => 'sylius.ui.verified',
+                            'path' => 'user?.verified',
+                            'options' => [
+                                'template' => '@SyliusAdmin/shared/grid/field/boolean.html.twig',
+                                'vars' => ['th_class' => 'w-1 text-center'],
+                            ],
+                        ],
+                        'subscribedToNewsletter' => [
+                            'type' => 'twig',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.subscribed_to_newsletter',
+                            'options' => [
+                                'template' => '@SyliusAdmin/shared/grid/field/boolean.html.twig',
+                                'vars' => ['th_class' => 'w-1 text-center'],
+                            ],
+                        ],
+                        'mailchimpId' => [
+                            'type' => 'string',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.mailchimp_id',
+                        ],
                         'mailchimpSyncedAt' => [
                             'type' => 'twig',
                             'label' => 'webgriffe_sylius_mailchimp.ui.synced_at',
-                            'path' => 'mailchimpSyncedAt',
                             'sortable' => null,
                             'options' => [
                                 'template' => '@SyliusAdmin/shared/grid/field/date.html.twig',
@@ -115,16 +181,52 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
                         'mailchimpError' => [
                             'type' => 'string',
                             'label' => 'webgriffe_sylius_mailchimp.ui.sync_error',
-                            'path' => 'mailchimpError',
+                        ],
+                    ],
+                    'filters' => [
+                        'search' => [
+                            'type' => 'string',
+                            'label' => 'sylius.ui.search',
+                            'options' => [
+                                'fields' => ['email', 'firstName', 'lastName'],
+                            ],
+                        ],
+                        'subscribedToNewsletter' => [
+                            'type' => 'boolean',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.subscribed_to_newsletter',
+                        ],
+                        'mailchimpId' => [
+                            'type' => 'string',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.mailchimp_id',
+                        ],
+                        'mailchimpSyncedAt' => [
+                            'type' => 'date',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.synced_at',
+                        ],
+                        'syncError' => [
+                            'type' => 'exists',
+                            'label' => 'webgriffe_sylius_mailchimp.ui.sync_error',
+                            'options' => [
+                                'field' => 'mailchimpError',
+                            ],
+                        ],
+                        'enabled' => [
+                            'type' => 'boolean',
+                            'label' => 'sylius.ui.enabled',
+                            'options' => [
+                                'field' => 'user.enabled',
+                            ],
+                        ],
+                        'verified' => [
+                            'type' => 'exists',
+                            'label' => 'sylius.ui.verified',
+                            'options' => [
+                                'field' => 'user.verifiedAt',
+                            ],
                         ],
                     ],
                     'actions' => [
-                        'main' => [
-                            'create' => ['type' => 'create', 'enabled' => false],
-                        ],
                         'item' => [
-                            'show_orders' => ['type' => 'show', 'enabled' => false],
-                            'update' => ['type' => 'update', 'enabled' => false],
                             'show' => [
                                 'type' => 'show',
                                 'options' => [
