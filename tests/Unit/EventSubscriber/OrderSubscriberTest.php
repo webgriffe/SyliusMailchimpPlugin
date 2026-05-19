@@ -6,6 +6,7 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\EventSubscriber;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
@@ -26,8 +27,8 @@ final class OrderSubscriberTest extends TestCase
     {
         $this->cartEnqueuer = $this->createMock(CartEnqueuerInterface::class);
         $this->orderEnqueuer = $this->createMock(OrderEnqueuerInterface::class);
-        $this->subscriberNoCarts = new OrderSubscriber($this->cartEnqueuer, $this->orderEnqueuer, false);
-        $this->subscriberWithUnpaidAsCarts = new OrderSubscriber($this->cartEnqueuer, $this->orderEnqueuer, true);
+        $this->subscriberNoCarts = new OrderSubscriber($this->cartEnqueuer, $this->orderEnqueuer, false, new NullLogger());
+        $this->subscriberWithUnpaidAsCarts = new OrderSubscriber($this->cartEnqueuer, $this->orderEnqueuer, true, new NullLogger());
     }
 
     public function testGetSubscribedEvents(): void

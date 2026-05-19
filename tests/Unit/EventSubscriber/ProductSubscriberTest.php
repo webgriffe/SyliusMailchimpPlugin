@@ -6,6 +6,7 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\EventSubscriber;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -28,7 +29,7 @@ final class ProductSubscriberTest extends TestCase
     protected function setUp(): void
     {
         $this->productEnqueuer = $this->createMock(ProductEnqueuerInterface::class);
-        $this->subscriber = new ProductSubscriber($this->productEnqueuer);
+        $this->subscriber = new ProductSubscriber($this->productEnqueuer, new NullLogger());
     }
 
     public function testGetSubscribedEvents(): void
