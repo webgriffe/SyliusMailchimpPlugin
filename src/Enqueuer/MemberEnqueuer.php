@@ -36,38 +36,19 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
             return;
         }
 
-        if (!$customer instanceof MailchimpAwareInterface) {
-            $this->logger->warning('[Mailchimp] Customer is not MailchimpAwareInterface, skipping enqueue.');
-
-            return;
-        }
-
-        $customerId = $customer->getId();
-        if (!is_int($customerId)) {
-            $this->logger->warning('[Mailchimp] Customer has no integer ID, skipping enqueue.');
-
+        $context = $this->resolveAudienceContext($customer, 'enqueue');
+        if ($context === null) {
             return;
         }
 
         $email = $customer->getEmail();
         if ($email === null || $email === '') {
-            $this->logger->warning('[Mailchimp] Customer #{id} has no email, skipping enqueue.', ['id' => $customerId]);
+            $this->logger->warning('[Mailchimp] Customer #{id} has no email, skipping enqueue.', ['id' => $context['customerId']]);
 
             return;
         }
 
-        try {
-            $listId = $this->audienceContext->getAudienceId();
-        } catch (AudienceNotFoundException $e) {
-            $this->logger->warning('[Mailchimp] Could not resolve audience for customer #{id}: {msg}', [
-                'id' => $customerId,
-                'msg' => $e->getMessage(),
-            ]);
-
-            return;
-        }
-
-        $this->enqueueForList($customer, $customerId, $email, $listId);
+        $this->enqueueForList($customer, $context['customerId'], $email, $context['listId']);
     }
 
     #[\Override]
@@ -97,10 +78,68 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     }
 
     #[\Override]
+    public function enqueueEmailChange(CustomerInterface $customer, string $oldEmail): void
+    {
+        $context = $this->resolveAudienceContext($customer, 'email change enqueue');
+        if ($context === null) {
+            return;
+        }
+
+        $this->enqueueRemoval($context['customerId'], $context['listId'], $oldEmail);
+
+        if (!$customer->isSubscribedToNewsletter()) {
+            return;
+        }
+
+        $newEmail = $customer->getEmail();
+        if ($newEmail === null || $newEmail === '') {
+            return;
+        }
+
+        $this->enqueueForList($customer, $context['customerId'], $newEmail, $context['listId']);
+    }
+
+    #[\Override]
     public function enqueueRemoval(int $customerId, string $listId, string $email): void
     {
         $subscriberHash = md5(strtolower($email));
         $this->logger->debug('[Mailchimp] Dispatching MemberRemove for customer #{id}.', ['id' => $customerId]);
         $this->messageBus->dispatch(new MemberRemove($customerId, $listId, $subscriberHash));
+    }
+
+    /**
+     * @return array{customerId: int, listId: string}|null
+     */
+    private function resolveAudienceContext(CustomerInterface $customer, string $operation): ?array
+    {
+        if (!$customer instanceof MailchimpAwareInterface) {
+            $this->logger->warning('[Mailchimp] Customer is not MailchimpAwareInterface, skipping {operation}.', [
+                'operation' => $operation,
+            ]);
+
+            return null;
+        }
+
+        $customerId = $customer->getId();
+        if (!is_int($customerId)) {
+            $this->logger->warning('[Mailchimp] Customer has no integer ID, skipping {operation}.', [
+                'operation' => $operation,
+            ]);
+
+            return null;
+        }
+
+        try {
+            $listId = $this->audienceContext->getAudienceId();
+        } catch (AudienceNotFoundException $e) {
+            $this->logger->warning('[Mailchimp] Could not resolve audience for customer #{id}: {msg}', [
+                'id' => $customerId,
+                'msg' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        return ['customerId' => $customerId, 'listId' => $listId];
     }
 }

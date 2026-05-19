@@ -139,6 +139,80 @@ final class MemberEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($customer);
     }
 
+    public function test_enqueue_email_change_dispatches_remove_and_create_when_subscribed(): void
+    {
+        $customer = $this->buildCustomer(1, 'new@example.com', null);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->mailchimpClient->method('getMember')->willReturn(null);
+
+        $dispatched = [];
+        $this->messageBus->expects($this->exactly(2))->method('dispatch')
+            ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
+                $dispatched[] = $msg;
+
+                return new Envelope($msg);
+            });
+
+        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
+
+        $this->assertInstanceOf(MemberRemove::class, $dispatched[0]);
+        $this->assertInstanceOf(MemberCreate::class, $dispatched[1]);
+    }
+
+    public function test_enqueue_email_change_dispatches_only_remove_when_not_subscribed(): void
+    {
+        $customer = $this->createMock(TestMailchimpCustomerInterface::class);
+        $customer->method('getId')->willReturn(1);
+        $customer->method('getEmail')->willReturn('new@example.com');
+        $customer->method('getMailchimpId')->willReturn(null);
+        $customer->method('isSubscribedToNewsletter')->willReturn(false);
+
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+
+        $dispatched = [];
+        $this->messageBus->expects($this->once())->method('dispatch')
+            ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
+                $dispatched[] = $msg;
+
+                return new Envelope($msg);
+            });
+
+        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
+
+        $this->assertCount(1, $dispatched);
+        $this->assertInstanceOf(MemberRemove::class, $dispatched[0]);
+    }
+
+    public function test_enqueue_email_change_dispatches_only_remove_when_new_email_is_empty(): void
+    {
+        $customer = $this->buildCustomer(1, '', null);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+
+        $dispatched = [];
+        $this->messageBus->expects($this->once())->method('dispatch')
+            ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
+                $dispatched[] = $msg;
+
+                return new Envelope($msg);
+            });
+
+        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
+
+        $this->assertCount(1, $dispatched);
+        $this->assertInstanceOf(MemberRemove::class, $dispatched[0]);
+    }
+
+    public function test_enqueue_email_change_skips_when_audience_not_found(): void
+    {
+        $customer = $this->buildCustomer(1, 'new@example.com', null);
+        $this->audienceContext->method('getAudienceId')
+            ->willThrowException(new AudienceNotFoundException('No audience'));
+
+        $this->messageBus->expects($this->never())->method('dispatch');
+
+        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
+    }
+
     public function test_enqueue_removal_dispatches_member_remove(): void
     {
         $expectedHash = md5(strtolower('test@example.com'));
