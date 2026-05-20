@@ -92,7 +92,7 @@ final class OrderMapperTest extends TestCase
 
         $mapped = $this->mapper->map($order);
 
-        $this->assertSame('order-42', $mapped->id);
+        $this->assertSame('42', $mapped->id);
         $this->assertSame('john@example.com', $mapped->customer->emailAddress);
         $this->assertSame('USD', $mapped->currencyCode);
         $this->assertSame(29.99, $mapped->orderTotal);

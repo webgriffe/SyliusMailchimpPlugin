@@ -23,7 +23,7 @@ final class OrderMapper
 
     public function map(OrderInterface $order, bool $isInRealTime = false): Order
     {
-        $orderId = IdSanitizer::sanitize(sprintf('order-%s', (string) $order->getId()));
+        $orderId = IdSanitizer::sanitize((string) $order->getId());
         $currencyCode = (string) $order->getCurrencyCode();
         $orderTotal = round($order->getTotal() / 100, 2);
         $taxTotal = round($order->getTaxTotal() / 100, 2);

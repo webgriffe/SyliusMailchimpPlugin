@@ -73,7 +73,7 @@ final class OrderHandlersTest extends TestCase
         );
         $handler(new OrderCreate(42, 1));
 
-        $this->assertSame('order-42', $order->getMailchimpOrderId());
+        $this->assertSame('42', $order->getMailchimpOrderId());
         $this->assertNull($order->getMailchimpOrderError());
     }
 
