@@ -49,7 +49,7 @@ final class CartHandlersTest extends TestCase
 
     public function testCartCreateCallsUpsertCartAndPersistsId(): void
     {
-        $order = $this->createOrder(orderId: 5, tokenValue: 'cart-token-xyz');
+        $order = $this->createOrder(orderId: 5);
         $channel = $this->createChannel('WEB');
         $this->orderRepository->method('find')->with(5)->willReturn($order);
         $this->channelRepository->method('find')->with(1)->willReturn($channel);
@@ -67,7 +67,7 @@ final class CartHandlersTest extends TestCase
         );
         $handler(new CartCreate(5, 1));
 
-        $this->assertSame('cart-token-xyz', $order->getMailchimpCartId());
+        $this->assertSame('5', $order->getMailchimpCartId());
         $this->assertNull($order->getMailchimpCartError());
     }
 
@@ -90,7 +90,7 @@ final class CartHandlersTest extends TestCase
 
     public function testCartUpdateCallsUpsertCart(): void
     {
-        $order = $this->createOrder(orderId: 5, tokenValue: 'cart-token');
+        $order = $this->createOrder(orderId: 5);
         $channel = $this->createChannel('WEB');
         $this->orderRepository->method('find')->willReturn($order);
         $this->channelRepository->method('find')->willReturn($channel);
@@ -126,7 +126,7 @@ final class CartHandlersTest extends TestCase
         $handler(new CartRemove('WEB', 'cart-abc'));
     }
 
-    private function createOrder(int $orderId, string $tokenValue): Order
+    private function createOrder(int $orderId): Order
     {
         $customer = new Customer();
         self::setId($customer, 1);
@@ -134,7 +134,6 @@ final class CartHandlersTest extends TestCase
 
         $order = new Order();
         self::setId($order, $orderId);
-        $order->setTokenValue($tokenValue);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
         self::setTotal($order, 1000);

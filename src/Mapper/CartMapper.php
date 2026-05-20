@@ -22,7 +22,7 @@ final class CartMapper
 
     public function map(OrderInterface $order, ChannelInterface&ChannelMailchimpAwareInterface $channel): Cart
     {
-        $cartId = IdSanitizer::sanitize((string) $order->getTokenValue());
+        $cartId = IdSanitizer::sanitize((string) $order->getId());
         $checkoutUrl = sprintf('%s/checkout', rtrim((string) $channel->getHostname(), '/'));
         $currencyCode = (string) $order->getCurrencyCode();
         $orderTotal = round($order->getTotal() / 100, 2);
@@ -54,7 +54,7 @@ final class CartMapper
 
         $lineId = IdSanitizer::sanitize(sprintf('%s_%s', (string) $item->getId(), $variant->getCode() ?? ''));
         $productId = IdSanitizer::sanitize($variant->getProduct()?->getCode() ?? '');
-        $variantId = IdSanitizer::sanitize(sprintf('%s_%s', $variant->getProduct()?->getCode() ?? '', $variant->getCode() ?? ''));
+        $variantId = IdSanitizer::sanitize($variant->getCode() ?? '');
 
         return new CartLine(
             id: $lineId,

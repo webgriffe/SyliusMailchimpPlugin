@@ -48,7 +48,7 @@ final class CartMapperTest extends TestCase
         $channel->setHostname('https://example.com');
 
         $order = new Order();
-        $order->setTokenValue('abc123token');
+        self::setId($order, 42);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
         $order->addItem($item);
@@ -56,7 +56,7 @@ final class CartMapperTest extends TestCase
 
         $cart = $this->mapper->map($order, $channel);
 
-        $this->assertSame('abc123token', $cart->id);
+        $this->assertSame('42', $cart->id);
         $this->assertSame('john@example.com', $cart->customer->emailAddress);
         $this->assertSame('https://example.com/checkout', $cart->checkoutUrl);
         $this->assertSame('EUR', $cart->currencyCode);
@@ -64,7 +64,7 @@ final class CartMapperTest extends TestCase
         $this->assertCount(1, $cart->lines);
         $this->assertSame('10_TSHIRT-L', $cart->lines[0]->id);
         $this->assertSame('TSHIRT', $cart->lines[0]->productId);
-        $this->assertSame('TSHIRT_TSHIRT-L', $cart->lines[0]->productVariantId);
+        $this->assertSame('TSHIRT-L', $cart->lines[0]->productVariantId);
         $this->assertSame(2, $cart->lines[0]->quantity);
         $this->assertSame(19.99, $cart->lines[0]->price);
     }
@@ -81,7 +81,7 @@ final class CartMapperTest extends TestCase
         $channel->setHostname('https://example.com');
 
         $order = new Order();
-        $order->setTokenValue('tok');
+        self::setId($order, 99);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
         $order->addItem($item);
