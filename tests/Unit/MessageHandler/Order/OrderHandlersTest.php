@@ -15,6 +15,8 @@ use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderRemove;
@@ -37,6 +39,8 @@ final class OrderHandlersTest extends TestCase
 
     private StoreMapper $storeMapper;
 
+    private ProductMapper $productMapper;
+
     protected function setUp(): void
     {
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
@@ -45,6 +49,7 @@ final class OrderHandlersTest extends TestCase
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->orderMapper = new OrderMapper(new EcommerceCustomerMapper());
         $this->storeMapper = new StoreMapper();
+        $this->productMapper = new ProductMapper(new ProductVariantMapper());
     }
 
     public function testOrderCreateCallsUpsertOrderAndPersistsId(): void
@@ -61,6 +66,7 @@ final class OrderHandlersTest extends TestCase
             $this->channelRepository,
             $this->orderMapper,
             $this->storeMapper,
+            $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
@@ -81,6 +87,7 @@ final class OrderHandlersTest extends TestCase
             $this->channelRepository,
             $this->orderMapper,
             $this->storeMapper,
+            $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
@@ -100,6 +107,7 @@ final class OrderHandlersTest extends TestCase
             $this->channelRepository,
             $this->orderMapper,
             $this->storeMapper,
+            $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
@@ -120,6 +128,7 @@ final class OrderHandlersTest extends TestCase
             $this->channelRepository,
             $this->orderMapper,
             $this->storeMapper,
+            $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),

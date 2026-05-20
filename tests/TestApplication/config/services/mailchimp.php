@@ -6,6 +6,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Client\StubMailchimpClient;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpCartContext;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpRegistrationContext;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 
@@ -27,6 +28,14 @@ return static function (ContainerConfigurator $containerConfigurator) {
         ->public();
 
     $services->set(MailchimpRegistrationContext::class)
+        ->args(
+            [
+                service(StubMailchimpClient::class),
+            ]
+        )
+        ->public();
+
+    $services->set(MailchimpCartContext::class)
         ->args(
             [
                 service(StubMailchimpClient::class),

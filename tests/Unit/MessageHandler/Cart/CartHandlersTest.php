@@ -15,6 +15,8 @@ use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
@@ -37,6 +39,8 @@ final class CartHandlersTest extends TestCase
 
     private StoreMapper $storeMapper;
 
+    private ProductMapper $productMapper;
+
     protected function setUp(): void
     {
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
@@ -45,6 +49,7 @@ final class CartHandlersTest extends TestCase
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->cartMapper = new CartMapper(new EcommerceCustomerMapper());
         $this->storeMapper = new StoreMapper();
+        $this->productMapper = new ProductMapper(new ProductVariantMapper());
     }
 
     public function testCartCreateCallsUpsertCartAndPersistsId(): void
@@ -61,6 +66,7 @@ final class CartHandlersTest extends TestCase
             $this->channelRepository,
             $this->cartMapper,
             $this->storeMapper,
+            $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
@@ -81,6 +87,7 @@ final class CartHandlersTest extends TestCase
             $this->channelRepository,
             $this->cartMapper,
             $this->storeMapper,
+            $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
@@ -101,6 +108,7 @@ final class CartHandlersTest extends TestCase
             $this->channelRepository,
             $this->cartMapper,
             $this->storeMapper,
+            $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
