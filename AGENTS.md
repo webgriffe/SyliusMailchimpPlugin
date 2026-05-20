@@ -80,6 +80,18 @@ All code must be in English — class names, method names, variable names, comme
   - **Integration tests** (`--testsuite=integration`) for classes that require a database, external dependencies, or have too many collaborators to test in isolation.
 - Mirror the source namespace structure in the test directory (e.g., `src/Foo/Bar.php` → `tests/Unit/Foo/BarTest.php`).
 
+#### Mocking rules
+- **Mock only services** — i.e., collaborators of the class under test that are injected as dependencies (repositories, message bus, API clients, mapper interfaces, etc.).
+- **Never mock entities or models** — always instantiate real objects and populate them via setters/adders. Use `ReflectionProperty` to set protected fields that have no public setter (e.g., auto-generated `$id`, `$quantity`).
+- The only acceptable exception is when a test specifically needs an object that does **not** implement a certain interface (e.g., testing a guard that skips non-`MailchimpAwareInterface` customers) — in that case a targeted mock is justified.
+- Concrete entity classes available for tests:
+  - `Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer`
+  - `Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order`
+  - `Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel`
+  - `Sylius\Component\Core\Model\{Address, OrderItem, Product, ProductVariant, ProductTranslation, ChannelPricing}`
+  - `Sylius\Component\Order\Model\Adjustment`
+  - `Sylius\Component\Locale\Model\Locale`
+
 ### Commands
 Long-running Symfony commands use `LockableTrait` with an environment toggle:
 ```php
