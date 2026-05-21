@@ -40,12 +40,11 @@ final class OrderSubscriberTest extends TestCase
         self::assertArrayHasKey('sylius.order.post_complete', $events);
     }
 
-    public function testOnOrderPostUpdateEnqueuesCartForCartState(): void
+    public function testOnOrderPostUpdateDoesNotEnqueueCartForCartState(): void
     {
         $order = new Order();
 
-        $this->cartEnqueuer->expects(self::once())->method('enqueue')->with($order);
-        $this->cartEnqueuer->expects(self::never())->method('enqueueRemoval');
+        $this->cartEnqueuer->expects(self::never())->method('enqueue');
         $this->orderEnqueuer->expects(self::never())->method('enqueue');
 
         $this->subscriberNoCarts->onOrderPostUpdate(new GenericEvent($order));
@@ -89,11 +88,11 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberNoCarts->onOrderPostUpdate(new GenericEvent(new \stdClass()));
     }
 
-    public function testOnOrderPostCompleteEnqueuesCartRemovalAndOrder(): void
+    public function testOnOrderPostCompleteEnqueuesOrderOnly(): void
     {
         $order = new Order();
 
-        $this->cartEnqueuer->expects(self::once())->method('enqueueRemoval')->with($order);
+        $this->cartEnqueuer->expects(self::never())->method('enqueueRemoval');
         $this->orderEnqueuer->expects(self::once())->method('enqueue')->with($order, isInRealTime: true);
 
         $this->subscriberNoCarts->onOrderPostComplete(new GenericEvent($order));

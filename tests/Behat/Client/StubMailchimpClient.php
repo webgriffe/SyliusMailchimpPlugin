@@ -25,10 +25,14 @@ final class StubMailchimpClient implements MailchimpClientInterface
     /** @var array<array{storeId: string, cart: Cart}> */
     private static array $upsertCartCalls = [];
 
+    /** @var array<array{storeId: string, cartId: string}> */
+    private static array $removeCartCalls = [];
+
     public function reset(): void
     {
         self::$upsertMemberCalls = [];
         self::$upsertCartCalls = [];
+        self::$removeCartCalls = [];
     }
 
     /** @return array<array{listId: string, member: Member}> */
@@ -41,6 +45,12 @@ final class StubMailchimpClient implements MailchimpClientInterface
     public function getUpsertCartCalls(): array
     {
         return self::$upsertCartCalls;
+    }
+
+    /** @return array<array{storeId: string, cartId: string}> */
+    public function getRemoveCartCalls(): array
+    {
+        return self::$removeCartCalls;
     }
 
     #[\Override]
@@ -102,6 +112,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function removeCart(string $storeId, string $cartId): void
     {
+        self::$removeCartCalls[] = ['storeId' => $storeId, 'cartId' => $cartId];
     }
 
     #[\Override]

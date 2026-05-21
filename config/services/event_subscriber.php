@@ -7,6 +7,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
+use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CartSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CustomerSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\OrderSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\ProductSubscriber;
@@ -33,6 +34,11 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(ProductSubscriber::class)
         ->arg('$productEnqueuer', service(ProductEnqueuerInterface::class))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->tag('kernel.event_subscriber');
+
+    $services->set(CartSubscriber::class)
+        ->arg('$cartEnqueuer', service(CartEnqueuerInterface::class))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('kernel.event_subscriber');
 };

@@ -43,12 +43,6 @@ final class OrderSubscriber implements EventSubscriberInterface
             'state' => $state,
         ]);
 
-        if ($state === OrderInterface::STATE_CART) {
-            $this->cartEnqueuer->enqueue($order);
-
-            return;
-        }
-
         if ($this->sendUnpaidOrdersAsCarts && $state === OrderInterface::STATE_NEW) {
             $this->cartEnqueuer->enqueue($order);
         }
@@ -62,7 +56,6 @@ final class OrderSubscriber implements EventSubscriberInterface
         }
 
         $this->logger->debug('[Mailchimp] onOrderPostComplete: order #{id}.', ['id' => $order->getId()]);
-        $this->cartEnqueuer->enqueueRemoval($order);
         $this->orderEnqueuer->enqueue($order, isInRealTime: true);
     }
 }
