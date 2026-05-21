@@ -144,6 +144,39 @@ final class OrderMapperTest extends TestCase
         $this->assertCount(0, $mapped->lines);
     }
 
+    public function testMapsOrderWithCartId(): void
+    {
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('x@example.com');
+
+        $order = new Order();
+        self::setId($order, 10);
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
+        $order->setMailchimpCartId('10');
+
+        $mapped = $this->mapper->map($order);
+
+        $this->assertSame('10', $mapped->cartId);
+    }
+
+    public function testMapsOrderWithoutCartIdWhenNotSet(): void
+    {
+        $customer = new Customer();
+        self::setId($customer, 1);
+        $customer->setEmail('x@example.com');
+
+        $order = new Order();
+        self::setId($order, 10);
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
+
+        $mapped = $this->mapper->map($order);
+
+        $this->assertNull($mapped->cartId);
+    }
+
     private static function setId(object $entity, int $id): void
     {
         $ref = new \ReflectionProperty($entity, 'id');

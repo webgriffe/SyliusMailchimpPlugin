@@ -9,6 +9,7 @@ use Sylius\Component\Core\Model\AdjustmentInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\OrderItemInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
+use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Address;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Order;
@@ -51,6 +52,7 @@ final class OrderMapper
             shippingAddress: $this->mapAddress($order->getShippingAddress()),
             processedAt: $order->getCheckoutCompletedAt(),
             isInRealTime: $isInRealTime,
+            cartId: $order instanceof MailchimpOrderAwareInterface ? $order->getMailchimpCartId() : null,
         );
     }
 

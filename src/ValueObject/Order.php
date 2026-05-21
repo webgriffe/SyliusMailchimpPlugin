@@ -20,6 +20,7 @@ final class Order
         public readonly ?Address $shippingAddress = null,
         public readonly ?\DateTimeInterface $processedAt = null,
         public readonly bool $isInRealTime = false,
+        public readonly ?string $cartId = null,
     ) {
     }
 }

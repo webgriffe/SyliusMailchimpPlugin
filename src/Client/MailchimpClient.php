@@ -383,6 +383,10 @@ final class MailchimpClient implements MailchimpClientInterface
             $payload['processed_at_foreign'] = $order->processedAt->format(\DateTimeInterface::ATOM);
         }
 
+        if ($order->cartId !== null) {
+            $payload['cart_id'] = $order->cartId;
+        }
+
         $this->upsertEcommerceResource(
             sprintf('%secommerce/stores/%s/orders/%s', $this->baseUrl, $storeId, $order->id),
             $payload,
