@@ -1,6 +1,26 @@
 default:
     suites:
-        webgriffe_mailchimp:
+        webgriffe_mailchimp_registering:
+            contexts:
+                - sylius.behat.context.hook.doctrine_orm
+                - sylius.behat.context.hook.session
+                - sylius.behat.context.setup.channel
+                - sylius.behat.context.setup.locale
+                - sylius.behat.context.setup.user
+                - sylius.behat.context.setup.shop_security
+
+                - sylius.behat.context.transform.shared_storage
+                - sylius.behat.context.transform.lexical
+
+                - sylius.behat.context.ui.shop.locale
+                - sylius.behat.context.ui.shop.registration
+
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpRegistrationContext
+            filters:
+                tags: "@mailchimp&&@registering"
+
+        webgriffe_mailchimp_cart:
             contexts:
                 - sylius.behat.context.hook.doctrine_orm
                 - sylius.behat.context.hook.session
@@ -13,11 +33,39 @@ default:
                 - sylius.behat.context.transform.lexical
 
                 - sylius.behat.context.ui.shop.locale
-                - sylius.behat.context.ui.shop.registration
                 - sylius.behat.context.ui.shop.cart
 
                 - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext
-                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpRegistrationContext
                 - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpCartContext
             filters:
-                tags: "@mailchimp&&@ui"
+                tags: "@mailchimp&&@cart"
+
+        webgriffe_mailchimp_order:
+            contexts:
+                - sylius.behat.context.hook.doctrine_orm
+                - sylius.behat.context.hook.session
+                - sylius.behat.context.setup.channel
+                - sylius.behat.context.setup.locale
+                - sylius.behat.context.setup.product
+                - sylius.behat.context.setup.user
+                - sylius.behat.context.setup.shop_security
+                - sylius.behat.context.setup.cart
+                - sylius.behat.context.setup.shipping
+                - sylius.behat.context.setup.payment
+                - sylius.behat.context.setup.checkout.address
+                - sylius.behat.context.setup.checkout
+
+                - sylius.behat.context.transform.shared_storage
+                - sylius.behat.context.transform.product
+                - sylius.behat.context.transform.lexical
+                - sylius.behat.context.transform.shipping_method
+                - sylius.behat.context.transform.payment
+
+                - sylius.behat.context.ui.shop.locale
+                - sylius.behat.context.ui.shop.checkout.complete
+                - sylius.behat.context.ui.shop.checkout.thank_you
+
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpOrderContext
+            filters:
+                tags: "@mailchimp&&@order"

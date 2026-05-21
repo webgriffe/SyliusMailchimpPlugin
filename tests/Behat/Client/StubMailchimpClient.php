@@ -28,11 +28,19 @@ final class StubMailchimpClient implements MailchimpClientInterface
     /** @var array<array{storeId: string, cartId: string}> */
     private static array $removeCartCalls = [];
 
+    /** @var array<array{storeId: string, order: Order}> */
+    private static array $upsertOrderCalls = [];
+
+    /** @var array<array{storeId: string, orderId: string}> */
+    private static array $removeOrderCalls = [];
+
     public function reset(): void
     {
         self::$upsertMemberCalls = [];
         self::$upsertCartCalls = [];
         self::$removeCartCalls = [];
+        self::$upsertOrderCalls = [];
+        self::$removeOrderCalls = [];
     }
 
     /** @return array<array{listId: string, member: Member}> */
@@ -51,6 +59,28 @@ final class StubMailchimpClient implements MailchimpClientInterface
     public function getRemoveCartCalls(): array
     {
         return self::$removeCartCalls;
+    }
+
+    /** @return array<array{storeId: string, order: Order}> */
+    public function getUpsertOrderCalls(): array
+    {
+        return self::$upsertOrderCalls;
+    }
+
+    /** @return array<array{storeId: string, orderId: string}> */
+    public function getRemoveOrderCalls(): array
+    {
+        return self::$removeOrderCalls;
+    }
+
+    public function getLastUpsertOrderCall(): ?Order
+    {
+        $calls = self::$upsertOrderCalls;
+        if ($calls === []) {
+            return null;
+        }
+
+        return $calls[array_key_last($calls)]['order'];
     }
 
     #[\Override]
@@ -118,11 +148,13 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertOrder(string $storeId, Order $order): void
     {
+        self::$upsertOrderCalls[] = ['storeId' => $storeId, 'order' => $order];
     }
 
     #[\Override]
     public function removeOrder(string $storeId, string $orderId): void
     {
+        self::$removeOrderCalls[] = ['storeId' => $storeId, 'orderId' => $orderId];
     }
 
     #[\Override]

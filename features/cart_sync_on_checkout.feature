@@ -1,4 +1,4 @@
-@mailchimp @ui
+@mailchimp @cart
 Feature: Cart synchronization with Mailchimp
     In order to target customers with abandoned cart campaigns
     As an e-commerce store

@@ -1,4 +1,4 @@
-@mailchimp @ui
+@mailchimp @registering
 Feature: Mailchimp newsletter synchronization during customer registration
     In order to respect customer preferences and privacy
     As a visitor
