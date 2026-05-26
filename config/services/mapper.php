@@ -31,7 +31,9 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ProductVariantMapper::class);
 
     $services->set(ProductMapper::class)
-        ->arg('$productVariantMapper', service(ProductVariantMapper::class));
+        ->arg('$productVariantMapper', service(ProductVariantMapper::class))
+        ->arg('$router', service('router'))
+        ->arg('$imagineFilterService', service('liip_imagine.service.filter'));
 
     $services->set(CartMapper::class)
         ->arg('$customerMapper', service(EcommerceCustomerMapper::class));

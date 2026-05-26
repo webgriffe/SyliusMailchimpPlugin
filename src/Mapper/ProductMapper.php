@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Webgriffe\SyliusMailchimpPlugin\Mapper;
 
+use Liip\ImagineBundle\Service\FilterService;
 use Sylius\Component\Core\Model\ChannelInterface;
+use Sylius\Component\Core\Model\ProductImageInterface;
 use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
 
@@ -14,6 +17,8 @@ final class ProductMapper
 {
     public function __construct(
         private readonly ProductVariantMapper $productVariantMapper,
+        private readonly UrlGeneratorInterface $router,
+        private readonly FilterService $imagineFilterService,
     ) {
     }
 
@@ -21,9 +26,23 @@ final class ProductMapper
     {
         $translation = $product->getTranslation($locale);
         $productId = IdSanitizer::sanitize((string) $product->getCode());
-        $channelHostname = rtrim((string) $channel->getHostname(), '/');
         $slug = $translation->getSlug() ?? '';
-        $url = $slug !== '' ? sprintf('%s/products/%s', $channelHostname, $slug) : $channelHostname;
+        $url = $slug !== ''
+            ? $this->router->generate(
+                'sylius_shop_product_show',
+                ['slug' => $slug, '_locale' => $locale],
+                UrlGeneratorInterface::ABSOLUTE_URL,
+            )
+            : (string) $channel->getHostname();
+
+        $imageUrl = '';
+        $firstImage = $product->getImages()->first();
+        if ($firstImage instanceof ProductImageInterface) {
+            $path = $firstImage->getPath();
+            if ($path !== null && $path !== '') {
+                $imageUrl = $this->imagineFilterService->getUrlOfFilteredImage($path, 'sylius_shop_product_large_thumbnail');
+            }
+        }
 
         $variants = [];
         foreach ($product->getVariants() as $variant) {
@@ -38,6 +57,7 @@ final class ProductMapper
             url: $url,
             variants: $variants,
             description: (string) $translation->getDescription(),
+            imageUrl: $imageUrl,
         );
     }
 }
