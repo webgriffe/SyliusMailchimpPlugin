@@ -14,13 +14,16 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
-use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 final class CartEnqueuer implements CartEnqueuerInterface
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
         private readonly LoggerInterface $logger,
+        private readonly AudienceProviderInterface $audienceProvider,
+        private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
     ) {
     }
 
@@ -72,7 +75,8 @@ final class CartEnqueuer implements CartEnqueuerInterface
             return;
         }
 
-        $storeId = IdSanitizer::sanitize((string) $channel->getCode());
+        $audience = $this->audienceProvider->getAudience($channel, $order->getLocaleCode());
+        $storeId = $this->storeIdentifierResolver->resolve($audience);
         $this->logger->debug('[Mailchimp] Dispatching CartRemove for cart {cartId} in store {store}.', ['cartId' => $cartId, 'store' => $storeId]);
         $this->messageBus->dispatch(new CartRemove($storeId, $cartId), [new DelayStamp(1000)]);
     }

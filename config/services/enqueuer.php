@@ -14,7 +14,8 @@ use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuerInterface;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -28,7 +29,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(StoreEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
-        ->arg('$storeMapper', service(StoreMapper::class))
+        ->arg('$audienceProvider', service(AudienceProviderInterface::class))
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
         ->arg('$logger', service('monolog.logger.mailchimp'));
     $services->alias(StoreEnqueuerInterface::class, StoreEnqueuer::class);
 
@@ -39,12 +41,16 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(CartEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
-        ->arg('$logger', service('monolog.logger.mailchimp'));
+        ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->arg('$audienceProvider', service(AudienceProviderInterface::class))
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class));
     $services->alias(CartEnqueuerInterface::class, CartEnqueuer::class);
 
     $services->set(OrderEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
-        ->arg('$logger', service('monolog.logger.mailchimp'));
+        ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->arg('$audienceProvider', service(AudienceProviderInterface::class))
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class));
     $services->alias(OrderEnqueuerInterface::class, OrderEnqueuer::class);
 };
 

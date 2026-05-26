@@ -14,17 +14,31 @@ use Symfony\Component\EventDispatcher\GenericEvent;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\ProductSubscriber;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class ProductSubscriberTest extends TestCase
 {
     private MockObject&ProductEnqueuerInterface $productEnqueuer;
+
+    private MockObject&AudienceProviderInterface $audienceProvider;
+
+    private MockObject&StoreIdentifierResolverInterface $storeIdentifierResolver;
 
     private ProductSubscriber $subscriber;
 
     protected function setUp(): void
     {
         $this->productEnqueuer = $this->createMock(ProductEnqueuerInterface::class);
-        $this->subscriber = new ProductSubscriber($this->productEnqueuer, new NullLogger());
+        $this->audienceProvider = $this->createMock(AudienceProviderInterface::class);
+        $this->storeIdentifierResolver = $this->createMock(StoreIdentifierResolverInterface::class);
+        $this->subscriber = new ProductSubscriber(
+            $this->productEnqueuer,
+            new NullLogger(),
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
+        );
     }
 
     public function testGetSubscribedEvents(): void
@@ -72,11 +86,18 @@ final class ProductSubscriberTest extends TestCase
     {
         $channel1 = new Channel();
         $channel1->setCode('CHANNEL_1');
+        $channel1->setMailchimpAudienceId('aud1');
         $channel2 = new Channel();
         $channel2->setCode('CHANNEL_2');
+        $channel2->setMailchimpAudienceId('aud2');
 
         $product = $this->createMock(ProductInterface::class);
         $product->method('getChannels')->willReturn(new ArrayCollection([$channel1, $channel2]));
+
+        $this->audienceProvider->method('getAudience')
+            ->willReturnCallback(static fn (Channel $ch) => new Audience((string) $ch->getMailchimpAudienceId(), $ch));
+        $this->storeIdentifierResolver->method('resolve')
+            ->willReturnCallback(static fn (Audience $a) => sprintf('%s-%s', (string) $a->channel->getCode(), $a->id));
 
         $this->productEnqueuer->expects(self::exactly(2))->method('buildProductId')->with($product)->willReturn('prod-123');
         $this->productEnqueuer->expects(self::exactly(2))->method('enqueueRemoval');
@@ -91,6 +112,7 @@ final class ProductSubscriberTest extends TestCase
         $product = $this->createMock(ProductInterface::class);
         $product->method('getChannels')->willReturn(new ArrayCollection([$channel]));
 
+        $this->audienceProvider->expects(self::never())->method('getAudience');
         $this->productEnqueuer->expects(self::never())->method('enqueueRemoval');
 
         $this->subscriber->onProductPreDelete(new GenericEvent($product));

@@ -14,7 +14,8 @@ final class Store
         public readonly string $currencyCode,
         public readonly string $primaryLocale,
         public readonly string $listId = '',
-        public readonly string $timezone = 'Europe/Rome',
+        public readonly string $platform = 'Sylius',
+        public readonly string $timezone = '',
         public readonly string $phone = '',
         public readonly string $address = '',
     ) {

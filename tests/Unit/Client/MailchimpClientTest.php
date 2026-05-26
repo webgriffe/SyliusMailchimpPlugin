@@ -236,7 +236,7 @@ final class MailchimpClientTest extends TestCase
             });
 
         $store = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Store('store-1', 'My Shop', 'myshop.com', 'admin@myshop.com', 'EUR', 'it_IT', 'list-1');
-        $this->client->upsertStore('store-1', $store);
+        $this->client->upsertStore($store);
     }
 
     public function test_upsert_store_patches_on_existing(): void
@@ -254,7 +254,7 @@ final class MailchimpClientTest extends TestCase
             });
 
         $store = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Store('store-1', 'My Shop', 'myshop.com', 'admin@myshop.com', 'EUR', 'it_IT');
-        $this->client->upsertStore('store-1', $store);
+        $this->client->upsertStore($store);
     }
 
     public function test_upsert_product_includes_variants(): void

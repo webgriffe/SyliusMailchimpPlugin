@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\MessageHandler\Cart;
 
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Channel\Repository\ChannelRepositoryInterface;
@@ -15,15 +16,16 @@ use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartUpdateHandler;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class CartHandlersTest extends TestCase
 {
@@ -37,9 +39,11 @@ final class CartHandlersTest extends TestCase
 
     private CartMapper $cartMapper;
 
-    private StoreMapper $storeMapper;
+    private MockObject&AudienceProviderInterface $audienceProvider;
 
-    private ProductMapper $productMapper;
+    private MockObject&StoreIdentifierResolverInterface $storeIdentifierResolver;
+
+    private ProductMapperInterface $productMapper;
 
     protected function setUp(): void
     {
@@ -48,16 +52,19 @@ final class CartHandlersTest extends TestCase
         $this->mailchimpClient = $this->createMock(MailchimpClientInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->cartMapper = new CartMapper(new EcommerceCustomerMapper());
-        $this->storeMapper = new StoreMapper();
-        $this->productMapper = new ProductMapper(new ProductVariantMapper());
+        $this->audienceProvider = $this->createMock(AudienceProviderInterface::class);
+        $this->storeIdentifierResolver = $this->createMock(StoreIdentifierResolverInterface::class);
+        $this->storeIdentifierResolver->method('resolve')->willReturn('WEB-abc123');
+        $this->productMapper = $this->createMock(ProductMapperInterface::class);
     }
 
     public function testCartCreateCallsUpsertCartAndPersistsId(): void
     {
-        $order = $this->createOrder(orderId: 5);
         $channel = $this->createChannel('WEB');
+        $order = $this->createOrder(orderId: 5);
         $this->orderRepository->method('find')->with(5)->willReturn($order);
         $this->channelRepository->method('find')->with(1)->willReturn($channel);
+        $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertCart');
         $this->entityManager->expects($this->once())->method('flush');
 
@@ -65,7 +72,8 @@ final class CartHandlersTest extends TestCase
             $this->orderRepository,
             $this->channelRepository,
             $this->cartMapper,
-            $this->storeMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
             $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
@@ -86,7 +94,8 @@ final class CartHandlersTest extends TestCase
             $this->orderRepository,
             $this->channelRepository,
             $this->cartMapper,
-            $this->storeMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
             $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
@@ -97,17 +106,19 @@ final class CartHandlersTest extends TestCase
 
     public function testCartUpdateCallsUpsertCart(): void
     {
-        $order = $this->createOrder(orderId: 5);
         $channel = $this->createChannel('WEB');
+        $order = $this->createOrder(orderId: 5);
         $this->orderRepository->method('find')->willReturn($order);
         $this->channelRepository->method('find')->willReturn($channel);
+        $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertCart');
 
         $handler = new CartUpdateHandler(
             $this->orderRepository,
             $this->channelRepository,
             $this->cartMapper,
-            $this->storeMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
             $this->productMapper,
             $this->mailchimpClient,
             $this->entityManager,
@@ -156,6 +167,7 @@ final class CartHandlersTest extends TestCase
         $channel->setName('Test Store');
         $channel->setHostname('https://example.com');
         $channel->setContactEmail('test@example.com');
+        $channel->setMailchimpAudienceId('abc123');
 
         return $channel;
     }

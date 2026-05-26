@@ -7,11 +7,12 @@ namespace Webgriffe\SyliusMailchimpPlugin\Provider;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class ChannelAudienceProvider implements AudienceProviderInterface
 {
     #[\Override]
-    public function getAudienceId(ChannelInterface $channel): string
+    public function getAudience(ChannelInterface $channel, ?string $localeCode = null): Audience
     {
         if (!$channel instanceof ChannelMailchimpAwareInterface) {
             throw new AudienceNotFoundException(sprintf(
@@ -29,6 +30,6 @@ final class ChannelAudienceProvider implements AudienceProviderInterface
             ));
         }
 
-        return $audienceId;
+        return new Audience($audienceId, $channel);
     }
 }

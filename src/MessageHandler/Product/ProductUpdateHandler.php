@@ -11,10 +11,11 @@ use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Repository\ProductRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 #[AsMessageHandler]
 final class ProductUpdateHandler
@@ -22,8 +23,9 @@ final class ProductUpdateHandler
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly ChannelRepositoryInterface $channelRepository,
-        private readonly ProductMapper $productMapper,
-        private readonly StoreMapper $storeMapper,
+        private readonly ProductMapperInterface $productMapper,
+        private readonly AudienceProviderInterface $audienceProvider,
+        private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
         private readonly MailchimpClientInterface $mailchimpClient,
         private readonly LoggerInterface $logger,
     ) {
@@ -45,9 +47,10 @@ final class ProductUpdateHandler
             return;
         }
 
-        $store = $this->storeMapper->map($channel);
+        $audience = $this->audienceProvider->getAudience($channel, $message->locale);
+        $storeId = $this->storeIdentifierResolver->resolve($audience);
         $mappedProduct = $this->productMapper->map($product, $channel, $message->locale);
-        $this->mailchimpClient->upsertProduct($store->id, $mappedProduct);
-        $this->logger->info('[Mailchimp] Product #{id} updated in store {store}.', ['id' => $message->productId, 'store' => $store->id]);
+        $this->mailchimpClient->upsertProduct($storeId, $mappedProduct);
+        $this->logger->info('[Mailchimp] Product #{id} updated in store {store}.', ['id' => $message->productId, 'store' => $storeId]);
     }
 }

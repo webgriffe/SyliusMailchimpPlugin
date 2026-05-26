@@ -13,6 +13,8 @@ use Webgriffe\SyliusMailchimpPlugin\Resolver\MemberStatusResolver;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\MemberStatusResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\MergeFieldsProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\MergeFieldsResolver;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolver;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\TagsResolver;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\TagsResolverInterface;
 
@@ -27,6 +29,10 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$channelContext', service('sylius.context.channel'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class));
     $services->alias(AudienceContextInterface::class, AudienceContext::class);
+
+    // Store identifier
+    $services->set(StoreIdentifierResolver::class);
+    $services->alias(StoreIdentifierResolverInterface::class, StoreIdentifierResolver::class);
 
     // Member status
     $services->set(MemberStatusResolver::class)

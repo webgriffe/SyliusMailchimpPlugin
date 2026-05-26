@@ -176,7 +176,7 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertStore(string $storeId, Store $store): void
+    public function upsertStore(Store $store): void
     {
         $payload = [
             'id' => $store->id,
@@ -196,7 +196,7 @@ final class MailchimpClient implements MailchimpClientInterface
             $payload['address'] = ['address1' => $store->address];
         }
 
-        $getUrl = sprintf('%secommerce/stores/%s', $this->baseUrl, $storeId);
+        $getUrl = sprintf('%secommerce/stores/%s', $this->baseUrl, $store->id);
         $this->logger->debug('[Mailchimp] GET {url}', ['url' => $getUrl]);
 
         $getResponse = $this->httpClient->request('GET', $getUrl, [
@@ -227,10 +227,10 @@ final class MailchimpClient implements MailchimpClientInterface
 
         $statusCode = $response->getStatusCode();
         if ($statusCode >= 400) {
-            $this->handleErrorResponse($statusCode, $response->getContent(false), $storeId);
+            $this->handleErrorResponse($statusCode, $response->getContent(false), $store->id);
         }
 
-        $this->logger->info('[Mailchimp] Store {id} upserted.', ['id' => $storeId]);
+        $this->logger->info('[Mailchimp] Store {id} upserted.', ['id' => $store->id]);
     }
 
     #[\Override]

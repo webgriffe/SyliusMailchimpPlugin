@@ -15,6 +15,7 @@ final readonly class MailchimpConsoleCartContext implements Context
     public function __construct(private KernelInterface $kernel, private SyncCartsCommand $command)
     {
     }
+
     /**
      * @When I synchronize carts with Mailchimp
      */

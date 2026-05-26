@@ -132,7 +132,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertStore(string $storeId, Store $store): void
+    public function upsertStore(Store $store): void
     {
     }
 

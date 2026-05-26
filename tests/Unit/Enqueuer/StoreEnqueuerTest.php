@@ -4,30 +4,47 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Enqueuer;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 use Webgriffe\SyliusMailchimpPlugin\Message\Store\StoreCreate;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class StoreEnqueuerTest extends TestCase
 {
     private MessageBusInterface $messageBus;
+
+    private MockObject&AudienceProviderInterface $audienceProvider;
+
+    private MockObject&StoreIdentifierResolverInterface $storeIdentifierResolver;
 
     private StoreEnqueuer $enqueuer;
 
     protected function setUp(): void
     {
         $this->messageBus = $this->createMock(MessageBusInterface::class);
-        $this->enqueuer = new StoreEnqueuer($this->messageBus, new StoreMapper(), new NullLogger());
+        $this->audienceProvider = $this->createMock(AudienceProviderInterface::class);
+        $this->storeIdentifierResolver = $this->createMock(StoreIdentifierResolverInterface::class);
+        $this->enqueuer = new StoreEnqueuer(
+            $this->messageBus,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
+            new NullLogger(),
+        );
     }
 
     public function testEnqueueDispatchesStoreCreate(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
+        $audience = new Audience('aud123', $channel);
+        $this->audienceProvider->method('getAudience')->willReturn($audience);
+        $this->storeIdentifierResolver->method('resolve')->willReturn('WEB-aud123');
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -58,6 +75,7 @@ final class StoreEnqueuerTest extends TestCase
         $channel->setName('Test Store');
         $channel->setHostname('https://example.com');
         $channel->setContactEmail('test@example.com');
+        $channel->setMailchimpAudienceId('aud123');
 
         return $channel;
     }

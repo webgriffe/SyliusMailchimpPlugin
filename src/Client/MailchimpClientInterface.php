@@ -27,7 +27,7 @@ interface MailchimpClientInterface
     public function updateMemberTags(string $listId, string $subscriberHash, array $tags): void;
 
     // Stores (e-commerce)
-    public function upsertStore(string $storeId, Store $store): void;
+    public function upsertStore(Store $store): void;
 
     public function removeStore(string $storeId): void;
 

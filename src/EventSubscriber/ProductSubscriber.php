@@ -11,13 +11,16 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
-use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 final class ProductSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly ProductEnqueuerInterface $productEnqueuer,
         private readonly LoggerInterface $logger,
+        private readonly AudienceProviderInterface $audienceProvider,
+        private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
     ) {
     }
 
@@ -66,7 +69,9 @@ final class ProductSubscriber implements EventSubscriberInterface
                 continue;
             }
 
-            $storeId = IdSanitizer::sanitize((string) $channel->getCode());
+            $localeCode = $channel->getDefaultLocale()?->getCode();
+            $audience = $this->audienceProvider->getAudience($channel, $localeCode);
+            $storeId = $this->storeIdentifierResolver->resolve($audience);
             $productId = $this->productEnqueuer->buildProductId($product);
             $this->productEnqueuer->enqueueRemoval($storeId, $productId);
         }

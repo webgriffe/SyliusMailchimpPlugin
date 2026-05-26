@@ -9,6 +9,7 @@ use Sylius\Component\Core\Model\ChannelInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Provider\ChannelAudienceProvider;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class ChannelAudienceProviderTest extends TestCase
 {
@@ -26,7 +27,7 @@ final class ChannelAudienceProviderTest extends TestCase
         $channel = $this->createMock(ChannelInterface::class);
         $channel->method('getCode')->willReturn('WEB');
 
-        $this->provider->getAudienceId($channel);
+        $this->provider->getAudience($channel);
     }
 
     public function test_throws_exception_when_audience_id_is_null(): void
@@ -36,7 +37,7 @@ final class ChannelAudienceProviderTest extends TestCase
         $channel = new Channel();
         $channel->setMailchimpAudienceId(null);
 
-        $this->provider->getAudienceId($channel);
+        $this->provider->getAudience($channel);
     }
 
     public function test_throws_exception_when_audience_id_is_empty_string(): void
@@ -46,16 +47,28 @@ final class ChannelAudienceProviderTest extends TestCase
         $channel = new Channel();
         $channel->setMailchimpAudienceId('');
 
-        $this->provider->getAudienceId($channel);
+        $this->provider->getAudience($channel);
     }
 
-    public function test_returns_audience_id_when_configured(): void
+    public function test_returns_audience_when_configured(): void
     {
         $channel = new Channel();
         $channel->setMailchimpAudienceId('abc123');
 
-        $result = $this->provider->getAudienceId($channel);
+        $audience = $this->provider->getAudience($channel);
 
-        $this->assertSame('abc123', $result);
+        $this->assertInstanceOf(Audience::class, $audience);
+        $this->assertSame('abc123', $audience->id);
+        $this->assertSame($channel, $audience->channel);
+    }
+
+    public function test_locale_code_is_accepted_but_ignored(): void
+    {
+        $channel = new Channel();
+        $channel->setMailchimpAudienceId('abc123');
+
+        $audience = $this->provider->getAudience($channel, 'it_IT');
+
+        $this->assertSame('abc123', $audience->id);
     }
 }

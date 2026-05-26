@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\MessageHandler\Product;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Sylius\Component\Channel\Repository\ChannelRepositoryInterface;
@@ -12,15 +13,17 @@ use Sylius\Component\Core\Model\ProductTranslation;
 use Sylius\Component\Core\Repository\ProductRepositoryInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductUpdateHandler;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product as ProductVO;
 
 final class ProductHandlersTest extends TestCase
 {
@@ -30,17 +33,22 @@ final class ProductHandlersTest extends TestCase
 
     private MailchimpClientInterface $mailchimpClient;
 
-    private ProductMapper $productMapper;
+    private MockObject&ProductMapperInterface $productMapper;
 
-    private StoreMapper $storeMapper;
+    private MockObject&AudienceProviderInterface $audienceProvider;
+
+    private MockObject&StoreIdentifierResolverInterface $storeIdentifierResolver;
 
     protected function setUp(): void
     {
         $this->productRepository = $this->createMock(ProductRepositoryInterface::class);
         $this->channelRepository = $this->createMock(ChannelRepositoryInterface::class);
         $this->mailchimpClient = $this->createMock(MailchimpClientInterface::class);
-        $this->productMapper = new ProductMapper(new ProductVariantMapper());
-        $this->storeMapper = new StoreMapper();
+        $this->productMapper = $this->createMock(ProductMapperInterface::class);
+        $this->productMapper->method('map')->willReturn(new ProductVO(id: 'PROD', title: 'Product', url: 'https://example.com'));
+        $this->audienceProvider = $this->createMock(AudienceProviderInterface::class);
+        $this->storeIdentifierResolver = $this->createMock(StoreIdentifierResolverInterface::class);
+        $this->storeIdentifierResolver->method('resolve')->willReturn('WEB-abc123');
     }
 
     public function testProductCreateCallsUpsertProduct(): void
@@ -49,13 +57,15 @@ final class ProductHandlersTest extends TestCase
         $channel = $this->createChannel('WEB');
         $this->productRepository->method('find')->with(10)->willReturn($product);
         $this->channelRepository->method('find')->with(1)->willReturn($channel);
+        $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertProduct');
 
         $handler = new ProductCreateHandler(
             $this->productRepository,
             $this->channelRepository,
             $this->productMapper,
-            $this->storeMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
             $this->mailchimpClient,
             new NullLogger(),
         );
@@ -71,7 +81,8 @@ final class ProductHandlersTest extends TestCase
             $this->productRepository,
             $this->channelRepository,
             $this->productMapper,
-            $this->storeMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
             $this->mailchimpClient,
             new NullLogger(),
         );
@@ -84,13 +95,15 @@ final class ProductHandlersTest extends TestCase
         $channel = $this->createChannel('WEB');
         $this->productRepository->method('find')->willReturn($product);
         $this->channelRepository->method('find')->willReturn($channel);
+        $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertProduct');
 
         $handler = new ProductUpdateHandler(
             $this->productRepository,
             $this->channelRepository,
             $this->productMapper,
-            $this->storeMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
             $this->mailchimpClient,
             new NullLogger(),
         );
@@ -139,6 +152,7 @@ final class ProductHandlersTest extends TestCase
         $channel->setName('Test Store');
         $channel->setHostname('https://example.com');
         $channel->setContactEmail('test@example.com');
+        $channel->setMailchimpAudienceId('abc123');
 
         return $channel;
     }

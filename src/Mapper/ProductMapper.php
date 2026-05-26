@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
 
-final class ProductMapper
+final class ProductMapper implements ProductMapperInterface
 {
     public function __construct(
         private readonly ProductVariantMapperInterface $productVariantMapper,

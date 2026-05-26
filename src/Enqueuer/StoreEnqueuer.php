@@ -7,15 +7,17 @@ namespace Webgriffe\SyliusMailchimpPlugin\Enqueuer;
 use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 use Webgriffe\SyliusMailchimpPlugin\Message\Store\StoreCreate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 final class StoreEnqueuer implements StoreEnqueuerInterface
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
-        private readonly StoreMapper $storeMapper,
+        private readonly AudienceProviderInterface $audienceProvider,
+        private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -30,10 +32,11 @@ final class StoreEnqueuer implements StoreEnqueuerInterface
             return;
         }
 
-        $store = $this->storeMapper->map($channel);
+        $audience = $this->audienceProvider->getAudience($channel);
+        $storeId = $this->storeIdentifierResolver->resolve($audience);
         $this->logger->info('[Mailchimp] Enqueueing store sync for channel #{id} (store {store}).', [
             'id' => $channelId,
-            'store' => $store->id,
+            'store' => $storeId,
         ]);
         $this->messageBus->dispatch(new StoreCreate($channelId));
     }

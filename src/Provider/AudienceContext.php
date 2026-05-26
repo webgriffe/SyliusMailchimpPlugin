@@ -21,6 +21,6 @@ final class AudienceContext implements AudienceContextInterface
         /** @var ChannelInterface $channel */
         $channel = $this->channelContext->getChannel();
 
-        return $this->audienceProvider->getAudienceId($channel);
+        return $this->audienceProvider->getAudience($channel)->id;
     }
 }
