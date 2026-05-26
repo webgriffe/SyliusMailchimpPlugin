@@ -30,11 +30,11 @@ default:
                     symfony: ~
                 chromedriver:
                     chrome:
-                        api_url: http://127.0.0.1:9222
+                        api_url: "%env(BEHAT_CHROME_URL)%"
                         validate_certificate: false
                 chrome_headless_second_session:
                     chrome:
-                        api_url: http://127.0.0.1:9222
+                        api_url: "%env(BEHAT_CHROME_URL)%"
                         validate_certificate: false
             show_auto: false
 

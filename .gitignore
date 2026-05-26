@@ -10,8 +10,10 @@
 
 /.phpunit.result.cache
 /behat.yml
+/behat.sh
 /phpunit.xml
 /compose.override.yml
+/compose.test.yml
 .phpunit.result.cache
 
 # Symfony CLI https://symfony.com/doc/current/setup/symfony_server.html#different-php-settings-per-project
