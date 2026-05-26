@@ -12,70 +12,86 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\Order;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Store;
 
+/**
+ * Tracks all calls in a temporary file so they are visible across processes
+ * (e.g. PHP-FPM handling Chrome requests vs the Behat context runner).
+ */
 final class StubMailchimpClient implements MailchimpClientInterface
 {
-    /**
-     * Static so that calls recorded during the HTTP request kernel are visible
-     * to the Behat context kernel (FriendsOfBehat\SymfonyExtension uses two separate kernels).
-     *
-     * @var array<array{listId: string, member: Member}>
-     */
-    private static array $upsertMemberCalls = [];
+    private static function getCallsFile(): string
+    {
+        return sys_get_temp_dir() . '/mailchimp_stub_calls.ser';
+    }
 
-    /** @var array<array{storeId: string, cart: Cart}> */
-    private static array $upsertCartCalls = [];
+    private static function readCalls(): array
+    {
+        $file = self::getCallsFile();
+        if (!file_exists($file)) {
+            return self::emptyCallsArray();
+        }
 
-    /** @var array<array{storeId: string, cartId: string}> */
-    private static array $removeCartCalls = [];
+        $data = @unserialize((string) file_get_contents($file));
 
-    /** @var array<array{storeId: string, order: Order}> */
-    private static array $upsertOrderCalls = [];
+        return is_array($data) ? $data : self::emptyCallsArray();
+    }
 
-    /** @var array<array{storeId: string, orderId: string}> */
-    private static array $removeOrderCalls = [];
+    private static function writeCalls(array $calls): void
+    {
+        $file = self::getCallsFile();
+        $serialized = serialize($calls);
+        file_put_contents($file, $serialized, \LOCK_EX);
+        @chmod($file, 0666);
+    }
+
+    private static function emptyCallsArray(): array
+    {
+        return [
+            'upsertMember' => [],
+            'upsertCart' => [],
+            'removeCart' => [],
+            'upsertOrder' => [],
+            'removeOrder' => [],
+        ];
+    }
 
     public function reset(): void
     {
-        self::$upsertMemberCalls = [];
-        self::$upsertCartCalls = [];
-        self::$removeCartCalls = [];
-        self::$upsertOrderCalls = [];
-        self::$removeOrderCalls = [];
+        self::writeCalls(self::emptyCallsArray());
     }
 
     /** @return array<array{listId: string, member: Member}> */
     public function getUpsertMemberCalls(): array
     {
-        return self::$upsertMemberCalls;
+        return self::readCalls()['upsertMember'] ?? [];
     }
 
     /** @return array<array{storeId: string, cart: Cart}> */
     public function getUpsertCartCalls(): array
     {
-        return self::$upsertCartCalls;
+        return self::readCalls()['upsertCart'] ?? [];
     }
 
     /** @return array<array{storeId: string, cartId: string}> */
     public function getRemoveCartCalls(): array
     {
-        return self::$removeCartCalls;
+        return self::readCalls()['removeCart'] ?? [];
     }
 
     /** @return array<array{storeId: string, order: Order}> */
     public function getUpsertOrderCalls(): array
     {
-        return self::$upsertOrderCalls;
+        return self::readCalls()['upsertOrder'] ?? [];
     }
 
     /** @return array<array{storeId: string, orderId: string}> */
     public function getRemoveOrderCalls(): array
     {
-        return self::$removeOrderCalls;
+        return self::readCalls()['removeOrder'] ?? [];
     }
 
     public function getLastUpsertOrderCall(): ?Order
     {
-        $calls = self::$upsertOrderCalls;
+        $calls = self::readCalls()['upsertOrder'] ?? [];
         if ($calls === []) {
             return null;
         }
@@ -86,7 +102,9 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertMember(string $listId, Member $member): string
     {
-        self::$upsertMemberCalls[] = ['listId' => $listId, 'member' => $member];
+        $calls = self::readCalls();
+        $calls['upsertMember'][] = ['listId' => $listId, 'member' => $member];
+        self::writeCalls($calls);
 
         return md5(strtolower($member->emailAddress));
     }
@@ -136,25 +154,33 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertCart(string $storeId, Cart $cart): void
     {
-        self::$upsertCartCalls[] = ['storeId' => $storeId, 'cart' => $cart];
+        $calls = self::readCalls();
+        $calls['upsertCart'][] = ['storeId' => $storeId, 'cart' => $cart];
+        self::writeCalls($calls);
     }
 
     #[\Override]
     public function removeCart(string $storeId, string $cartId): void
     {
-        self::$removeCartCalls[] = ['storeId' => $storeId, 'cartId' => $cartId];
+        $calls = self::readCalls();
+        $calls['removeCart'][] = ['storeId' => $storeId, 'cartId' => $cartId];
+        self::writeCalls($calls);
     }
 
     #[\Override]
     public function upsertOrder(string $storeId, Order $order): void
     {
-        self::$upsertOrderCalls[] = ['storeId' => $storeId, 'order' => $order];
+        $calls = self::readCalls();
+        $calls['upsertOrder'][] = ['storeId' => $storeId, 'order' => $order];
+        self::writeCalls($calls);
     }
 
     #[\Override]
     public function removeOrder(string $storeId, string $orderId): void
     {
-        self::$removeOrderCalls[] = ['storeId' => $storeId, 'orderId' => $orderId];
+        $calls = self::readCalls();
+        $calls['removeOrder'][] = ['storeId' => $storeId, 'orderId' => $orderId];
+        self::writeCalls($calls);
     }
 
     #[\Override]

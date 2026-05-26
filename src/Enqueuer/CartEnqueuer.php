@@ -8,6 +8,7 @@ use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\DelayStamp;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartUpdate;
@@ -46,10 +47,10 @@ final class CartEnqueuer implements CartEnqueuerInterface
         }
 
         if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpCartId() !== null) {
-            $this->messageBus->dispatch(new CartUpdate($orderId, $channelId));
+            $this->messageBus->dispatch(new CartUpdate($orderId, $channelId), [new DelayStamp(1000)]);
             $this->logger->debug('[Mailchimp] Dispatched CartUpdate for order #{id}.', ['id' => $orderId]);
         } else {
-            $this->messageBus->dispatch(new CartCreate($orderId, $channelId));
+            $this->messageBus->dispatch(new CartCreate($orderId, $channelId), [new DelayStamp(1000)]);
             $this->logger->debug('[Mailchimp] Dispatched CartCreate for order #{id}.', ['id' => $orderId]);
         }
     }
@@ -73,6 +74,6 @@ final class CartEnqueuer implements CartEnqueuerInterface
 
         $storeId = IdSanitizer::sanitize((string) $channel->getCode());
         $this->logger->debug('[Mailchimp] Dispatching CartRemove for cart {cartId} in store {store}.', ['cartId' => $cartId, 'store' => $storeId]);
-        $this->messageBus->dispatch(new CartRemove($storeId, $cartId));
+        $this->messageBus->dispatch(new CartRemove($storeId, $cartId), [new DelayStamp(1000)]);
     }
 }
