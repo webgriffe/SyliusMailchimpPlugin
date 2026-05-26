@@ -7,16 +7,15 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 use Liip\ImagineBundle\Service\FilterService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Sylius\Component\Core\Model\ChannelPricing;
 use Sylius\Component\Core\Model\Product;
 use Sylius\Component\Core\Model\ProductImage;
 use Sylius\Component\Core\Model\ProductTranslation;
 use Sylius\Component\Core\Model\ProductVariant;
-use Sylius\Component\Product\Model\ProductVariantTranslation;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\ProductVariant as ProductVariantVO;
 
 final class ProductMapperTest extends TestCase
 {
@@ -28,11 +27,15 @@ final class ProductMapperTest extends TestCase
     /** @var FilterService&MockObject */
     private FilterService $imagineFilterService;
 
+    /** @var ProductVariantMapperInterface&MockObject */
+    private ProductVariantMapperInterface $productVariantMapper;
+
     protected function setUp(): void
     {
         $this->router = $this->createMock(UrlGeneratorInterface::class);
         $this->imagineFilterService = $this->createMock(FilterService::class);
-        $this->mapper = new ProductMapper(new ProductVariantMapper(), $this->router, $this->imagineFilterService);
+        $this->productVariantMapper = $this->createMock(ProductVariantMapperInterface::class);
+        $this->mapper = new ProductMapper($this->productVariantMapper, $this->router, $this->imagineFilterService);
     }
 
     public function testMapsProductWithVariants(): void
@@ -41,31 +44,22 @@ final class ProductMapperTest extends TestCase
         $channel->setCode('WEB');
         $channel->setHostname('https://example.com');
 
-        $pricing = new ChannelPricing();
-        $pricing->setChannelCode('WEB');
-        $pricing->setPrice(1999);
-
         $translation = new ProductTranslation();
         $translation->setLocale('en_US');
         $translation->setSlug('cool-tshirt');
         $translation->setName('Cool T-Shirt');
         $translation->setDescription('A cool t-shirt');
 
+        $variant = new ProductVariant();
+        $variant->setCode('TSHIRT-L');
+        $variant->setCurrentLocale('en_US');
+        $variant->setFallbackLocale('en_US');
+
         $product = new Product();
         $product->setCode('TSHIRT');
         $product->setCurrentLocale('en_US');
         $product->setFallbackLocale('en_US');
         $product->addTranslation($translation);
-
-        $variantTranslation = new ProductVariantTranslation();
-        $variantTranslation->setLocale('en_US');
-
-        $variant = new ProductVariant();
-        $variant->setCode('TSHIRT-L');
-        $variant->setCurrentLocale('en_US');
-        $variant->setFallbackLocale('en_US');
-        $variant->addTranslation($variantTranslation);
-        $variant->addChannelPricing($pricing);
         $product->addVariant($variant);
 
         $this->router
@@ -73,6 +67,9 @@ final class ProductMapperTest extends TestCase
             ->method('generate')
             ->with('sylius_shop_product_show', ['slug' => 'cool-tshirt', '_locale' => 'en_US'], UrlGeneratorInterface::ABSOLUTE_URL)
             ->willReturn('https://example.com/en_US/products/cool-tshirt');
+
+        $mappedVariant = new ProductVariantVO(id: 'TSHIRT-L', title: 'Cool T-Shirt (TSHIRT-L)', url: 'https://example.com/en_US/products/cool-tshirt');
+        $this->productVariantMapper->method('map')->willReturn($mappedVariant);
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 

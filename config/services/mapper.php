@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Sylius\Component\Core\Calculator\ProductVariantPricesCalculatorInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapper;
@@ -11,6 +12,7 @@ use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -28,7 +30,11 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(EcommerceCustomerMapper::class);
 
-    $services->set(ProductVariantMapper::class);
+    $services->set(ProductVariantMapper::class)
+        ->arg('$pricesCalculator', service(ProductVariantPricesCalculatorInterface::class))
+        ->arg('$imagineFilterService', service('liip_imagine.service.filter'));
+
+    $services->alias(ProductVariantMapperInterface::class, ProductVariantMapper::class);
 
     $services->set(ProductMapper::class)
         ->arg('$productVariantMapper', service(ProductVariantMapper::class))

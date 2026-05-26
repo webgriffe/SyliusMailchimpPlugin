@@ -16,7 +16,7 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
 final class ProductMapper
 {
     public function __construct(
-        private readonly ProductVariantMapper $productVariantMapper,
+        private readonly ProductVariantMapperInterface $productVariantMapper,
         private readonly UrlGeneratorInterface $router,
         private readonly FilterService $imagineFilterService,
     ) {
