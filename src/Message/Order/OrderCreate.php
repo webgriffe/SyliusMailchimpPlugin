@@ -8,7 +8,6 @@ final class OrderCreate
 {
     public function __construct(
         public readonly int $orderId,
-        public readonly int $channelId,
         public readonly bool $isInRealTime = false,
     ) {
     }

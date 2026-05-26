@@ -8,7 +8,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Channel\Repository\ChannelRepositoryInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
@@ -29,13 +28,11 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class OrderHandlersTest extends TestCase
 {
-    private OrderRepositoryInterface $orderRepository;
+    private MockObject&OrderRepositoryInterface $orderRepository;
 
-    private ChannelRepositoryInterface $channelRepository;
+    private MockObject&MailchimpClientInterface $mailchimpClient;
 
-    private MailchimpClientInterface $mailchimpClient;
-
-    private EntityManagerInterface $entityManager;
+    private MockObject&EntityManagerInterface $entityManager;
 
     private OrderMapper $orderMapper;
 
@@ -43,12 +40,11 @@ final class OrderHandlersTest extends TestCase
 
     private MockObject&StoreIdentifierResolverInterface $storeIdentifierResolver;
 
-    private ProductMapperInterface $productMapper;
+    private MockObject&ProductMapperInterface $productMapper;
 
     protected function setUp(): void
     {
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
-        $this->channelRepository = $this->createMock(ChannelRepositoryInterface::class);
         $this->mailchimpClient = $this->createMock(MailchimpClientInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->orderMapper = new OrderMapper(new EcommerceCustomerMapper());
@@ -61,25 +57,14 @@ final class OrderHandlersTest extends TestCase
     public function testOrderCreateCallsUpsertOrderAndPersistsId(): void
     {
         $channel = $this->createChannel('WEB');
-        $order = $this->createOrder(orderId: 42);
+        $order = $this->createOrder(orderId: 42, channel: $channel);
         $this->orderRepository->method('find')->with(42)->willReturn($order);
-        $this->channelRepository->method('find')->with(1)->willReturn($channel);
         $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertOrder');
         $this->entityManager->expects($this->once())->method('flush');
 
-        $handler = new OrderCreateHandler(
-            $this->orderRepository,
-            $this->channelRepository,
-            $this->orderMapper,
-            $this->audienceProvider,
-            $this->storeIdentifierResolver,
-            $this->productMapper,
-            $this->mailchimpClient,
-            $this->entityManager,
-            new NullLogger(),
-        );
-        $handler(new OrderCreate(42, 1));
+        $handler = $this->makeCreateHandler();
+        $handler(new OrderCreate(42));
 
         $this->assertSame('42', $order->getMailchimpOrderId());
         $this->assertNull($order->getMailchimpOrderError());
@@ -90,62 +75,30 @@ final class OrderHandlersTest extends TestCase
         $this->orderRepository->method('find')->willReturn(null);
         $this->mailchimpClient->expects($this->never())->method('upsertOrder');
 
-        $handler = new OrderCreateHandler(
-            $this->orderRepository,
-            $this->channelRepository,
-            $this->orderMapper,
-            $this->audienceProvider,
-            $this->storeIdentifierResolver,
-            $this->productMapper,
-            $this->mailchimpClient,
-            $this->entityManager,
-            new NullLogger(),
-        );
-        $handler(new OrderCreate(999, 1));
+        $handler = $this->makeCreateHandler();
+        $handler(new OrderCreate(999));
     }
 
-    public function testOrderCreateSkipsWhenChannelNotFound(): void
+    public function testOrderCreateSkipsWhenOrderHasNoMailchimpChannel(): void
     {
-        $order = $this->createOrder(orderId: 1);
+        $order = $this->createOrder(orderId: 1, channel: null);
         $this->orderRepository->method('find')->willReturn($order);
-        $this->channelRepository->method('find')->willReturn(null);
         $this->mailchimpClient->expects($this->never())->method('upsertOrder');
 
-        $handler = new OrderCreateHandler(
-            $this->orderRepository,
-            $this->channelRepository,
-            $this->orderMapper,
-            $this->audienceProvider,
-            $this->storeIdentifierResolver,
-            $this->productMapper,
-            $this->mailchimpClient,
-            $this->entityManager,
-            new NullLogger(),
-        );
-        $handler(new OrderCreate(1, 999));
+        $handler = $this->makeCreateHandler();
+        $handler(new OrderCreate(1));
     }
 
     public function testOrderUpdateCallsUpsertOrder(): void
     {
         $channel = $this->createChannel('WEB');
-        $order = $this->createOrder(orderId: 5);
+        $order = $this->createOrder(orderId: 5, channel: $channel);
         $this->orderRepository->method('find')->willReturn($order);
-        $this->channelRepository->method('find')->willReturn($channel);
         $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertOrder');
 
-        $handler = new OrderUpdateHandler(
-            $this->orderRepository,
-            $this->channelRepository,
-            $this->orderMapper,
-            $this->audienceProvider,
-            $this->storeIdentifierResolver,
-            $this->productMapper,
-            $this->mailchimpClient,
-            $this->entityManager,
-            new NullLogger(),
-        );
-        $handler(new OrderUpdate(5, 1));
+        $handler = $this->makeUpdateHandler();
+        $handler(new OrderUpdate(5));
     }
 
     public function testOrderRemoveCallsRemoveOrder(): void
@@ -166,7 +119,35 @@ final class OrderHandlersTest extends TestCase
         $handler(new OrderRemove('WEB', 'order-42'));
     }
 
-    private function createOrder(int $orderId): Order
+    private function makeCreateHandler(): OrderCreateHandler
+    {
+        return new OrderCreateHandler(
+            $this->orderRepository,
+            $this->orderMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
+            $this->productMapper,
+            $this->mailchimpClient,
+            $this->entityManager,
+            new NullLogger(),
+        );
+    }
+
+    private function makeUpdateHandler(): OrderUpdateHandler
+    {
+        return new OrderUpdateHandler(
+            $this->orderRepository,
+            $this->orderMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
+            $this->productMapper,
+            $this->mailchimpClient,
+            $this->entityManager,
+            new NullLogger(),
+        );
+    }
+
+    private function createOrder(int $orderId, ?Channel $channel): Order
     {
         $customer = new Customer();
         self::setId($customer, 1);
@@ -176,6 +157,9 @@ final class OrderHandlersTest extends TestCase
         self::setId($order, $orderId);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
+        if ($channel !== null) {
+            $order->setChannel($channel);
+        }
         self::setTotal($order, 1000);
 
         return $order;

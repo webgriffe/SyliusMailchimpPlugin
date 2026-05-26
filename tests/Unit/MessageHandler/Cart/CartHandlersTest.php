@@ -8,7 +8,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use Sylius\Component\Channel\Repository\ChannelRepositoryInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
@@ -29,13 +28,11 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class CartHandlersTest extends TestCase
 {
-    private OrderRepositoryInterface $orderRepository;
+    private MockObject&OrderRepositoryInterface $orderRepository;
 
-    private ChannelRepositoryInterface $channelRepository;
+    private MockObject&MailchimpClientInterface $mailchimpClient;
 
-    private MailchimpClientInterface $mailchimpClient;
-
-    private EntityManagerInterface $entityManager;
+    private MockObject&EntityManagerInterface $entityManager;
 
     private CartMapper $cartMapper;
 
@@ -43,12 +40,11 @@ final class CartHandlersTest extends TestCase
 
     private MockObject&StoreIdentifierResolverInterface $storeIdentifierResolver;
 
-    private ProductMapperInterface $productMapper;
+    private MockObject&ProductMapperInterface $productMapper;
 
     protected function setUp(): void
     {
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
-        $this->channelRepository = $this->createMock(ChannelRepositoryInterface::class);
         $this->mailchimpClient = $this->createMock(MailchimpClientInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->cartMapper = new CartMapper(new EcommerceCustomerMapper());
@@ -61,25 +57,14 @@ final class CartHandlersTest extends TestCase
     public function testCartCreateCallsUpsertCartAndPersistsId(): void
     {
         $channel = $this->createChannel('WEB');
-        $order = $this->createOrder(orderId: 5);
+        $order = $this->createOrder(orderId: 5, channel: $channel);
         $this->orderRepository->method('find')->with(5)->willReturn($order);
-        $this->channelRepository->method('find')->with(1)->willReturn($channel);
         $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertCart');
         $this->entityManager->expects($this->once())->method('flush');
 
-        $handler = new CartCreateHandler(
-            $this->orderRepository,
-            $this->channelRepository,
-            $this->cartMapper,
-            $this->audienceProvider,
-            $this->storeIdentifierResolver,
-            $this->productMapper,
-            $this->mailchimpClient,
-            $this->entityManager,
-            new NullLogger(),
-        );
-        $handler(new CartCreate(5, 1));
+        $handler = $this->makeCreateHandler();
+        $handler(new CartCreate(5));
 
         $this->assertSame('5', $order->getMailchimpCartId());
         $this->assertNull($order->getMailchimpCartError());
@@ -90,41 +75,20 @@ final class CartHandlersTest extends TestCase
         $this->orderRepository->method('find')->willReturn(null);
         $this->mailchimpClient->expects($this->never())->method('upsertCart');
 
-        $handler = new CartCreateHandler(
-            $this->orderRepository,
-            $this->channelRepository,
-            $this->cartMapper,
-            $this->audienceProvider,
-            $this->storeIdentifierResolver,
-            $this->productMapper,
-            $this->mailchimpClient,
-            $this->entityManager,
-            new NullLogger(),
-        );
-        $handler(new CartCreate(999, 1));
+        $handler = $this->makeCreateHandler();
+        $handler(new CartCreate(999));
     }
 
     public function testCartUpdateCallsUpsertCart(): void
     {
         $channel = $this->createChannel('WEB');
-        $order = $this->createOrder(orderId: 5);
+        $order = $this->createOrder(orderId: 5, channel: $channel);
         $this->orderRepository->method('find')->willReturn($order);
-        $this->channelRepository->method('find')->willReturn($channel);
         $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
         $this->mailchimpClient->expects($this->once())->method('upsertCart');
 
-        $handler = new CartUpdateHandler(
-            $this->orderRepository,
-            $this->channelRepository,
-            $this->cartMapper,
-            $this->audienceProvider,
-            $this->storeIdentifierResolver,
-            $this->productMapper,
-            $this->mailchimpClient,
-            $this->entityManager,
-            new NullLogger(),
-        );
-        $handler(new CartUpdate(5, 1));
+        $handler = $this->makeUpdateHandler();
+        $handler(new CartUpdate(5));
     }
 
     public function testCartRemoveCallsRemoveCart(): void
@@ -145,7 +109,35 @@ final class CartHandlersTest extends TestCase
         $handler(new CartRemove('WEB', 'cart-abc'));
     }
 
-    private function createOrder(int $orderId): Order
+    private function makeCreateHandler(): CartCreateHandler
+    {
+        return new CartCreateHandler(
+            $this->orderRepository,
+            $this->cartMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
+            $this->productMapper,
+            $this->mailchimpClient,
+            $this->entityManager,
+            new NullLogger(),
+        );
+    }
+
+    private function makeUpdateHandler(): CartUpdateHandler
+    {
+        return new CartUpdateHandler(
+            $this->orderRepository,
+            $this->cartMapper,
+            $this->audienceProvider,
+            $this->storeIdentifierResolver,
+            $this->productMapper,
+            $this->mailchimpClient,
+            $this->entityManager,
+            new NullLogger(),
+        );
+    }
+
+    private function createOrder(int $orderId, ?Channel $channel = null): Order
     {
         $customer = new Customer();
         self::setId($customer, 1);
@@ -155,6 +147,9 @@ final class CartHandlersTest extends TestCase
         self::setId($order, $orderId);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
+        if ($channel !== null) {
+            $order->setChannel($channel);
+        }
         self::setTotal($order, 1000);
 
         return $order;

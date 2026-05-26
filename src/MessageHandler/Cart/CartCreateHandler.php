@@ -6,7 +6,6 @@ namespace Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Sylius\Component\Channel\Repository\ChannelRepositoryInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\ProductInterface;
@@ -27,7 +26,6 @@ final class CartCreateHandler
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly ChannelRepositoryInterface $channelRepository,
         private readonly CartMapper $cartMapper,
         private readonly AudienceProviderInterface $audienceProvider,
         private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
@@ -47,9 +45,9 @@ final class CartCreateHandler
             return;
         }
 
-        $channel = $this->channelRepository->find($message->channelId);
+        $channel = $order->getChannel();
         if (!$channel instanceof ChannelInterface || !$channel instanceof ChannelMailchimpAwareInterface) {
-            $this->logger->warning('[Mailchimp] Channel #{id} not found or not Mailchimp-aware, skipping CartCreate.', ['id' => $message->channelId]);
+            $this->logger->warning('[Mailchimp] Order #{id} has no Mailchimp-aware channel, skipping CartCreate.', ['id' => $message->orderId]);
 
             return;
         }

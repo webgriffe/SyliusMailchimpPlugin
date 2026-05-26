@@ -8,7 +8,6 @@ final class CartCreate
 {
     public function __construct(
         public readonly int $orderId,
-        public readonly int $channelId,
     ) {
     }
 }

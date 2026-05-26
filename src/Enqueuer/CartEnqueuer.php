@@ -44,16 +44,11 @@ final class CartEnqueuer implements CartEnqueuerInterface
             return;
         }
 
-        $channelId = $channel->getId();
-        if (!is_int($channelId)) {
-            return;
-        }
-
         if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpCartId() !== null) {
-            $this->messageBus->dispatch(new CartUpdate($orderId, $channelId), [new DelayStamp(1000)]);
+            $this->messageBus->dispatch(new CartUpdate($orderId), [new DelayStamp(1000)]);
             $this->logger->debug('[Mailchimp] Dispatched CartUpdate for order #{id}.', ['id' => $orderId]);
         } else {
-            $this->messageBus->dispatch(new CartCreate($orderId, $channelId), [new DelayStamp(1000)]);
+            $this->messageBus->dispatch(new CartCreate($orderId), [new DelayStamp(1000)]);
             $this->logger->debug('[Mailchimp] Dispatched CartCreate for order #{id}.', ['id' => $orderId]);
         }
     }

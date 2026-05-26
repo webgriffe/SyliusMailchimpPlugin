@@ -112,7 +112,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(CartCreateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$channelRepository', service('sylius.repository.channel'))
         ->arg('$cartMapper', service(CartMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
@@ -124,7 +123,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(CartUpdateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$channelRepository', service('sylius.repository.channel'))
         ->arg('$cartMapper', service(CartMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
@@ -141,7 +139,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(OrderCreateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$channelRepository', service('sylius.repository.channel'))
         ->arg('$orderMapper', service(OrderMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
@@ -153,7 +150,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(OrderUpdateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$channelRepository', service('sylius.repository.channel'))
         ->arg('$orderMapper', service(OrderMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
