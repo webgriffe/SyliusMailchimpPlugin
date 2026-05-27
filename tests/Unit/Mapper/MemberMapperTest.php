@@ -8,6 +8,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Event\MemberMappedEvent;
 use Webgriffe\SyliusMailchimpPlugin\Exception\MissingCustomerEmailException;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapper;
@@ -18,6 +19,8 @@ use Webgriffe\SyliusMailchimpPlugin\Resolver\TagsResolverInterface;
 
 final class MemberMapperTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MockObject&MemberStatusResolverInterface $statusResolver;
 
     private MockObject&TagsResolverInterface $tagsResolver;
@@ -50,7 +53,7 @@ final class MemberMapperTest extends TestCase
         $this->expectException(MissingCustomerEmailException::class);
 
         $customer = new Customer();
-        self::setId($customer, 42);
+        self::setIdOnObject($customer, 42);
 
         $this->mapper->map($customer, 'list-id');
     }
@@ -60,7 +63,7 @@ final class MemberMapperTest extends TestCase
         $this->expectException(MissingCustomerEmailException::class);
 
         $customer = new Customer();
-        self::setId($customer, 42);
+        self::setIdOnObject($customer, 42);
         $customer->setEmail('');
 
         $this->mapper->map($customer, 'list-id');
@@ -132,11 +135,5 @@ final class MemberMapperTest extends TestCase
         $member = $this->mapper->map($customer, 'list-abc');
 
         $this->assertSame(['VIP', 'Newsletter'], $member->tags);
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

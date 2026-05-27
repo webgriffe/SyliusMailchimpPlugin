@@ -11,6 +11,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
@@ -21,6 +22,8 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class CartEnqueuerTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MessageBusInterface $messageBus;
 
     private MockObject&AudienceProviderInterface $audienceProvider;
@@ -42,7 +45,7 @@ final class CartEnqueuerTest extends TestCase
         );
     }
 
-    public function testEnqueueDispatchesCartCreateWhenNoMailchimpCartId(): void
+    public function test_enqueue_dispatches_cart_create_when_no_mailchimp_cart_id(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
         $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: null);
@@ -55,7 +58,7 @@ final class CartEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($order);
     }
 
-    public function testEnqueueDispatchesCartUpdateWhenMailchimpCartIdExists(): void
+    public function test_enqueue_dispatches_cart_update_when_mailchimp_cart_id_exists(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
         $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: 'existing-cart-id');
@@ -68,7 +71,7 @@ final class CartEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($order);
     }
 
-    public function testEnqueueRemovalDispatchesCartRemove(): void
+    public function test_enqueue_removal_dispatches_cart_remove(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB', audienceId: 'abc123');
         $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: 'cart-token-abc');
@@ -85,7 +88,7 @@ final class CartEnqueuerTest extends TestCase
         $this->enqueuer->enqueueRemoval($order);
     }
 
-    public function testEnqueueRemovalSkipsWhenNoCartId(): void
+    public function test_enqueue_removal_skips_when_no_cart_id(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB', audienceId: 'abc123');
         $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: null);
@@ -98,7 +101,7 @@ final class CartEnqueuerTest extends TestCase
     private function createOrder(int $id, Channel $channel, ?string $mailchimpCartId): Order
     {
         $order = new Order();
-        self::setId($order, $id);
+        self::setIdOnObject($order, $id);
         $order->setChannel($channel);
         if ($mailchimpCartId !== null) {
             $order->setMailchimpCartId($mailchimpCartId);
@@ -110,16 +113,10 @@ final class CartEnqueuerTest extends TestCase
     private function createChannel(int $id, string $code, string $audienceId = 'audience123'): Channel
     {
         $channel = new Channel();
-        self::setId($channel, $id);
+        self::setIdOnObject($channel, $id);
         $channel->setCode($code);
         $channel->setMailchimpAudienceId($audienceId);
 
         return $channel;
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

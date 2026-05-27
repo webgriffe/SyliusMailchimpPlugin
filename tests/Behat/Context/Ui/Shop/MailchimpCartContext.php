@@ -6,7 +6,7 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop;
 
 use Behat\Behat\Context\Context;
 use Behat\Behat\Hook\Scope\BeforeScenarioScope;
-use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Client\StubMailchimpClient;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart;
 use Webmozart\Assert\Assert;
 

@@ -7,12 +7,12 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Controller;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Sylius\Component\Channel\Context\ChannelContextInterface;
-use Sylius\Component\Core\Model\ChannelInterface;
-use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 use Sylius\Component\Core\Storage\CartStorageInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Webgriffe\SyliusMailchimpPlugin\Controller\CartRecoveryController;
 
 final class CartRecoveryControllerTest extends TestCase
@@ -42,10 +42,10 @@ final class CartRecoveryControllerTest extends TestCase
         );
     }
 
-    public function testRestoresCartAndRedirectsToCartSummary(): void
+    public function test_restores_cart_and_redirects_to_cart_summary(): void
     {
-        $order = $this->createMock(OrderInterface::class);
-        $channel = $this->createMock(ChannelInterface::class);
+        $order = new Order();
+        $channel = new Channel();
 
         $this->orderRepository->method('findCartByTokenValue')->with('abc123')->willReturn($order);
         $this->channelContext->method('getChannel')->willReturn($channel);
@@ -58,7 +58,7 @@ final class CartRecoveryControllerTest extends TestCase
         self::assertSame('/cart', $response->getTargetUrl());
     }
 
-    public function testRedirectsToHomepageWhenOrderNotFound(): void
+    public function test_redirects_to_homepage_when_order_not_found(): void
     {
         $this->orderRepository->method('findCartByTokenValue')->willReturn(null);
         $this->urlGenerator->method('generate')->with('sylius_shop_homepage')->willReturn('/');

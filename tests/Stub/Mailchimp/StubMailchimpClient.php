@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Client;
+namespace Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp;
 
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart;
@@ -51,6 +51,10 @@ final class StubMailchimpClient implements MailchimpClientInterface
             'removeCart' => [],
             'upsertOrder' => [],
             'removeOrder' => [],
+            'upsertStore' => [],
+            'removeStore' => [],
+            'upsertProduct' => [],
+            'removeProduct' => [],
         ];
     }
 
@@ -87,6 +91,30 @@ final class StubMailchimpClient implements MailchimpClientInterface
     public function getRemoveOrderCalls(): array
     {
         return self::readCalls()['removeOrder'] ?? [];
+    }
+
+    /** @return array<array{store: Store}> */
+    public function getUpsertStoreCalls(): array
+    {
+        return self::readCalls()['upsertStore'] ?? [];
+    }
+
+    /** @return array<array{storeId: string}> */
+    public function getRemoveStoreCalls(): array
+    {
+        return self::readCalls()['removeStore'] ?? [];
+    }
+
+    /** @return array<array{storeId: string, product: Product}> */
+    public function getUpsertProductCalls(): array
+    {
+        return self::readCalls()['upsertProduct'] ?? [];
+    }
+
+    /** @return array<array{storeId: string, productId: string}> */
+    public function getRemoveProductCalls(): array
+    {
+        return self::readCalls()['removeProduct'] ?? [];
     }
 
     public function getLastUpsertOrderCall(): ?Order
@@ -134,21 +162,33 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertStore(Store $store): void
     {
+        $calls = self::readCalls();
+        $calls['upsertStore'][] = ['store' => $store];
+        self::writeCalls($calls);
     }
 
     #[\Override]
     public function removeStore(string $storeId): void
     {
+        $calls = self::readCalls();
+        $calls['removeStore'][] = ['storeId' => $storeId];
+        self::writeCalls($calls);
     }
 
     #[\Override]
     public function upsertProduct(string $storeId, Product $product): void
     {
+        $calls = self::readCalls();
+        $calls['upsertProduct'][] = ['storeId' => $storeId, 'product' => $product];
+        self::writeCalls($calls);
     }
 
     #[\Override]
     public function removeProduct(string $storeId, string $productId): void
     {
+        $calls = self::readCalls();
+        $calls['removeProduct'][] = ['storeId' => $storeId, 'productId' => $productId];
+        self::writeCalls($calls);
     }
 
     #[\Override]

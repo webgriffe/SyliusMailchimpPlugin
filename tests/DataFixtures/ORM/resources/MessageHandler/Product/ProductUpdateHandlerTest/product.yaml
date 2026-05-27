@@ -1,0 +1,49 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_product_update:
+        code: 'PRODUCT_UPDATE_TEST'
+        name: 'Product Update Test Store'
+        hostname: 'https://product-update.test'
+        contactEmail: 'product@test.com'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Sylius\Component\Core\Model\ChannelPricing:
+    pricing_product_update:
+        channelCode: 'PRODUCT_UPDATE_TEST'
+        price: 1999
+
+Sylius\Component\Core\Model\ProductVariant:
+    variant_product_update:
+        code: 'PRODUCT_UPDATE_VARIANT'
+        currentLocale: 'en_US'
+        fallbackLocale: 'en_US'
+        name: 'Test'
+        __calls:
+            - addChannelPricing: ['@pricing_product_update']
+
+Sylius\Component\Core\Model\ProductTranslation:
+    product_translation_update:
+        locale: 'en_US'
+        name: 'Test Product'
+        slug: 'test-product-update'
+        description: 'A test product.'
+
+Sylius\Component\Core\Model\Product:
+    product_product_update:
+        code: 'PRODUCT_UPDATE_PRODUCT'
+        __calls:
+            - addTranslation: ['@product_translation_update']
+            - addVariant: ['@variant_product_update']

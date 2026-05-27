@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Client\StubMailchimpClient;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Console\MailchimpConsoleCartContext;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpCartContext;

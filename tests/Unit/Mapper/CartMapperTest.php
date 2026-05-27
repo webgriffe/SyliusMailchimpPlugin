@@ -11,11 +11,14 @@ use Sylius\Component\Core\Model\ProductVariant;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 
 final class CartMapperTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private CartMapper $mapper;
 
     protected function setUp(): void
@@ -23,10 +26,10 @@ final class CartMapperTest extends TestCase
         $this->mapper = new CartMapper(new EcommerceCustomerMapper());
     }
 
-    public function testMapsOrderToCart(): void
+    public function test_maps_order_to_cart(): void
     {
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('john@example.com');
         $customer->setFirstName('John');
         $customer->setLastName('Doe');
@@ -39,7 +42,7 @@ final class CartMapperTest extends TestCase
         $product->addVariant($variant);
 
         $item = new OrderItem();
-        self::setId($item, 10);
+        self::setIdOnObject($item, 10);
         $item->setVariant($variant);
         $item->setUnitPrice(1999);
         self::setQuantity($item, 2);
@@ -48,7 +51,7 @@ final class CartMapperTest extends TestCase
         $channel->setHostname('https://example.com');
 
         $order = new Order();
-        self::setId($order, 42);
+        self::setIdOnObject($order, 42);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
         $order->addItem($item);
@@ -69,19 +72,19 @@ final class CartMapperTest extends TestCase
         $this->assertSame(19.99, $cart->lines[0]->price);
     }
 
-    public function testSkipsItemWithNoVariant(): void
+    public function test_skips_item_with_no_variant(): void
     {
         $item = new OrderItem();
 
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('x@example.com');
 
         $channel = new Channel();
         $channel->setHostname('https://example.com');
 
         $order = new Order();
-        self::setId($order, 99);
+        self::setIdOnObject($order, 99);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
         $order->addItem($item);
@@ -89,12 +92,6 @@ final class CartMapperTest extends TestCase
         $cart = $this->mapper->map($order, $channel);
 
         $this->assertCount(0, $cart->lines);
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 
     private static function setQuantity(OrderItem $item, int $quantity): void

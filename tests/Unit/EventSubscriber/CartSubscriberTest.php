@@ -12,11 +12,14 @@ use Sylius\Component\Core\Model\OrderItemInterface;
 use Sylius\Component\Order\SyliusCartEvents;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CartSubscriber;
 
 final class CartSubscriberTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MockObject&CartEnqueuerInterface $cartEnqueuer;
 
     private CartSubscriber $subscriber;
@@ -27,7 +30,7 @@ final class CartSubscriberTest extends TestCase
         $this->subscriber = new CartSubscriber($this->cartEnqueuer, new NullLogger());
     }
 
-    public function testGetSubscribedEvents(): void
+    public function test_get_subscribed_events(): void
     {
         $events = CartSubscriber::getSubscribedEvents();
 
@@ -38,27 +41,27 @@ final class CartSubscriberTest extends TestCase
         self::assertArrayNotHasKey('kernel.response', $events);
     }
 
-    public function testOnCartChangeEnqueuesCartImmediatelyWhenIdIsSet(): void
+    public function test_on_cart_change_enqueues_cart_immediately_when_id_is_set(): void
     {
         $order = new Order();
-        $this->setId($order, 42);
+        self::setIdOnObject($order, 42);
 
         $this->cartEnqueuer->expects(self::once())->method('enqueue')->with($order);
 
         $this->subscriber->onCartChange(new GenericEvent($order));
     }
 
-    public function testOnCartChangeIgnoresNonOrderSubject(): void
+    public function test_on_cart_change_ignores_non_order_subject(): void
     {
         $this->cartEnqueuer->expects(self::never())->method('enqueue');
 
         $this->subscriber->onCartChange(new GenericEvent(new \stdClass()));
     }
 
-    public function testOnCartItemAddEnqueuesCartImmediatelyWhenIdIsSet(): void
+    public function test_on_cart_item_add_enqueues_cart_immediately_when_id_is_set(): void
     {
         $order = new Order();
-        $this->setId($order, 42);
+        self::setIdOnObject($order, 42);
 
         $command = $this->createMock(AddToCartCommandInterface::class);
         $command->method('getCart')->willReturn($order);
@@ -68,7 +71,7 @@ final class CartSubscriberTest extends TestCase
         $this->subscriber->onCartItemAdd(new GenericEvent($command));
     }
 
-    public function testOnCartItemAddSkipsNewCartWithNoId(): void
+    public function test_on_cart_item_add_skips_new_cart_with_no_id(): void
     {
         $order = new Order();
 
@@ -80,17 +83,17 @@ final class CartSubscriberTest extends TestCase
         $this->subscriber->onCartItemAdd(new GenericEvent($command));
     }
 
-    public function testOnCartItemAddIgnoresNonCommandSubject(): void
+    public function test_on_cart_item_add_ignores_non_command_subject(): void
     {
         $this->cartEnqueuer->expects(self::never())->method('enqueue');
 
         $this->subscriber->onCartItemAdd(new GenericEvent(new \stdClass()));
     }
 
-    public function testOnCartItemRemoveEnqueuesCartFromOrderItem(): void
+    public function test_on_cart_item_remove_enqueues_cart_from_order_item(): void
     {
         $order = new Order();
-        $this->setId($order, 42);
+        self::setIdOnObject($order, 42);
 
         $item = $this->createMock(OrderItemInterface::class);
         $item->method('getOrder')->willReturn($order);
@@ -100,14 +103,14 @@ final class CartSubscriberTest extends TestCase
         $this->subscriber->onCartItemRemove(new GenericEvent($item));
     }
 
-    public function testOnCartItemRemoveIgnoresNonItemSubject(): void
+    public function test_on_cart_item_remove_ignores_non_item_subject(): void
     {
         $this->cartEnqueuer->expects(self::never())->method('enqueue');
 
         $this->subscriber->onCartItemRemove(new GenericEvent(new \stdClass()));
     }
 
-    public function testOnCartItemRemoveIgnoresItemWithNoOrder(): void
+    public function test_on_cart_item_remove_ignores_item_with_no_order(): void
     {
         $item = $this->createMock(OrderItemInterface::class);
         $item->method('getOrder')->willReturn(null);
@@ -117,26 +120,20 @@ final class CartSubscriberTest extends TestCase
         $this->subscriber->onCartItemRemove(new GenericEvent($item));
     }
 
-    public function testOnCartClearEnqueuesRemoval(): void
+    public function test_on_cart_clear_enqueues_removal(): void
     {
         $order = new Order();
-        $this->setId($order, 42);
+        self::setIdOnObject($order, 42);
 
         $this->cartEnqueuer->expects(self::once())->method('enqueueRemoval')->with($order);
 
         $this->subscriber->onCartClear(new GenericEvent($order));
     }
 
-    public function testOnCartClearIgnoresNonOrderSubject(): void
+    public function test_on_cart_clear_ignores_non_order_subject(): void
     {
         $this->cartEnqueuer->expects(self::never())->method('enqueueRemoval');
 
         $this->subscriber->onCartClear(new GenericEvent(new \stdClass()));
-    }
-
-    private function setId(Order $order, int $id): void
-    {
-        $ref = new \ReflectionProperty($order, 'id');
-        $ref->setValue($order, $id);
     }
 }

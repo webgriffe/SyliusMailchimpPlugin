@@ -1,0 +1,31 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_order_create:
+        code: 'ORDER_CREATE_TEST'
+        name: 'Order Create Test Store'
+        hostname: 'https://order-create.test'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_order_create:
+        email: 'order-create@test.com'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
+    order_order_create:
+        channel: '@channel_order_create'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        customer: '@customer_order_create'

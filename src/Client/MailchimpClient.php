@@ -93,6 +93,7 @@ final class MailchimpClient implements MailchimpClientInterface
         /** @var array{email_address?: string, status?: string, merge_fields?: array{FNAME?: string, LNAME?: string}} $data */
         $data = json_decode($body, true);
 
+        // todo: there should be no fallback data as it is coming from maiclhimp, if something is missing we should throw!
         return new Member(
             $data['email_address'] ?? '',
             $data['status'] ?? 'subscribed',

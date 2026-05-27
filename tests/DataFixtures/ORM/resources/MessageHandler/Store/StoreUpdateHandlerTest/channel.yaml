@@ -1,0 +1,21 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_store_update:
+        code: 'STORE_UPDATE_TEST'
+        name: 'Store Update Test Store'
+        hostname: 'https://store-update.test'
+        contactEmail: 'store@test.com'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']

@@ -32,7 +32,7 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberWithUnpaidAsCarts = new OrderSubscriber($this->cartEnqueuer, $this->orderEnqueuer, true, new NullLogger());
     }
 
-    public function testGetSubscribedEvents(): void
+    public function test_get_subscribed_events(): void
     {
         $events = OrderSubscriber::getSubscribedEvents();
 
@@ -40,7 +40,7 @@ final class OrderSubscriberTest extends TestCase
         self::assertArrayHasKey('sylius.order.post_complete', $events);
     }
 
-    public function testOnOrderPostUpdateDoesNotEnqueueCartForCartState(): void
+    public function test_on_order_post_update_does_not_enqueue_cart_for_cart_state(): void
     {
         $order = new Order();
 
@@ -50,7 +50,7 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberNoCarts->onOrderPostUpdate(new GenericEvent($order));
     }
 
-    public function testOnOrderPostUpdateIgnoresNewStateWhenSendUnpaidOrdersAsCartsDisabled(): void
+    public function test_on_order_post_update_ignores_new_state_when_send_unpaid_orders_as_carts_disabled(): void
     {
         $order = new Order();
         $order->setState(OrderInterface::STATE_NEW);
@@ -60,7 +60,7 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberNoCarts->onOrderPostUpdate(new GenericEvent($order));
     }
 
-    public function testOnOrderPostUpdateEnqueuesCartForNewStateWhenSendUnpaidOrdersAsCartsEnabled(): void
+    public function test_on_order_post_update_enqueues_cart_for_new_state_when_send_unpaid_orders_as_carts_enabled(): void
     {
         $order = new Order();
         $order->setState(OrderInterface::STATE_NEW);
@@ -70,7 +70,7 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberWithUnpaidAsCarts->onOrderPostUpdate(new GenericEvent($order));
     }
 
-    public function testOnOrderPostUpdateIgnoresFulfilledState(): void
+    public function test_on_order_post_update_ignores_fulfilled_state(): void
     {
         $order = new Order();
         $order->setState(OrderInterface::STATE_FULFILLED);
@@ -80,7 +80,7 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberWithUnpaidAsCarts->onOrderPostUpdate(new GenericEvent($order));
     }
 
-    public function testOnOrderPostUpdateIgnoresNonOrderSubject(): void
+    public function test_on_order_post_update_ignores_non_order_subject(): void
     {
         $this->cartEnqueuer->expects(self::never())->method('enqueue');
         $this->orderEnqueuer->expects(self::never())->method('enqueue');
@@ -88,7 +88,7 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberNoCarts->onOrderPostUpdate(new GenericEvent(new \stdClass()));
     }
 
-    public function testOnOrderPostCompleteEnqueuesOrderOnly(): void
+    public function test_on_order_post_complete_enqueues_order_only(): void
     {
         $order = new Order();
 
@@ -98,7 +98,7 @@ final class OrderSubscriberTest extends TestCase
         $this->subscriberNoCarts->onOrderPostComplete(new GenericEvent($order));
     }
 
-    public function testOnOrderPostCompleteIgnoresNonOrderSubject(): void
+    public function test_on_order_post_complete_ignores_non_order_subject(): void
     {
         $this->cartEnqueuer->expects(self::never())->method('enqueueRemoval');
         $this->orderEnqueuer->expects(self::never())->method('enqueue');

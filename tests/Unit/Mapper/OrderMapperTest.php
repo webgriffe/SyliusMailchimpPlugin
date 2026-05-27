@@ -14,11 +14,14 @@ use Sylius\Component\Core\Model\ProductVariant;
 use Sylius\Component\Order\Model\Adjustment;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapper;
 
 final class OrderMapperTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private OrderMapper $mapper;
 
     protected function setUp(): void
@@ -26,10 +29,10 @@ final class OrderMapperTest extends TestCase
         $this->mapper = new OrderMapper(new EcommerceCustomerMapper());
     }
 
-    public function testMapsOrderToOrderVO(): void
+    public function test_maps_order_to_order_v_o(): void
     {
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('john@example.com');
         $customer->setFirstName('John');
         $customer->setLastName('Doe');
@@ -43,7 +46,7 @@ final class OrderMapperTest extends TestCase
         $product->addVariant($variant);
 
         $item = new OrderItem();
-        self::setId($item, 5);
+        self::setIdOnObject($item, 5);
         $item->setVariant($variant);
         $item->setUnitPrice(2999);
         self::setQuantity($item, 1);
@@ -66,7 +69,7 @@ final class OrderMapperTest extends TestCase
         $processedAt = new DateTimeImmutable('2024-01-15 10:00:00');
 
         $order = new Order();
-        self::setId($order, 42);
+        self::setIdOnObject($order, 42);
         $order->setCustomer($customer);
         $order->setBillingAddress($billingAddress);
         $order->setCurrencyCode('USD');
@@ -109,14 +112,14 @@ final class OrderMapperTest extends TestCase
         $this->assertFalse($mapped->isInRealTime);
     }
 
-    public function testMapsOrderWithIsInRealTimeFlag(): void
+    public function test_maps_order_with_is_in_real_time_flag(): void
     {
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('x@example.com');
 
         $order = new Order();
-        self::setId($order, 1);
+        self::setIdOnObject($order, 1);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
 
@@ -125,16 +128,16 @@ final class OrderMapperTest extends TestCase
         $this->assertTrue($mapped->isInRealTime);
     }
 
-    public function testSkipsItemWithNoVariant(): void
+    public function test_skips_item_with_no_variant(): void
     {
         $item = new OrderItem();
 
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('x@example.com');
 
         $order = new Order();
-        self::setId($order, 1);
+        self::setIdOnObject($order, 1);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
         $order->addItem($item);
@@ -144,14 +147,14 @@ final class OrderMapperTest extends TestCase
         $this->assertCount(0, $mapped->lines);
     }
 
-    public function testMapsOrderWithCartId(): void
+    public function test_maps_order_with_cart_id(): void
     {
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('x@example.com');
 
         $order = new Order();
-        self::setId($order, 10);
+        self::setIdOnObject($order, 10);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
         $order->setMailchimpCartId('10');
@@ -161,26 +164,20 @@ final class OrderMapperTest extends TestCase
         $this->assertSame('10', $mapped->cartId);
     }
 
-    public function testMapsOrderWithoutCartIdWhenNotSet(): void
+    public function test_maps_order_without_cart_id_when_not_set(): void
     {
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('x@example.com');
 
         $order = new Order();
-        self::setId($order, 10);
+        self::setIdOnObject($order, 10);
         $order->setCustomer($customer);
         $order->setCurrencyCode('EUR');
 
         $mapped = $this->mapper->map($order);
 
         $this->assertNull($mapped->cartId);
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 
     private static function setQuantity(OrderItem $item, int $quantity): void

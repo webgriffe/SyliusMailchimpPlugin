@@ -75,10 +75,19 @@ All code must be in English — class names, method names, variable names, comme
 - Coding standard: `sylius-labs/coding-standard` ECS ruleset applied to `src/`, `tests/Behat/`, `tests/Integration/`, and `ecs.php`.
 
 ### Tests
-- Every PHP class should have associated tests:
-  - **Unit tests** (`--testsuite=unit`) for isolated business logic.
-  - **Integration tests** (`--testsuite=integration`) for classes that require a database, external dependencies, or have too many collaborators to test in isolation.
+
+> **Full testing guide**: [`docs/testing-guide.md`](docs/testing-guide.md) — read this before writing or reviewing tests.
+
+#### When to use Unit vs Integration
+- **Unit** (`tests/Unit/`, `PHPUnit\Framework\TestCase`): class has ≤2 external dependencies, purely in-memory logic (mappers, value objects, simple event subscribers, remove-only handlers).
+- **Integration** (`tests/Integration/`, `KernelTestCase`): use when the class is a **message handler**, **command**, or **event listener** with 3+ constructor deps; or when it interacts with the database (`EntityManager`, repositories); or when it calls an external API (use `StubMailchimpClient` from the container).
 - Mirror the source namespace structure in the test directory (e.g., `src/Foo/Bar.php` → `tests/Unit/Foo/BarTest.php`).
+
+#### Method naming
+All test methods use `snake_case` with the `test_` prefix: `test_it_does_something_when_condition(): void`.
+
+#### Shared helpers
+Use `Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait` for setting auto-generated `$id` fields via reflection — **do not** duplicate `setId()` in every test class.
 
 #### Mocking rules
 - **Mock only services** — i.e., collaborators of the class under test that are injected as dependencies (repositories, message bus, API clients, mapper interfaces, etc.).
@@ -91,6 +100,15 @@ All code must be in English — class names, method names, variable names, comme
   - `Sylius\Component\Core\Model\{Address, OrderItem, Product, ProductVariant, ProductTranslation, ChannelPricing}`
   - `Sylius\Component\Order\Model\Adjustment`
   - `Sylius\Component\Locale\Model\Locale`
+
+#### Integration test setup
+- Extend `Symfony\Bundle\FrameworkBundle\Test\KernelTestCase`, call `self::bootKernel()` in `setUp()`.
+- Resolve services via `self::getContainer()->get(ServiceClass::class)`.
+- Use `Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient` (already registered in the test container as `MailchimpClientInterface`) to assert Mailchimp API calls.
+- Create DB fixtures programmatically in PHP (no Alice — not installed); clean up in `tearDown()`.
+
+#### Mailchimp API stub
+`tests/Stub/Mailchimp/StubMailchimpClient.php` — tracks all calls to the Mailchimp client in a temp file (cross-process safe for Behat). Use `$stub->reset()` in `setUp()` and `$stub->getUpsertCartCalls()` / `$stub->getUpsertOrderCalls()` / etc. to assert calls.
 
 ### Commands
 Long-running Symfony commands use `LockableTrait` with an environment toggle:

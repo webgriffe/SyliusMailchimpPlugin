@@ -33,7 +33,7 @@ final class ProductVariantMapperTest extends TestCase
         $this->mapper = new ProductVariantMapper($this->pricesCalculator, $this->imagineFilterService);
     }
 
-    public function testMapsVariantWithPricing(): void
+    public function test_maps_variant_with_pricing(): void
     {
         $productTranslation = new ProductTranslation();
         $productTranslation->setLocale('en_US');
@@ -69,7 +69,7 @@ final class ProductVariantMapperTest extends TestCase
         $this->assertSame(29.99, $pv->price);
     }
 
-    public function testMapsInventoryQuantityWhenTracked(): void
+    public function test_maps_inventory_quantity_when_tracked(): void
     {
         $productTranslation = new ProductTranslation();
         $productTranslation->setLocale('en_US');
@@ -100,7 +100,7 @@ final class ProductVariantMapperTest extends TestCase
         $this->assertSame(7, $pv->inventoryQuantity);
     }
 
-    public function testInventoryQuantityIsZeroWhenNotTracked(): void
+    public function test_inventory_quantity_is_zero_when_not_tracked(): void
     {
         $productTranslation = new ProductTranslation();
         $productTranslation->setLocale('en_US');
@@ -130,7 +130,7 @@ final class ProductVariantMapperTest extends TestCase
         $this->assertSame(0, $pv->inventoryQuantity);
     }
 
-    public function testMapsVariantImageUrl(): void
+    public function test_maps_variant_image_url(): void
     {
         $productTranslation = new ProductTranslation();
         $productTranslation->setLocale('en_US');
@@ -167,7 +167,7 @@ final class ProductVariantMapperTest extends TestCase
         $this->assertSame('https://example.com/media/cache/sylius_shop_product_large_thumbnail/product/ab/cd/variant-image.webp', $pv->imageUrl);
     }
 
-    public function testImageUrlIsEmptyWhenVariantHasNoImages(): void
+    public function test_image_url_is_empty_when_variant_has_no_images(): void
     {
         $productTranslation = new ProductTranslation();
         $productTranslation->setLocale('en_US');

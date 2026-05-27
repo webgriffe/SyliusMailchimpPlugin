@@ -9,10 +9,13 @@ use Sylius\Component\Core\Model\Address;
 use Sylius\Component\Core\Model\AddressInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 
 final class EcommerceCustomerMapperTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private EcommerceCustomerMapper $mapper;
 
     protected function setUp(): void
@@ -20,7 +23,7 @@ final class EcommerceCustomerMapperTest extends TestCase
         $this->mapper = new EcommerceCustomerMapper();
     }
 
-    public function testMapsOrderWithCustomerAndBillingAddress(): void
+    public function test_maps_order_with_customer_and_billing_address(): void
     {
         $address = new Address();
         $address->setFirstName('John');
@@ -33,7 +36,7 @@ final class EcommerceCustomerMapperTest extends TestCase
         $address->setProvinceCode('NY');
 
         $customer = new Customer();
-        self::setId($customer, 42);
+        self::setIdOnObject($customer, 42);
         $customer->setEmail('john@example.com');
         $customer->setFirstName('John');
         $customer->setLastName('Doe');
@@ -56,10 +59,10 @@ final class EcommerceCustomerMapperTest extends TestCase
         $this->assertSame('US', $ecommerceCustomer->address->countryCode);
     }
 
-    public function testMapsOrderWithoutCustomer(): void
+    public function test_maps_order_without_customer(): void
     {
         $order = new Order();
-        self::setId($order, 99);
+        self::setIdOnObject($order, 99);
 
         $ecommerceCustomer = $this->mapper->mapFromOrder($order);
 
@@ -71,7 +74,7 @@ final class EcommerceCustomerMapperTest extends TestCase
         $this->assertNull($ecommerceCustomer->address);
     }
 
-    public function testMapsOrderWithNullAddressNameFields(): void
+    public function test_maps_order_with_null_address_name_fields(): void
     {
         $address = $this->createMock(AddressInterface::class);
         $address->method('getFirstName')->willReturn(null);
@@ -84,7 +87,7 @@ final class EcommerceCustomerMapperTest extends TestCase
         $address->method('getProvinceCode')->willReturn(null);
 
         $customer = new Customer();
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $customer->setEmail('test@example.com');
 
         $order = new Order();
@@ -95,11 +98,5 @@ final class EcommerceCustomerMapperTest extends TestCase
 
         $this->assertNotNull($ecommerceCustomer->address);
         $this->assertSame('', $ecommerceCustomer->address->name);
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

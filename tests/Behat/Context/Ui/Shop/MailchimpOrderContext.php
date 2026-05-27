@@ -11,7 +11,7 @@ use Sylius\Behat\Service\SharedStorageInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
-use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Client\StubMailchimpClient;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 use Webmozart\Assert\Assert;
 

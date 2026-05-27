@@ -11,6 +11,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderRemove;
@@ -21,6 +22,8 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class OrderEnqueuerTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MessageBusInterface $messageBus;
 
     private MockObject&AudienceProviderInterface $audienceProvider;
@@ -42,7 +45,7 @@ final class OrderEnqueuerTest extends TestCase
         );
     }
 
-    public function testEnqueueDispatchesOrderCreateWhenNoMailchimpOrderId(): void
+    public function test_enqueue_dispatches_order_create_when_no_mailchimp_order_id(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
         $order = $this->createOrder(id: 10, channel: $channel, mailchimpOrderId: null);
@@ -55,7 +58,7 @@ final class OrderEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($order);
     }
 
-    public function testEnqueueDispatchesOrderUpdateWhenMailchimpOrderIdExists(): void
+    public function test_enqueue_dispatches_order_update_when_mailchimp_order_id_exists(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
         $order = $this->createOrder(id: 10, channel: $channel, mailchimpOrderId: 'order-10');
@@ -68,7 +71,7 @@ final class OrderEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($order);
     }
 
-    public function testEnqueuePassesIsInRealTimeFlag(): void
+    public function test_enqueue_passes_is_in_real_time_flag(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
         $order = $this->createOrder(id: 10, channel: $channel, mailchimpOrderId: null);
@@ -87,7 +90,7 @@ final class OrderEnqueuerTest extends TestCase
         $this->assertTrue($dispatched->isInRealTime);
     }
 
-    public function testEnqueueRemovalDispatchesOrderRemoveWithCorrectStoreId(): void
+    public function test_enqueue_removal_dispatches_order_remove_with_correct_store_id(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB', audienceId: 'abc123');
         $order = $this->createOrder(id: 10, channel: $channel, mailchimpOrderId: 'order-10');
@@ -104,7 +107,7 @@ final class OrderEnqueuerTest extends TestCase
         $this->enqueuer->enqueueRemoval($order);
     }
 
-    public function testEnqueueRemovalSkipsWhenNoOrderId(): void
+    public function test_enqueue_removal_skips_when_no_order_id(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
         $order = $this->createOrder(id: 10, channel: $channel, mailchimpOrderId: null);
@@ -117,7 +120,7 @@ final class OrderEnqueuerTest extends TestCase
     private function createOrder(int $id, Channel $channel, ?string $mailchimpOrderId): Order
     {
         $order = new Order();
-        self::setId($order, $id);
+        self::setIdOnObject($order, $id);
         $order->setChannel($channel);
         if ($mailchimpOrderId !== null) {
             $order->setMailchimpOrderId($mailchimpOrderId);
@@ -129,16 +132,10 @@ final class OrderEnqueuerTest extends TestCase
     private function createChannel(int $id, string $code, string $audienceId = 'audience123'): Channel
     {
         $channel = new Channel();
-        self::setId($channel, $id);
+        self::setIdOnObject($channel, $id);
         $channel->setCode($code);
         $channel->setMailchimpAudienceId($audienceId);
 
         return $channel;
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

@@ -11,11 +11,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CustomerSubscriber;
 
 final class CustomerSubscriberTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MockObject&MemberEnqueuerInterface $memberEnqueuer;
 
     private MockObject&EntityManagerInterface $entityManager;
@@ -66,7 +69,7 @@ final class CustomerSubscriberTest extends TestCase
     public function test_enqueues_update_when_no_email_change(): void
     {
         $customer = new Customer();
-        self::setId($customer, 42);
+        self::setIdOnObject($customer, 42);
 
         $this->unitOfWork->method('getEntityChangeSet')->willReturn([]);
 
@@ -79,7 +82,7 @@ final class CustomerSubscriberTest extends TestCase
     public function test_dispatches_remove_and_create_when_email_changed(): void
     {
         $customer = new Customer();
-        self::setId($customer, 42);
+        self::setIdOnObject($customer, 42);
 
         $this->unitOfWork->method('getEntityChangeSet')->willReturn([
             'email' => ['old@example.com', 'new@example.com'],
@@ -96,7 +99,7 @@ final class CustomerSubscriberTest extends TestCase
     public function test_does_not_dispatch_create_when_new_email_is_empty(): void
     {
         $customer = new Customer();
-        self::setId($customer, 42);
+        self::setIdOnObject($customer, 42);
 
         $this->unitOfWork->method('getEntityChangeSet')->willReturn([
             'email' => ['old@example.com', ''],
@@ -117,11 +120,5 @@ final class CustomerSubscriberTest extends TestCase
         $this->unitOfWork->expects($this->never())->method('getEntityChangeSet');
 
         $this->subscriber->onCustomerPreUpdate(new GenericEvent($customer));
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

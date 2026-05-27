@@ -12,6 +12,7 @@ use Sylius\Component\Locale\Model\LocaleInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductRemove;
@@ -19,6 +20,8 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
 
 final class ProductEnqueuerTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MessageBusInterface $messageBus;
 
     private ProductEnqueuer $enqueuer;
@@ -29,7 +32,7 @@ final class ProductEnqueuerTest extends TestCase
         $this->enqueuer = new ProductEnqueuer($this->messageBus, new NullLogger());
     }
 
-    public function testEnqueueNewProductDispatchesProductCreate(): void
+    public function test_enqueue_new_product_dispatches_product_create(): void
     {
         $channel = $this->createChannel(id: 1);
         $product = $this->createProduct(id: 10, channels: [$channel]);
@@ -42,7 +45,7 @@ final class ProductEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($product, isNew: true);
     }
 
-    public function testEnqueueExistingProductDispatchesProductUpdate(): void
+    public function test_enqueue_existing_product_dispatches_product_update(): void
     {
         $channel = $this->createChannel(id: 1);
         $product = $this->createProduct(id: 10, channels: [$channel]);
@@ -55,7 +58,7 @@ final class ProductEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($product, isNew: false);
     }
 
-    public function testEnqueueDispatchesForEachMailchimpChannel(): void
+    public function test_enqueue_dispatches_for_each_mailchimp_channel(): void
     {
         $channel1 = $this->createChannel(id: 1);
         $channel2 = $this->createChannel(id: 2);
@@ -68,7 +71,7 @@ final class ProductEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($product);
     }
 
-    public function testEnqueueRemovalDispatchesProductRemove(): void
+    public function test_enqueue_removal_dispatches_product_remove(): void
     {
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -81,7 +84,7 @@ final class ProductEnqueuerTest extends TestCase
     private function createProduct(int $id, array $channels = []): ProductInterface
     {
         $product = new Product();
-        self::setId($product, $id);
+        self::setIdOnObject($product, $id);
         $product->setCode('PROD-' . $id);
         foreach ($channels as $channel) {
             $product->addChannel($channel);
@@ -96,15 +99,9 @@ final class ProductEnqueuerTest extends TestCase
         $locale->method('getCode')->willReturn('en_US');
 
         $channel = new Channel();
-        self::setId($channel, $id);
+        self::setIdOnObject($channel, $id);
         $channel->setDefaultLocale($locale);
 
         return $channel;
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

@@ -1,0 +1,71 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_order_sync:
+        code: 'ORDER_SYNC_TEST'
+        name: 'Order Sync Test Store'
+        hostname: 'https://order-sync.test'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Sylius\Component\Core\Model\ChannelPricing:
+    pricing_order_sync:
+        channelCode: 'ORDER_SYNC_TEST'
+        price: 2999
+
+Sylius\Component\Core\Model\ProductVariant:
+    variant_order_sync:
+        code: 'ORDER_SYNC_VARIANT'
+        currentLocale: 'en_US'
+        fallbackLocale: 'en_US'
+        name: 'S'
+        __calls:
+            - addChannelPricing: ['@pricing_order_sync']
+
+Sylius\Component\Core\Model\ProductTranslation:
+    product_translation_order_sync:
+        locale: 'en_US'
+        name: 'Test T-Shirt'
+        slug: 'test-t-shirt-order-sync'
+        description: 'A test product.'
+
+Sylius\Component\Core\Model\Product:
+    product_order_sync:
+        code: 'ORDER_SYNC_PRODUCT'
+        __calls:
+            - addTranslation: ['@product_translation_order_sync']
+            - addVariant: ['@variant_order_sync']
+
+Sylius\Component\Core\Model\OrderItem:
+    order_item_order_sync:
+        variant: '@variant_order_sync'
+        unitPrice: 2999
+
+Sylius\Component\Core\Model\OrderItemUnit:
+    unit_order_sync:
+        __construct:
+            - '@order_item_order_sync'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_order_sync:
+        email: 'order-sync@test.com'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
+    order_order_sync:
+        channel: '@channel_order_sync'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        customer: '@customer_order_sync'
+        __calls:
+            - addItem: ['@order_item_order_sync']

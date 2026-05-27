@@ -38,7 +38,7 @@ final class ProductMapperTest extends TestCase
         $this->mapper = new ProductMapper($this->productVariantMapper, $this->router, $this->imagineFilterService);
     }
 
-    public function testMapsProductWithVariants(): void
+    public function test_maps_product_with_variants(): void
     {
         $channel = new Channel();
         $channel->setCode('WEB');
@@ -81,7 +81,7 @@ final class ProductMapperTest extends TestCase
         $this->assertSame('TSHIRT-L', $mapped->variants[0]->id);
     }
 
-    public function testMapsProductImageUrl(): void
+    public function test_maps_product_image_url(): void
     {
         $channel = new Channel();
         $channel->setCode('WEB');
@@ -115,7 +115,7 @@ final class ProductMapperTest extends TestCase
         $this->assertSame('https://example.com/media/cache/sylius_shop_product_large_thumbnail/product/ab/cd/image.webp', $mapped->imageUrl);
     }
 
-    public function testImageUrlIsEmptyWhenProductHasNoImages(): void
+    public function test_image_url_is_empty_when_product_has_no_images(): void
     {
         $channel = new Channel();
         $channel->setHostname('https://example.com');
@@ -140,7 +140,7 @@ final class ProductMapperTest extends TestCase
         $this->assertSame('', $mapped->imageUrl);
     }
 
-    public function testFallsBackToHostnameWhenNoSlug(): void
+    public function test_falls_back_to_hostname_when_no_slug(): void
     {
         $channel = new Channel();
         $channel->setHostname('https://example.com');
@@ -163,7 +163,7 @@ final class ProductMapperTest extends TestCase
         $this->assertSame('https://example.com', $mapped->url);
     }
 
-    public function testMapsProductWithNoVariants(): void
+    public function test_maps_product_with_no_variants(): void
     {
         $channel = new Channel();
         $channel->setHostname('https://example.com');

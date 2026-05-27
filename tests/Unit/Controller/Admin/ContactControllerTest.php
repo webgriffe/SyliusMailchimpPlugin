@@ -6,11 +6,11 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Controller\Admin;
 
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Sylius\Component\Core\Model\CustomerInterface;
-use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
@@ -57,9 +57,9 @@ final class ContactControllerTest extends TestCase
 
     public function test_it_loads_orders_and_carts_and_renders_for_found_customer(): void
     {
-        $customer = $this->createMock(CustomerInterface::class);
-        $order = $this->createMock(OrderInterface::class);
-        $cart = $this->createMock(OrderInterface::class);
+        $customer = new Customer();
+        $order = new Order();
+        $cart = new Order();
 
         $this->customerRepository->method('find')->with(42)->willReturn($customer);
         $this->orderRepository->expects($this->once())->method('findByCustomer')

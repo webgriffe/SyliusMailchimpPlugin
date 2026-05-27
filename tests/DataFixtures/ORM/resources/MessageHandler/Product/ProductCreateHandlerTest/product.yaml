@@ -1,0 +1,49 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_product_create:
+        code: 'PRODUCT_CREATE_TEST'
+        name: 'Product Create Test Store'
+        hostname: 'https://product-create.test'
+        contactEmail: 'product@test.com'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Sylius\Component\Core\Model\ChannelPricing:
+    pricing_product_create:
+        channelCode: 'PRODUCT_CREATE_TEST'
+        price: 1999
+
+Sylius\Component\Core\Model\ProductVariant:
+    variant_product_create:
+        code: 'PRODUCT_CREATE_VARIANT'
+        currentLocale: 'en_US'
+        fallbackLocale: 'en_US'
+        name: 'Test'
+        __calls:
+            - addChannelPricing: ['@pricing_product_create']
+
+Sylius\Component\Core\Model\ProductTranslation:
+    product_translation_create:
+        locale: 'en_US'
+        name: 'Test Product'
+        slug: 'test-product-create'
+        description: 'A test product.'
+
+Sylius\Component\Core\Model\Product:
+    product_product_create:
+        code: 'PRODUCT_CREATE_PRODUCT'
+        __calls:
+            - addTranslation: ['@product_translation_create']
+            - addVariant: ['@variant_product_create']

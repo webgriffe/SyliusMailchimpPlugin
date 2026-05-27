@@ -10,6 +10,7 @@ use Psr\Log\NullLogger;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Store\StoreCreate;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
@@ -18,6 +19,8 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 
 final class StoreEnqueuerTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MessageBusInterface $messageBus;
 
     private MockObject&AudienceProviderInterface $audienceProvider;
@@ -39,7 +42,7 @@ final class StoreEnqueuerTest extends TestCase
         );
     }
 
-    public function testEnqueueDispatchesStoreCreate(): void
+    public function test_enqueue_dispatches_store_create(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
         $audience = new Audience('aud123', $channel);
@@ -54,7 +57,7 @@ final class StoreEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($channel);
     }
 
-    public function testEnqueueSkipsWhenChannelHasNoIntId(): void
+    public function test_enqueue_skips_when_channel_has_no_int_id(): void
     {
         $channel = new Channel();
         $channel->setCode('WEB');
@@ -70,7 +73,7 @@ final class StoreEnqueuerTest extends TestCase
     private function createChannel(int $id, string $code): Channel
     {
         $channel = new Channel();
-        self::setId($channel, $id);
+        self::setIdOnObject($channel, $id);
         $channel->setCode($code);
         $channel->setName('Test Store');
         $channel->setHostname('https://example.com');
@@ -78,11 +81,5 @@ final class StoreEnqueuerTest extends TestCase
         $channel->setMailchimpAudienceId('aud123');
 
         return $channel;
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

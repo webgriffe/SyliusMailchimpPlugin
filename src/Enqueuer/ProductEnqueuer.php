@@ -42,7 +42,7 @@ final class ProductEnqueuer implements ProductEnqueuerInterface
                 continue;
             }
 
-            $locale = $channel->getDefaultLocale()?->getCode() ?? 'en';
+            $locale = $channel->getDefaultLocale()?->getCode() ?? 'en'; // todo: en is not a valid fallback
             $message = $isNew ? new ProductCreate($productId, $channelId, $locale) : new ProductUpdate($productId, $channelId, $locale);
             $this->logger->debug('[Mailchimp] Dispatching {type} for product #{id} in channel #{channel}.', [
                 'type' => $isNew ? 'ProductCreate' : 'ProductUpdate',

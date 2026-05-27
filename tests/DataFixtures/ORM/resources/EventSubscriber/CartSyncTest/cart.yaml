@@ -1,0 +1,66 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_cart_sync:
+        code: 'CART_SYNC_TEST'
+        name: 'Cart Sync Test Store'
+        hostname: 'https://cart-sync.test'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Sylius\Component\Core\Model\ChannelPricing:
+    pricing_cart_sync:
+        channelCode: 'CART_SYNC_TEST'
+        price: 2999
+
+Sylius\Component\Core\Model\ProductVariant:
+    variant_cart_sync:
+        code: 'CART_SYNC_VARIANT'
+        currentLocale: 'en_US'
+        fallbackLocale: 'en_US'
+        name: 'S'
+        __calls:
+            - addChannelPricing: ['@pricing_cart_sync']
+
+Sylius\Component\Core\Model\ProductTranslation:
+    product_translation_cart_sync:
+        locale: 'en_US'
+        name: 'Test T-Shirt'
+        slug: 'test-t-shirt-cart-sync'
+        description: 'A test product.'
+
+Sylius\Component\Core\Model\Product:
+    product_cart_sync:
+        code: 'CART_SYNC_PRODUCT'
+        __calls:
+            - addTranslation: ['@product_translation_cart_sync']
+            - addVariant: ['@variant_cart_sync']
+
+Sylius\Component\Core\Model\OrderItem:
+    order_item_cart_sync:
+        variant: '@variant_cart_sync'
+        unitPrice: 2999
+
+Sylius\Component\Core\Model\OrderItemUnit:
+    unit_cart_sync:
+        __construct:
+            - '@order_item_cart_sync'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
+    order_cart_sync:
+        channel: '@channel_cart_sync'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        __calls:
+            - addItem: ['@order_item_cart_sync']

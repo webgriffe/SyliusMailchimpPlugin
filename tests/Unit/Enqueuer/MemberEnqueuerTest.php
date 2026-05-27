@@ -11,6 +11,7 @@ use Sylius\Component\Core\Model\CustomerInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
@@ -23,6 +24,8 @@ use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 
 final class MemberEnqueuerTest extends TestCase
 {
+    use ReflectionIdTrait;
+
     private MockObject&MessageBusInterface $messageBus;
 
     private MockObject&AudienceContextInterface $audienceContext;
@@ -67,7 +70,7 @@ final class MemberEnqueuerTest extends TestCase
     {
         $customer = new Customer();
         $customer->setSubscribedToNewsletter(true);
-        self::setId($customer, 1);
+        self::setIdOnObject($customer, 1);
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($customer);
@@ -235,7 +238,7 @@ final class MemberEnqueuerTest extends TestCase
     private function buildCustomer(int $id, string $email, ?string $mailchimpId = null, bool $subscribedToNewsletter = true): Customer
     {
         $customer = new Customer();
-        self::setId($customer, $id);
+        self::setIdOnObject($customer, $id);
         if ($email !== '') {
             $customer->setEmail($email);
         }
@@ -245,11 +248,5 @@ final class MemberEnqueuerTest extends TestCase
         $customer->setSubscribedToNewsletter($subscribedToNewsletter);
 
         return $customer;
-    }
-
-    private static function setId(object $entity, int $id): void
-    {
-        $ref = new \ReflectionProperty($entity, 'id');
-        $ref->setValue($entity, $id);
     }
 }

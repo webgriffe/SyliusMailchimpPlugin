@@ -1,0 +1,4 @@
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_member_create:
+        email: 'member-create@test.com'
+        subscribedToNewsletter: true
