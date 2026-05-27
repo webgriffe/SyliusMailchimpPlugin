@@ -179,6 +179,15 @@ final class MailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertStore(Store $store): void
     {
+        if (filter_var($store->emailAddress, \FILTER_VALIDATE_EMAIL) === false) {
+            throw new \InvalidArgumentException(sprintf(
+                'Cannot upsert Mailchimp store "%s": invalid email address "%s". ' .
+                'Please set a valid contact email on the Sylius channel.',
+                $store->id,
+                $store->emailAddress,
+            ));
+        }
+
         $payload = [
             'id' => $store->id,
             'name' => $store->name,
@@ -205,7 +214,8 @@ final class MailchimpClient implements MailchimpClientInterface
         ]);
 
         $getStatus = $getResponse->getStatusCode();
-        if ($getStatus === 404) {
+        $isCreation = $getStatus === 404;
+        if ($isCreation) {
             if ($store->listId !== '') {
                 $payload['list_id'] = $store->listId;
             }
@@ -216,19 +226,42 @@ final class MailchimpClient implements MailchimpClientInterface
                 'auth_basic' => ['anystring', $this->getApiKey()],
                 'json' => $payload,
             ]);
-        } else {
+        } elseif ($getStatus === 200) {
             unset($payload['id']);
+            if ($store->listId !== '') {
+                $payload['list_id'] = $store->listId;
+            }
             $this->logger->debug('[Mailchimp] PATCH {url}', ['url' => $getUrl, 'payload' => $payload]);
 
             $response = $this->httpClient->request('PATCH', $getUrl, [
                 'auth_basic' => ['anystring', $this->getApiKey()],
                 'json' => $payload,
             ]);
+        } else {
+            $this->handleErrorResponse($getStatus, $getResponse->getContent(false), $store->id);
         }
 
         $statusCode = $response->getStatusCode();
         if ($statusCode >= 400) {
             $this->handleErrorResponse($statusCode, $response->getContent(false), $store->id);
+        }
+
+        if ($isCreation) {
+            $responseBody = $response->getContent(false);
+            /** @var array<string, mixed>|null $responseData */
+            $responseData = json_decode($responseBody, true);
+            if (is_array($responseData) && ($responseData['email_address'] ?? '') === '') {
+                throw new ClientException(
+                    sprintf(
+                        'Mailchimp silently rejected store "%s" creation: the email address "%s" was not accepted. ' .
+                        'The email domain may be reserved or blocked by Mailchimp (e.g. example.com).',
+                        $store->id,
+                        $store->emailAddress,
+                    ),
+                    $statusCode,
+                    $responseBody,
+                );
+            }
         }
 
         $this->logger->info('[Mailchimp] Store {id} upserted.', ['id' => $store->id]);
