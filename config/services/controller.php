@@ -22,6 +22,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$webhookSecret', param('webgriffe_sylius_mailchimp.webhook_secret'))
+        ->arg('$webhookSigningSecret', param('webgriffe_sylius_mailchimp.webhook_signing_secret'))
         ->tag('controller.service_arguments');
 
     $services->set(NewsletterController::class)

@@ -26,6 +26,7 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
         Assert::string($config['api_key']);
         Assert::string($config['member_default_status']);
         Assert::string($config['webhook_secret']);
+        Assert::string($config['webhook_signing_secret']);
         Assert::boolean($config['send_unpaid_orders_as_carts']);
         Assert::isArray($config['mapper']);
         Assert::isArray($config['mapper']['product']);
@@ -35,6 +36,7 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
         $container->setParameter('webgriffe_sylius_mailchimp.api_key', $config['api_key']);
         $container->setParameter('webgriffe_sylius_mailchimp.member_default_status', $config['member_default_status']);
         $container->setParameter('webgriffe_sylius_mailchimp.webhook_secret', $config['webhook_secret']);
+        $container->setParameter('webgriffe_sylius_mailchimp.webhook_signing_secret', $config['webhook_signing_secret']);
         $container->setParameter('webgriffe_sylius_mailchimp.send_unpaid_orders_as_carts', $config['send_unpaid_orders_as_carts']);
         $container->setParameter('webgriffe_sylius_mailchimp.command_lock_enable', $config['command_lock_enable']);
         $container->setParameter('webgriffe_sylius_mailchimp.mapper.product.image_type', $config['mapper']['product']['image_type']);

@@ -12,10 +12,15 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberSubscriptionUpdate;
 
 final class WebhookController
 {
+    private const SIGNATURE_HEADER = 'X-Mailchimp-Signature';
+
+    private const SIGNATURE_TIMESTAMP_TOLERANCE_SECONDS = 300;
+
     public function __construct(
         private readonly MessageBusInterface $messageBus,
         private readonly LoggerInterface $logger,
         private readonly ?string $webhookSecret,
+        private readonly ?string $webhookSigningSecret = null,
     ) {
     }
 
@@ -33,6 +38,14 @@ final class WebhookController
         // Mailchimp sends a GET request as a "health check" — just return 200
         if ($request->isMethod(Request::METHOD_GET)) {
             return new Response('OK');
+        }
+
+        if ($this->webhookSigningSecret !== null && $this->webhookSigningSecret !== '') {
+            if (!$this->hasValidSignature($request, $this->webhookSigningSecret)) {
+                $this->logger->warning('[Mailchimp] Webhook received with missing or invalid signature.');
+
+                return new Response('Forbidden', Response::HTTP_FORBIDDEN);
+            }
         }
 
         $type = (string) $request->request->get('type', '');
@@ -61,5 +74,41 @@ final class WebhookController
         $this->messageBus->dispatch(new MemberSubscriptionUpdate($type, $email, $listId));
 
         return new Response('OK');
+    }
+
+    /**
+     * Mailchimp signs webhook deliveries with HMAC-SHA256 over "{timestamp}.{raw_body}" and sends
+     * the result in the "X-Mailchimp-Signature" header as "t={timestamp},v1={hex_signature}".
+     */
+    private function hasValidSignature(Request $request, string $signingSecret): bool
+    {
+        $header = $request->headers->get(self::SIGNATURE_HEADER);
+        if ($header === null || $header === '') {
+            return false;
+        }
+
+        $timestamp = null;
+        $signature = null;
+        foreach (explode(',', $header) as $part) {
+            [$key, $value] = array_pad(explode('=', $part, 2), 2, '');
+            if ($key === 't') {
+                $timestamp = $value;
+            }
+            if ($key === 'v1') {
+                $signature = $value;
+            }
+        }
+
+        if ($timestamp === null || $timestamp === '' || $signature === null || $signature === '') {
+            return false;
+        }
+
+        if (abs(time() - (int) $timestamp) > self::SIGNATURE_TIMESTAMP_TOLERANCE_SECONDS) {
+            return false;
+        }
+
+        $expectedSignature = hash_hmac('sha256', $timestamp . '.' . $request->getContent(), $signingSecret);
+
+        return hash_equals($expectedSignature, $signature);
     }
 }

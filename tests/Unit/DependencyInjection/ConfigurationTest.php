@@ -45,6 +45,7 @@ final class ConfigurationTest extends TestCase
         self::assertSame('abc123-us1', $config['api_key']);
         self::assertSame('subscribed', $config['member_default_status']);
         self::assertSame('', $config['webhook_secret']);
+        self::assertSame('', $config['webhook_signing_secret']);
         self::assertTrue($config['send_unpaid_orders_as_carts']);
         self::assertSame('main', $config['mapper']['product']['image_type']);
         self::assertSame('sylius_medium', $config['mapper']['product']['image_filter']);
@@ -102,5 +103,14 @@ final class ConfigurationTest extends TestCase
         ]);
 
         self::assertSame('my-secret', $config['webhook_secret']);
+    }
+
+    public function test_it_accepts_webhook_signing_secret(): void
+    {
+        $config = $this->processor->processConfiguration($this->configuration, [
+            ['api_key' => 'abc123-us1', 'webhook_signing_secret' => 'my-signing-secret'],
+        ]);
+
+        self::assertSame('my-signing-secret', $config['webhook_signing_secret']);
     }
 }
