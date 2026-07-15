@@ -69,9 +69,12 @@ final class CustomerSubscriberTest extends TestCase
     public function test_enqueues_update_when_no_email_change(): void
     {
         $customer = new Customer();
+        $customer->setEmail('same@example.com');
         self::setIdOnObject($customer, 42);
 
-        $this->unitOfWork->method('getEntityChangeSet')->willReturn([]);
+        $this->unitOfWork->method('getOriginalEntityData')->with($customer)->willReturn([
+            'email' => 'same@example.com',
+        ]);
 
         $this->memberEnqueuer->expects($this->once())->method('enqueue')->with($customer);
 
@@ -82,10 +85,11 @@ final class CustomerSubscriberTest extends TestCase
     public function test_dispatches_remove_and_create_when_email_changed(): void
     {
         $customer = new Customer();
+        $customer->setEmail('new@example.com');
         self::setIdOnObject($customer, 42);
 
-        $this->unitOfWork->method('getEntityChangeSet')->willReturn([
-            'email' => ['old@example.com', 'new@example.com'],
+        $this->unitOfWork->method('getOriginalEntityData')->with($customer)->willReturn([
+            'email' => 'old@example.com',
         ]);
 
         $this->memberEnqueuer->expects($this->once())
@@ -96,13 +100,14 @@ final class CustomerSubscriberTest extends TestCase
         $this->subscriber->onCustomerPostUpdate(new GenericEvent($customer));
     }
 
-    public function test_does_not_dispatch_create_when_new_email_is_empty(): void
+    public function test_dispatches_email_change_when_new_email_is_empty(): void
     {
         $customer = new Customer();
+        $customer->setEmail('');
         self::setIdOnObject($customer, 42);
 
-        $this->unitOfWork->method('getEntityChangeSet')->willReturn([
-            'email' => ['old@example.com', ''],
+        $this->unitOfWork->method('getOriginalEntityData')->with($customer)->willReturn([
+            'email' => 'old@example.com',
         ]);
 
         $this->memberEnqueuer->expects($this->once())
@@ -117,7 +122,7 @@ final class CustomerSubscriberTest extends TestCase
     {
         $customer = new Customer();
 
-        $this->unitOfWork->expects($this->never())->method('getEntityChangeSet');
+        $this->unitOfWork->expects($this->never())->method('getOriginalEntityData');
 
         $this->subscriber->onCustomerPreUpdate(new GenericEvent($customer));
     }

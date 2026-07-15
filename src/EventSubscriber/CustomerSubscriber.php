@@ -55,11 +55,14 @@ final class CustomerSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $uow = $this->entityManager->getUnitOfWork();
-        $changeSet = $uow->getEntityChangeSet($customer);
+        // This resource event fires before flush, when the UnitOfWork has not yet computed
+        // change sets, so compare the current email against the data loaded from the database.
+        $originalData = $this->entityManager->getUnitOfWork()->getOriginalEntityData($customer);
+        /** @var mixed $originalEmail */
+        $originalEmail = $originalData['email'] ?? null;
 
-        if (isset($changeSet['email']) && is_string($changeSet['email'][0])) {
-            $this->emailBeforeUpdate[$customerId] = ['email' => $changeSet['email'][0]];
+        if (is_string($originalEmail) && $originalEmail !== '' && $originalEmail !== $customer->getEmail()) {
+            $this->emailBeforeUpdate[$customerId] = ['email' => $originalEmail];
         }
     }
 
