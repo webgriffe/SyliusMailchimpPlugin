@@ -48,6 +48,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     {
         return [
             'upsertMember' => [],
+            'removeMember' => [],
             'upsertCart' => [],
             'removeCart' => [],
             'upsertOrder' => [],
@@ -68,6 +69,12 @@ final class StubMailchimpClient implements MailchimpClientInterface
     public function getUpsertMemberCalls(): array
     {
         return self::readCalls()['upsertMember'] ?? [];
+    }
+
+    /** @return array<array{listId: string, subscriberHash: string}> */
+    public function getRemoveMemberCalls(): array
+    {
+        return self::readCalls()['removeMember'] ?? [];
     }
 
     /** @return array<array{storeId: string, order: OrderInterface}> */
@@ -147,6 +154,9 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function removeMember(string $listId, string $subscriberHash): void
     {
+        $calls = self::readCalls();
+        $calls['removeMember'][] = ['listId' => $listId, 'subscriberHash' => $subscriberHash];
+        self::writeCalls($calls);
     }
 
     #[\Override]
