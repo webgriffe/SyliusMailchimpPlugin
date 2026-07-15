@@ -20,6 +20,29 @@ default:
             filters:
                 tags: "@mailchimp&&@registering"
 
+        webgriffe_mailchimp_profile_update:
+            contexts:
+                - sylius.behat.context.hook.doctrine_orm
+                - sylius.behat.context.hook.session
+                - sylius.behat.context.setup.channel
+                - sylius.behat.context.setup.locale
+                - sylius.behat.context.setup.user
+                - sylius.behat.context.setup.shop_security
+
+                - sylius.behat.context.transform.shared_storage
+                - sylius.behat.context.transform.lexical
+
+                - sylius.behat.context.ui.shop.locale
+                - sylius.behat.context.ui.shop.account
+                - sylius.behat.context.ui.save
+
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpCustomerContext
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpRegistrationContext
+                - Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpProfileContext
+            filters:
+                tags: "@mailchimp&&@profile_update"
+
         webgriffe_mailchimp_cart:
             contexts:
                 - sylius.behat.context.hook.doctrine_orm

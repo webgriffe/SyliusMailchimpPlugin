@@ -7,7 +7,9 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Console\MailchimpConsoleCartContext;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpChannelContext;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Setup\MailchimpCustomerContext;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpCartContext;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpProfileContext;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpOrderContext;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop\MailchimpRegistrationContext;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
@@ -27,6 +29,23 @@ return static function (ContainerConfigurator $containerConfigurator) {
             [
                 service('sylius.behat.shared_storage'),
                 service('doctrine.orm.entity_manager'),
+            ]
+        )
+        ->public();
+
+    $services->set(MailchimpCustomerContext::class)
+        ->args(
+            [
+                service('sylius.repository.customer'),
+                service('doctrine.orm.entity_manager'),
+            ]
+        )
+        ->public();
+
+    $services->set(MailchimpProfileContext::class)
+        ->args(
+            [
+                service(StubMailchimpClient::class),
             ]
         )
         ->public();
