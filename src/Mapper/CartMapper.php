@@ -10,17 +10,16 @@ use Sylius\Component\Core\Model\OrderItemInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine;
 
-final class CartMapper
+final class CartMapper implements CartMapperInterface
 {
     public function __construct(
-        private readonly EcommerceCustomerMapper $customerMapper,
+        private readonly EcommerceCustomerMapperInterface $customerMapper,
     ) {
     }
 
-    public function map(OrderInterface $order, ChannelInterface&ChannelMailchimpAwareInterface $channel): Cart
+    #[\Override]
+    public function map(OrderInterface $order, ChannelInterface&ChannelMailchimpAwareInterface $channel): array
     {
         $cartId = IdSanitizer::sanitize((string) $order->getId());
         $checkoutUrl = sprintf('%s/checkout', rtrim((string) $channel->getHostname(), '/'));
@@ -35,17 +34,18 @@ final class CartMapper
             }
         }
 
-        return new Cart(
-            id: $cartId,
-            customer: $this->customerMapper->mapFromOrder($order),
-            checkoutUrl: $checkoutUrl,
-            currencyCode: $currencyCode,
-            orderTotal: $orderTotal,
-            lines: $lines,
-        );
+        return [
+            'id' => $cartId,
+            'customer' => $this->customerMapper->mapFromOrder($order),
+            'checkout_url' => $checkoutUrl,
+            'currency_code' => $currencyCode,
+            'order_total' => $orderTotal,
+            'lines' => $lines,
+        ];
     }
 
-    private function mapCartLine(OrderItemInterface $item): ?CartLine
+    /** @return array<string, mixed>|null */
+    private function mapCartLine(OrderItemInterface $item): ?array
     {
         $variant = $item->getVariant();
         if (!$variant instanceof ProductVariantInterface) {
@@ -56,12 +56,12 @@ final class CartMapper
         $productId = IdSanitizer::sanitize($variant->getProduct()?->getCode() ?? '');
         $variantId = IdSanitizer::sanitize($variant->getCode() ?? '');
 
-        return new CartLine(
-            id: $lineId,
-            productId: $productId,
-            productVariantId: $variantId,
-            quantity: $item->getQuantity(),
-            price: round($item->getUnitPrice() / 100, 2),
-        );
+        return [
+            'id' => $lineId,
+            'product_id' => $productId,
+            'product_variant_id' => $variantId,
+            'quantity' => $item->getQuantity(),
+            'price' => round($item->getUnitPrice() / 100, 2),
+        ];
     }
 }

@@ -8,7 +8,6 @@ use DateTimeZone;
 use Sylius\Component\Core\Model\ShopBillingDataInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Store;
 
 final class StoreMapper implements StoreMapperInterface
 {
@@ -18,7 +17,7 @@ final class StoreMapper implements StoreMapperInterface
     }
 
     #[\Override]
-    public function map(Audience $audience): Store
+    public function map(Audience $audience): array
     {
         $channel = $audience->channel;
 
@@ -43,17 +42,23 @@ final class StoreMapper implements StoreMapperInterface
             ]));
         }
 
-        return new Store(
-            id: $this->storeIdentifierResolver->resolve($audience),
-            name: (string) $channel->getName(),
-            domain: rtrim((string) $channel->getHostname(), '/'),
-            emailAddress: (string) $channel->getContactEmail(),
-            currencyCode: $currencyCode,
-            primaryLocale: $primaryLocale,
-            listId: $audience->id,
-            timezone: $timezone,
-            address: $address,
-        );
+        $payload = [
+            'id' => $this->storeIdentifierResolver->resolve($audience),
+            'name' => (string) $channel->getName(),
+            'domain' => rtrim((string) $channel->getHostname(), '/'),
+            'email_address' => (string) $channel->getContactEmail(),
+            'currency_code' => $currencyCode,
+            'primary_locale' => $primaryLocale,
+            'timezone' => $timezone,
+            'list_id' => $audience->id,
+            'platform' => 'Sylius',
+        ];
+
+        if ($address !== '') {
+            $payload['address'] = ['address1' => $address];
+        }
+
+        return $payload;
     }
 
     private static function resolveTimezone(?string $countryCode): string

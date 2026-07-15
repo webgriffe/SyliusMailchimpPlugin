@@ -11,7 +11,6 @@ use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
 
 final class ProductMapper implements ProductMapperInterface
 {
@@ -22,7 +21,8 @@ final class ProductMapper implements ProductMapperInterface
     ) {
     }
 
-    public function map(ProductInterface $product, ChannelInterface $channel, string $locale): Product
+    #[\Override]
+    public function map(ProductInterface $product, ChannelInterface $channel, string $locale): array
     {
         $translation = $product->getTranslation($locale);
         $productId = IdSanitizer::sanitize((string) $product->getCode());
@@ -35,15 +35,6 @@ final class ProductMapper implements ProductMapperInterface
             )
             : (string) $channel->getHostname();
 
-        $imageUrl = '';
-        $firstImage = $product->getImages()->first();
-        if ($firstImage instanceof ProductImageInterface) {
-            $path = $firstImage->getPath();
-            if ($path !== null && $path !== '') {
-                $imageUrl = $this->imagineFilterService->getUrlOfFilteredImage($path, 'sylius_shop_product_large_thumbnail');
-            }
-        }
-
         $variants = [];
         foreach ($product->getVariants() as $variant) {
             if ($variant instanceof ProductVariantInterface) {
@@ -51,13 +42,24 @@ final class ProductMapper implements ProductMapperInterface
             }
         }
 
-        return new Product(
-            id: $productId,
-            title: (string) $translation->getName(),
-            url: $url,
-            variants: $variants,
-            description: (string) $translation->getDescription(),
-            imageUrl: $imageUrl,
-        );
+        $payload = [
+            'id' => $productId,
+            'title' => (string) $translation->getName(),
+            'url' => $url,
+            'description' => (string) $translation->getDescription(),
+            'type' => '',
+            'vendor' => '',
+            'variants' => $variants,
+        ];
+
+        $firstImage = $product->getImages()->first();
+        if ($firstImage instanceof ProductImageInterface) {
+            $path = $firstImage->getPath();
+            if ($path !== null && $path !== '') {
+                $payload['image_url'] = $this->imagineFilterService->getUrlOfFilteredImage($path, 'sylius_shop_product_large_thumbnail');
+            }
+        }
+
+        return $payload;
     }
 }

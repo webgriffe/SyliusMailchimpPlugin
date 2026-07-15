@@ -49,14 +49,14 @@ final class StoreMapperTest extends TestCase
         $audience = new Audience('abc123', $channel);
         $store = $this->mapper->map($audience);
 
-        $this->assertSame('WEB-abc123', $store->id);
-        $this->assertSame('abc123', $store->listId);
-        $this->assertSame('Web Store', $store->name);
-        $this->assertSame('https://example.com', $store->domain);
-        $this->assertSame('store@example.com', $store->emailAddress);
-        $this->assertSame('USD', $store->currencyCode);
-        $this->assertSame('en', $store->primaryLocale);
-        $this->assertSame('Sylius', $store->platform);
+        $this->assertSame('WEB-abc123', $store['id']);
+        $this->assertSame('abc123', $store['list_id']);
+        $this->assertSame('Web Store', $store['name']);
+        $this->assertSame('https://example.com', $store['domain']);
+        $this->assertSame('store@example.com', $store['email_address']);
+        $this->assertSame('USD', $store['currency_code']);
+        $this->assertSame('en', $store['primary_locale']);
+        $this->assertSame('Sylius', $store['platform']);
     }
 
     public function test_strips_trailing_slash_from_domain(): void
@@ -64,7 +64,7 @@ final class StoreMapperTest extends TestCase
         $channel = $this->createChannel(hostname: 'https://example.com/');
         $store = $this->mapper->map(new Audience('aud', $channel));
 
-        $this->assertSame('https://example.com', $store->domain);
+        $this->assertSame('https://example.com', $store['domain']);
     }
 
     public function test_defaults_to_en_locale_when_no_default_locale(): void
@@ -72,7 +72,7 @@ final class StoreMapperTest extends TestCase
         $channel = $this->createChannel(defaultLocale: null);
         $store = $this->mapper->map(new Audience('aud', $channel));
 
-        $this->assertSame('en', $store->primaryLocale);
+        $this->assertSame('en', $store['primary_locale']);
     }
 
     public function test_defaults_to_usd_when_no_base_currency(): void
@@ -80,7 +80,7 @@ final class StoreMapperTest extends TestCase
         $channel = $this->createChannel(baseCurrency: null);
         $store = $this->mapper->map(new Audience('aud', $channel));
 
-        $this->assertSame('USD', $store->currencyCode);
+        $this->assertSame('USD', $store['currency_code']);
     }
 
     public function test_truncates_locale_to_two_chars(): void
@@ -91,7 +91,7 @@ final class StoreMapperTest extends TestCase
         $channel = $this->createChannel(defaultLocale: $locale);
         $store = $this->mapper->map(new Audience('aud', $channel));
 
-        $this->assertSame('it', $store->primaryLocale);
+        $this->assertSame('it', $store['primary_locale']);
     }
 
     public function test_maps_address_and_timezone_from_shop_billing_data(): void
@@ -105,8 +105,8 @@ final class StoreMapperTest extends TestCase
         $channel = $this->createChannel(shopBillingData: $billing);
         $store = $this->mapper->map(new Audience('aud', $channel));
 
-        $this->assertSame('Via Roma 1, Milan, 20121, IT', $store->address);
-        $this->assertNotSame('', $store->timezone);
+        $this->assertSame('Via Roma 1, Milan, 20121, IT', $store['address']['address1']);
+        $this->assertNotSame('', $store['timezone']);
     }
 
     public function test_address_and_timezone_are_empty_without_shop_billing_data(): void
@@ -114,8 +114,8 @@ final class StoreMapperTest extends TestCase
         $channel = $this->createChannel(shopBillingData: null);
         $store = $this->mapper->map(new Audience('aud', $channel));
 
-        $this->assertSame('', $store->address);
-        $this->assertSame('', $store->timezone);
+        $this->assertArrayNotHasKey('address', $store);
+        $this->assertSame('', $store['timezone']);
     }
 
     public function test_list_id_matches_audience_id(): void
@@ -123,7 +123,7 @@ final class StoreMapperTest extends TestCase
         $channel = $this->createChannel();
         $store = $this->mapper->map(new Audience('my-list-id', $channel));
 
-        $this->assertSame('my-list-id', $store->listId);
+        $this->assertSame('my-list-id', $store['list_id']);
     }
 
     private function createChannel(

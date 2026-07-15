@@ -6,8 +6,8 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop;
 
 use Behat\Behat\Context\Context;
 use Behat\Behat\Hook\Scope\BeforeScenarioScope;
+use Sylius\Component\Core\Model\OrderInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart;
 use Webmozart\Assert\Assert;
 
 final class MailchimpCartContext implements Context
@@ -52,9 +52,9 @@ final class MailchimpCartContext implements Context
     {
         $cart = $this->getLastUpsertedCart();
         Assert::count(
-            $cart->lines,
+            $cart->getItems()->toArray(),
             $count,
-            sprintf('Expected last cart sync to have %d line(s), got %d.', $count, count($cart->lines)),
+            sprintf('Expected last cart sync to have %d line(s), got %d.', $count, $cart->getItems()->count()),
         );
     }
 
@@ -64,13 +64,14 @@ final class MailchimpCartContext implements Context
     public function theLastCartSyncLineShouldHaveQuantity(int $quantity): void
     {
         $cart = $this->getLastUpsertedCart();
-        Assert::notEmpty($cart->lines, 'Expected at least one line in the last cart sync, but there are none.');
+        Assert::true($cart->getItems()->count() > 0, 'Expected at least one line in the last cart sync, but there are none.');
 
-        $line = $cart->lines[0];
+        $line = $cart->getItems()->first();
+        $lineQuantity = $line->getQuantity();
         Assert::same(
-            $line->quantity,
+            $lineQuantity,
             $quantity,
-            sprintf('Expected cart line quantity to be %d, got %d.', $quantity, $line->quantity),
+            sprintf('Expected cart line quantity to be %d, got %d.', $quantity, $lineQuantity),
         );
     }
 
@@ -96,11 +97,11 @@ final class MailchimpCartContext implements Context
         );
     }
 
-    private function getLastUpsertedCart(): Cart
+    private function getLastUpsertedCart(): OrderInterface
     {
         $calls = $this->stubMailchimpClient->getUpsertCartCalls();
         Assert::notEmpty($calls, 'Expected upsertCart to be called at least once, but it was not called.');
 
-        return $calls[array_key_last($calls)]['cart'];
+        return $calls[array_key_last($calls)]['order'];
     }
 }

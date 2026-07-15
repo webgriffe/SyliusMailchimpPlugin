@@ -7,12 +7,23 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Client;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use Sylius\Component\Core\Model\ChannelInterface;
+use Sylius\Component\Core\Model\OrderInterface;
+use Sylius\Component\Core\Model\ProductInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\NotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClient;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 
@@ -24,12 +35,36 @@ final class MailchimpClientTest extends TestCase
 
     private MockObject&HttpClientInterface $httpClient;
 
+    private MockObject&StoreMapperInterface $storeMapper;
+
+    private MockObject&ProductMapperInterface $productMapper;
+
+    private MockObject&CartMapperInterface $cartMapper;
+
+    private MockObject&OrderMapperInterface $orderMapper;
+
+    private MockObject&EcommerceCustomerMapperInterface $ecommerceCustomerMapper;
+
     private MailchimpClient $client;
 
     protected function setUp(): void
     {
         $this->httpClient = $this->createMock(HttpClientInterface::class);
-        $this->client = new MailchimpClient($this->httpClient, new NullLogger(), self::API_KEY);
+        $this->storeMapper = $this->createMock(StoreMapperInterface::class);
+        $this->productMapper = $this->createMock(ProductMapperInterface::class);
+        $this->cartMapper = $this->createMock(CartMapperInterface::class);
+        $this->orderMapper = $this->createMock(OrderMapperInterface::class);
+        $this->ecommerceCustomerMapper = $this->createMock(EcommerceCustomerMapperInterface::class);
+        $this->client = new MailchimpClient(
+            $this->httpClient,
+            new NullLogger(),
+            self::API_KEY,
+            $this->storeMapper,
+            $this->productMapper,
+            $this->cartMapper,
+            $this->orderMapper,
+            $this->ecommerceCustomerMapper,
+        );
     }
 
     public function test_upsert_member_returns_subscriber_id(): void
@@ -224,7 +259,7 @@ final class MailchimpClientTest extends TestCase
     public function test_upsert_store_posts_on_404(): void
     {
         $notFound = $this->mockResponse(404, '{"status":404}');
-        $created = $this->mockResponse(200, '{}');
+        $created = $this->mockResponse(200, '{"id":"store-1","email_address":"admin@myshop.com"}');
 
         $this->httpClient->expects($this->exactly(2))->method('request')
             ->willReturnCallback(function (string $method) use ($notFound, $created): ResponseInterface {
@@ -235,8 +270,20 @@ final class MailchimpClientTest extends TestCase
                 return $created;
             });
 
-        $store = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Store('store-1', 'My Shop', 'myshop.com', 'admin@myshop.com', 'EUR', 'it_IT', 'list-1');
-        $this->client->upsertStore($store);
+        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
+        $channel = $this->createMock(ChannelInterface::class);
+        $audience = new Audience('list-1', $channel);
+        $this->storeMapper->method('map')->willReturn([
+            'id' => 'store-1',
+            'name' => 'My Shop',
+            'domain' => 'myshop.com',
+            'email_address' => 'admin@myshop.com',
+            'currency_code' => 'EUR',
+            'primary_locale' => 'it',
+            'list_id' => 'list-1',
+            'platform' => 'Sylius',
+        ]);
+        $this->client->upsertStore($audience);
     }
 
     public function test_upsert_store_patches_on_existing(): void
@@ -253,8 +300,20 @@ final class MailchimpClientTest extends TestCase
                 return $updated;
             });
 
-        $store = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Store('store-1', 'My Shop', 'myshop.com', 'admin@myshop.com', 'EUR', 'it_IT');
-        $this->client->upsertStore($store);
+        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
+        $channel = $this->createMock(ChannelInterface::class);
+        $audience = new Audience('list-1', $channel);
+        $this->storeMapper->method('map')->willReturn([
+            'id' => 'store-1',
+            'name' => 'My Shop',
+            'domain' => 'myshop.com',
+            'email_address' => 'admin@myshop.com',
+            'currency_code' => 'EUR',
+            'primary_locale' => 'it',
+            'list_id' => 'list-1',
+            'platform' => 'Sylius',
+        ]);
+        $this->client->upsertStore($audience);
     }
 
     public function test_upsert_product_includes_variants(): void
@@ -267,9 +326,15 @@ final class MailchimpClientTest extends TestCase
             ))
             ->willReturn($response);
 
-        $variant = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\ProductVariant('var-1', 'Red', 'https://example.com', 'SKU', 9.99);
-        $product = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Product('prod-1', 'T-Shirt', 'https://example.com', [$variant]);
-        $this->client->upsertProduct('store-1', $product);
+        $product = $this->createMock(ProductInterface::class);
+        $channel = $this->createMock(ChannelInterface::class);
+        $this->productMapper->method('map')->willReturn([
+            'id' => 'prod-1',
+            'title' => 'T-Shirt',
+            'url' => 'https://example.com',
+            'variants' => [['id' => 'var-1', 'title' => 'Red', 'url' => 'https://example.com', 'sku' => 'SKU', 'price' => 9.99, 'inventory_quantity' => 0]],
+        ]);
+        $this->client->upsertProduct('store-1', $product, $channel, 'en_US');
     }
 
     public function test_upsert_cart_posts_on_404(): void
@@ -289,10 +354,18 @@ final class MailchimpClientTest extends TestCase
                 return $created;
             });
 
-        $customer = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer('cust-1', 'user@example.com');
-        $line = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine('line-1', 'prod-1', 'var-1', 1, 9.99);
-        $cart = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart('cart-1', $customer, 'https://example.com/checkout', 'EUR', 9.99, [$line]);
-        $this->client->upsertCart('store-1', $cart);
+        $order = $this->createMock(OrderInterface::class);
+        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
+        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
+        $this->cartMapper->method('map')->willReturn([
+            'id' => 'cart-1',
+            'customer' => ['id' => 'cust-1', 'email_address' => 'user@example.com', 'opt_in_status' => false],
+            'checkout_url' => 'https://example.com/checkout',
+            'currency_code' => 'EUR',
+            'order_total' => 9.99,
+            'lines' => [['id' => 'line-1', 'product_id' => 'prod-1', 'product_variant_id' => 'var-1', 'quantity' => 1, 'price' => 9.99]],
+        ]);
+        $this->client->upsertCart('store-1', $order, $channel);
 
         $this->assertSame('user@example.com', $capturedPost['customer']['email_address'] ?? null);
         $this->assertCount(1, $capturedPost['lines'] ?? []);
@@ -312,10 +385,18 @@ final class MailchimpClientTest extends TestCase
                 return $updated;
             });
 
-        $customer = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer('cust-1', 'user@example.com');
-        $line = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine('line-1', 'prod-1', 'var-1', 1, 9.99);
-        $cart = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart('cart-1', $customer, 'https://example.com/checkout', 'EUR', 9.99, [$line]);
-        $this->client->upsertCart('store-1', $cart);
+        $order = $this->createMock(OrderInterface::class);
+        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
+        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
+        $this->cartMapper->method('map')->willReturn([
+            'id' => 'cart-1',
+            'customer' => ['id' => 'cust-1', 'email_address' => 'user@example.com', 'opt_in_status' => false],
+            'checkout_url' => 'https://example.com/checkout',
+            'currency_code' => 'EUR',
+            'order_total' => 9.99,
+            'lines' => [],
+        ]);
+        $this->client->upsertCart('store-1', $order, $channel);
     }
 
     public function test_upsert_order_includes_processed_at_when_set(): void
@@ -327,8 +408,19 @@ final class MailchimpClientTest extends TestCase
             ))
             ->willReturn($response);
 
-        $customer = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer('cust-1', 'user@example.com');
-        $order = new \Webgriffe\SyliusMailchimpPlugin\ValueObject\Order('order-1', $customer, 'EUR', 99.0, [], processedAt: new \DateTimeImmutable('2025-01-01'));
+        /** @var OrderInterface&MailchimpOrderAwareInterface $order */
+        $order = $this->createMockForIntersectionOfInterfaces([OrderInterface::class, MailchimpOrderAwareInterface::class]);
+        $this->orderMapper->method('map')->willReturn([
+            'id' => 'order-1',
+            'customer' => ['id' => 'cust-1', 'email_address' => 'user@example.com', 'opt_in_status' => false],
+            'currency_code' => 'EUR',
+            'order_total' => 99.0,
+            'tax_total' => 0.0,
+            'shipping_total' => 0.0,
+            'discount_total' => 0.0,
+            'lines' => [],
+            'processed_at_foreign' => (new \DateTimeImmutable('2025-01-01'))->format(\DateTimeInterface::ATOM),
+        ]);
         $this->client->upsertOrder('store-1', $order);
     }
 

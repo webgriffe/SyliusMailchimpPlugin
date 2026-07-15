@@ -10,7 +10,6 @@ use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductImageInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\ProductVariant;
 
 final class ProductVariantMapper implements ProductVariantMapperInterface
 {
@@ -20,7 +19,8 @@ final class ProductVariantMapper implements ProductVariantMapperInterface
     ) {
     }
 
-    public function map(ProductVariantInterface $variant, ChannelInterface $channel, string $productUrl): ProductVariant
+    #[\Override]
+    public function map(ProductVariantInterface $variant, ChannelInterface $channel, string $productUrl): array
     {
         $variantId = IdSanitizer::sanitize($variant->getCode() ?? '');
         $price = round($this->pricesCalculator->calculate($variant, ['channel' => $channel]) / 100, 2);
@@ -30,23 +30,23 @@ final class ProductVariantMapper implements ProductVariantMapperInterface
             $inventoryQuantity = max(0, (int) $variant->getOnHand() - (int) $variant->getOnHold());
         }
 
-        $imageUrl = '';
+        $payload = [
+            'id' => $variantId,
+            'title' => $variant->getDescriptor(),
+            'url' => $productUrl,
+            'sku' => $variant->getCode() ?? '',
+            'price' => $price,
+            'inventory_quantity' => $inventoryQuantity,
+        ];
+
         $firstImage = $variant->getImages()->first();
         if ($firstImage instanceof ProductImageInterface) {
             $path = $firstImage->getPath();
             if ($path !== null && $path !== '') {
-                $imageUrl = $this->imagineFilterService->getUrlOfFilteredImage($path, 'sylius_shop_product_large_thumbnail');
+                $payload['image_url'] = $this->imagineFilterService->getUrlOfFilteredImage($path, 'sylius_shop_product_large_thumbnail');
             }
         }
 
-        return new ProductVariant(
-            id: $variantId,
-            title: $variant->getDescriptor(),
-            url: $productUrl,
-            sku: $variant->getCode() ?? '',
-            price: $price,
-            inventoryQuantity: $inventoryQuantity,
-            imageUrl: $imageUrl,
-        );
+        return $payload;
     }
 }

@@ -95,24 +95,20 @@ final class OrderMapperTest extends TestCase
 
         $mapped = $this->mapper->map($order);
 
-        $this->assertSame('42', $mapped->id);
-        $this->assertSame('john@example.com', $mapped->customer->emailAddress);
-        $this->assertSame('USD', $mapped->currencyCode);
-        $this->assertSame(29.99, $mapped->orderTotal);
-        $this->assertSame(3.0, $mapped->taxTotal);
-        $this->assertSame(8.0, $mapped->shippingTotal);
-        $this->assertSame(2.0, $mapped->discountTotal);
-        $this->assertCount(1, $mapped->lines);
-        $this->assertSame('line-5', $mapped->lines[0]->id);
-        $this->assertSame(5.0, $mapped->lines[0]->discount);
-        $this->assertNotNull($mapped->billingAddress);
-        $this->assertSame('John Doe', $mapped->billingAddress->name);
-        $this->assertNull($mapped->shippingAddress);
-        $this->assertSame($processedAt, $mapped->processedAt);
-        $this->assertFalse($mapped->isInRealTime);
+        $this->assertSame('42', $mapped['id']);
+        $this->assertSame('john@example.com', $mapped['customer']['email_address']);
+        $this->assertSame('USD', $mapped['currency_code']);
+        $this->assertSame(29.99, $mapped['order_total']);
+        $this->assertSame(3.0, $mapped['tax_total']);
+        $this->assertSame(8.0, $mapped['shipping_total']);
+        $this->assertSame(2.0, $mapped['discount_total']);
+        $this->assertCount(1, $mapped['lines']);
+        $this->assertSame('line-5', $mapped['lines'][0]['id']);
+        $this->assertSame(5.0, $mapped['lines'][0]['discount']);
+        $this->assertSame($processedAt->format(\DateTimeInterface::ATOM), $mapped['processed_at_foreign']);
     }
 
-    public function test_maps_order_with_is_in_real_time_flag(): void
+    public function test_is_in_real_time_flag_not_included_in_array(): void
     {
         $customer = new Customer();
         self::setIdOnObject($customer, 1);
@@ -125,7 +121,7 @@ final class OrderMapperTest extends TestCase
 
         $mapped = $this->mapper->map($order, isInRealTime: true);
 
-        $this->assertTrue($mapped->isInRealTime);
+        $this->assertArrayNotHasKey('is_in_real_time', $mapped);
     }
 
     public function test_skips_item_with_no_variant(): void
@@ -144,7 +140,7 @@ final class OrderMapperTest extends TestCase
 
         $mapped = $this->mapper->map($order);
 
-        $this->assertCount(0, $mapped->lines);
+        $this->assertCount(0, $mapped['lines']);
     }
 
     public function test_maps_order_with_cart_id(): void
@@ -161,7 +157,7 @@ final class OrderMapperTest extends TestCase
 
         $mapped = $this->mapper->map($order);
 
-        $this->assertSame('10', $mapped->cartId);
+        $this->assertSame('10', $mapped['cart_id']);
     }
 
     public function test_maps_order_without_cart_id_when_not_set(): void
@@ -177,7 +173,7 @@ final class OrderMapperTest extends TestCase
 
         $mapped = $this->mapper->map($order);
 
-        $this->assertNull($mapped->cartId);
+        $this->assertArrayNotHasKey('cart_id', $mapped);
     }
 
     private static function setQuantity(OrderItem $item, int $quantity): void

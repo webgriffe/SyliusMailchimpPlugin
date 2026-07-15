@@ -6,12 +6,11 @@ namespace Webgriffe\SyliusMailchimpPlugin\Mapper;
 
 use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Address;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer;
 
-final class EcommerceCustomerMapper
+final class EcommerceCustomerMapper implements EcommerceCustomerMapperInterface
 {
-    public function mapFromOrder(OrderInterface $order): EcommerceCustomer
+    #[\Override]
+    public function mapFromOrder(OrderInterface $order): array
     {
         $customer = $order->getCustomer();
         $billingAddress = $order->getBillingAddress();
@@ -19,27 +18,27 @@ final class EcommerceCustomerMapper
         $customerId = $customer instanceof CustomerInterface ? (string) $customer->getId() : (string) $order->getId();
         $emailAddress = $customer instanceof CustomerInterface ? (string) $customer->getEmail() : '';
 
-        $address = null;
+        $payload = [
+            'id' => $customerId,
+            'email_address' => $emailAddress,
+            'first_name' => $customer instanceof CustomerInterface ? (string) $customer->getFirstName() : '',
+            'last_name' => $customer instanceof CustomerInterface ? (string) $customer->getLastName() : '',
+            'opt_in_status' => $customer instanceof CustomerInterface && $customer->isSubscribedToNewsletter(),
+        ];
+
         if ($billingAddress !== null) {
-            $address = new Address(
-                name: trim(sprintf('%s %s', $billingAddress->getFirstName() ?? '', $billingAddress->getLastName() ?? '')),
-                address1: (string) $billingAddress->getStreet(),
-                city: (string) $billingAddress->getCity(),
-                postalCode: (string) $billingAddress->getPostcode(),
-                country: (string) $billingAddress->getCountryCode(),
-                countryCode: (string) $billingAddress->getCountryCode(),
-                province: (string) $billingAddress->getProvinceName(),
-                provinceCode: (string) $billingAddress->getProvinceCode(),
-            );
+            $payload['address'] = [
+                'name' => trim(sprintf('%s %s', $billingAddress->getFirstName() ?? '', $billingAddress->getLastName() ?? '')),
+                'address1' => (string) $billingAddress->getStreet(),
+                'city' => (string) $billingAddress->getCity(),
+                'postal_code' => (string) $billingAddress->getPostcode(),
+                'country' => (string) $billingAddress->getCountryCode(),
+                'country_code' => (string) $billingAddress->getCountryCode(),
+                'province' => (string) $billingAddress->getProvinceName(),
+                'province_code' => (string) $billingAddress->getProvinceCode(),
+            ];
         }
 
-        return new EcommerceCustomer(
-            id: $customerId,
-            emailAddress: $emailAddress,
-            firstName: $customer instanceof CustomerInterface ? (string) $customer->getFirstName() : '',
-            lastName: $customer instanceof CustomerInterface ? (string) $customer->getLastName() : '',
-            address: $address,
-            optInStatus: $customer instanceof CustomerInterface && $customer->isSubscribedToNewsletter(),
-        );
+        return $payload;
     }
 }

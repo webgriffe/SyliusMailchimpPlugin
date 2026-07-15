@@ -48,15 +48,15 @@ final class EcommerceCustomerMapperTest extends TestCase
 
         $ecommerceCustomer = $this->mapper->mapFromOrder($order);
 
-        $this->assertSame('42', $ecommerceCustomer->id);
-        $this->assertSame('john@example.com', $ecommerceCustomer->emailAddress);
-        $this->assertSame('John', $ecommerceCustomer->firstName);
-        $this->assertSame('Doe', $ecommerceCustomer->lastName);
-        $this->assertTrue($ecommerceCustomer->optInStatus);
-        $this->assertNotNull($ecommerceCustomer->address);
-        $this->assertSame('John Doe', $ecommerceCustomer->address->name);
-        $this->assertSame('123 Main St', $ecommerceCustomer->address->address1);
-        $this->assertSame('US', $ecommerceCustomer->address->countryCode);
+        $this->assertSame('42', $ecommerceCustomer['id']);
+        $this->assertSame('john@example.com', $ecommerceCustomer['email_address']);
+        $this->assertSame('John', $ecommerceCustomer['first_name']);
+        $this->assertSame('Doe', $ecommerceCustomer['last_name']);
+        $this->assertTrue($ecommerceCustomer['opt_in_status']);
+        $this->assertArrayHasKey('address', $ecommerceCustomer);
+        $this->assertSame('John Doe', $ecommerceCustomer['address']['name']);
+        $this->assertSame('123 Main St', $ecommerceCustomer['address']['address1']);
+        $this->assertSame('US', $ecommerceCustomer['address']['country_code']);
     }
 
     public function test_maps_order_without_customer(): void
@@ -66,12 +66,12 @@ final class EcommerceCustomerMapperTest extends TestCase
 
         $ecommerceCustomer = $this->mapper->mapFromOrder($order);
 
-        $this->assertSame('99', $ecommerceCustomer->id);
-        $this->assertSame('', $ecommerceCustomer->emailAddress);
-        $this->assertSame('', $ecommerceCustomer->firstName);
-        $this->assertSame('', $ecommerceCustomer->lastName);
-        $this->assertFalse($ecommerceCustomer->optInStatus);
-        $this->assertNull($ecommerceCustomer->address);
+        $this->assertSame('99', $ecommerceCustomer['id']);
+        $this->assertSame('', $ecommerceCustomer['email_address']);
+        $this->assertSame('', $ecommerceCustomer['first_name']);
+        $this->assertSame('', $ecommerceCustomer['last_name']);
+        $this->assertFalse($ecommerceCustomer['opt_in_status']);
+        $this->assertArrayNotHasKey('address', $ecommerceCustomer);
     }
 
     public function test_maps_order_with_null_address_name_fields(): void
@@ -96,7 +96,7 @@ final class EcommerceCustomerMapperTest extends TestCase
 
         $ecommerceCustomer = $this->mapper->mapFromOrder($order);
 
-        $this->assertNotNull($ecommerceCustomer->address);
-        $this->assertSame('', $ecommerceCustomer->address->name);
+        $this->assertArrayHasKey('address', $ecommerceCustomer);
+        $this->assertSame('', $ecommerceCustomer['address']['name']);
     }
 }

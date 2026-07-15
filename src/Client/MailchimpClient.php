@@ -5,20 +5,23 @@ declare(strict_types=1);
 namespace Webgriffe\SyliusMailchimpPlugin\Client;
 
 use Psr\Log\LoggerInterface;
+use Sylius\Component\Core\Model\ChannelInterface;
+use Sylius\Component\Core\Model\OrderInterface;
+use Sylius\Component\Core\Model\ProductInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\NotFoundException;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\CartLine;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapperInterface;
+use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Order;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\OrderLine;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\ProductVariant;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Store;
 
 final class MailchimpClient implements MailchimpClientInterface
 {
@@ -34,6 +37,11 @@ final class MailchimpClient implements MailchimpClientInterface
         private readonly HttpClientInterface $httpClient,
         private readonly LoggerInterface $logger,
         string $apiKey,
+        private readonly StoreMapperInterface $storeMapper,
+        private readonly ProductMapperInterface $productMapper,
+        private readonly CartMapperInterface $cartMapper,
+        private readonly OrderMapperInterface $orderMapper,
+        private readonly EcommerceCustomerMapperInterface $ecommerceCustomerMapper,
     ) {
         $this->apiKey = $apiKey;
         $dc = substr($apiKey, (int) strrpos($apiKey, '-') + 1);
@@ -177,36 +185,22 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertStore(Store $store): void
+    public function upsertStore(Audience $audience): void
     {
-        if (filter_var($store->emailAddress, \FILTER_VALIDATE_EMAIL) === false) {
+        $payload = $this->storeMapper->map($audience);
+        $storeId = self::stringFromPayload($payload['id'] ?? null);
+        $emailAddress = self::stringFromPayload($payload['email_address'] ?? null);
+
+        if (filter_var($emailAddress, \FILTER_VALIDATE_EMAIL) === false) {
             throw new \InvalidArgumentException(sprintf(
                 'Cannot upsert Mailchimp store "%s": invalid email address "%s". ' .
                 'Please set a valid contact email on the Sylius channel.',
-                $store->id,
-                $store->emailAddress,
+                $storeId,
+                $emailAddress,
             ));
         }
 
-        $payload = [
-            'id' => $store->id,
-            'name' => $store->name,
-            'domain' => $store->domain,
-            'email_address' => $store->emailAddress,
-            'currency_code' => $store->currencyCode,
-            'primary_locale' => $store->primaryLocale,
-            'timezone' => $store->timezone,
-        ];
-
-        if ($store->phone !== '') {
-            $payload['phone'] = $store->phone;
-        }
-
-        if ($store->address !== '') {
-            $payload['address'] = ['address1' => $store->address];
-        }
-
-        $getUrl = sprintf('%secommerce/stores/%s', $this->baseUrl, $store->id);
+        $getUrl = sprintf('%secommerce/stores/%s', $this->baseUrl, $storeId);
         $this->logger->debug('[Mailchimp] GET {url}', ['url' => $getUrl]);
 
         $getResponse = $this->httpClient->request('GET', $getUrl, [
@@ -216,9 +210,6 @@ final class MailchimpClient implements MailchimpClientInterface
         $getStatus = $getResponse->getStatusCode();
         $isCreation = $getStatus === 404;
         if ($isCreation) {
-            if ($store->listId !== '') {
-                $payload['list_id'] = $store->listId;
-            }
             $createUrl = sprintf('%secommerce/stores', $this->baseUrl);
             $this->logger->debug('[Mailchimp] POST {url}', ['url' => $createUrl, 'payload' => $payload]);
 
@@ -227,23 +218,21 @@ final class MailchimpClient implements MailchimpClientInterface
                 'json' => $payload,
             ]);
         } elseif ($getStatus === 200) {
-            unset($payload['id']);
-            if ($store->listId !== '') {
-                $payload['list_id'] = $store->listId;
-            }
-            $this->logger->debug('[Mailchimp] PATCH {url}', ['url' => $getUrl, 'payload' => $payload]);
+            $patchPayload = $payload;
+            unset($patchPayload['id']);
+            $this->logger->debug('[Mailchimp] PATCH {url}', ['url' => $getUrl, 'payload' => $patchPayload]);
 
             $response = $this->httpClient->request('PATCH', $getUrl, [
                 'auth_basic' => ['anystring', $this->getApiKey()],
-                'json' => $payload,
+                'json' => $patchPayload,
             ]);
         } else {
-            $this->handleErrorResponse($getStatus, $getResponse->getContent(false), $store->id);
+            $this->handleErrorResponse($getStatus, $getResponse->getContent(false), $storeId);
         }
 
         $statusCode = $response->getStatusCode();
         if ($statusCode >= 400) {
-            $this->handleErrorResponse($statusCode, $response->getContent(false), $store->id);
+            $this->handleErrorResponse($statusCode, $response->getContent(false), $storeId);
         }
 
         if ($isCreation) {
@@ -255,8 +244,8 @@ final class MailchimpClient implements MailchimpClientInterface
                     sprintf(
                         'Mailchimp silently rejected store "%s" creation: the email address "%s" was not accepted. ' .
                         'The email domain may be reserved or blocked by Mailchimp (e.g. example.com).',
-                        $store->id,
-                        $store->emailAddress,
+                        $storeId,
+                        $emailAddress,
                     ),
                     $statusCode,
                     $responseBody,
@@ -264,7 +253,7 @@ final class MailchimpClient implements MailchimpClientInterface
             }
         }
 
-        $this->logger->info('[Mailchimp] Store {id} upserted.', ['id' => $store->id]);
+        $this->logger->info('[Mailchimp] Store {id} upserted.', ['id' => $storeId]);
     }
 
     #[\Override]
@@ -286,23 +275,12 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertProduct(string $storeId, Product $product): void
+    public function upsertProduct(string $storeId, ProductInterface $product, ChannelInterface $channel, string $locale): void
     {
-        $payload = [
-            'id' => $product->id,
-            'title' => $product->title,
-            'url' => $product->url,
-            'description' => $product->description,
-            'type' => $product->type,
-            'vendor' => $product->vendor,
-            'variants' => array_map([$this, 'serializeProductVariant'], $product->variants),
-        ];
+        $payload = $this->productMapper->map($product, $channel, $locale);
+        $productId = self::stringFromPayload($payload['id'] ?? null);
 
-        if ($product->imageUrl !== '') {
-            $payload['image_url'] = $product->imageUrl;
-        }
-
-        $url = sprintf('%secommerce/stores/%s/products/%s', $this->baseUrl, $storeId, $product->id);
+        $url = sprintf('%secommerce/stores/%s/products/%s', $this->baseUrl, $storeId, $productId);
         $this->logger->debug('[Mailchimp] PUT {url}', ['url' => $url, 'payload' => $payload]);
 
         $response = $this->httpClient->request('PUT', $url, [
@@ -312,10 +290,10 @@ final class MailchimpClient implements MailchimpClientInterface
 
         $statusCode = $response->getStatusCode();
         if ($statusCode >= 400) {
-            $this->handleErrorResponse($statusCode, $response->getContent(false), $product->id);
+            $this->handleErrorResponse($statusCode, $response->getContent(false), $productId);
         }
 
-        $this->logger->info('[Mailchimp] Product {id} upserted in store {store}.', ['id' => $product->id, 'store' => $storeId]);
+        $this->logger->info('[Mailchimp] Product {id} upserted in store {store}.', ['id' => $productId, 'store' => $storeId]);
     }
 
     #[\Override]
@@ -337,18 +315,12 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertCart(string $storeId, Cart $cart): void
+    public function upsertCart(string $storeId, OrderInterface $order, ChannelInterface&ChannelMailchimpAwareInterface $channel): void
     {
-        $payload = [
-            'id' => $cart->id,
-            'customer' => $this->serializeEcommerceCustomer($cart->customer),
-            'checkout_url' => $cart->checkoutUrl,
-            'currency_code' => $cart->currencyCode,
-            'order_total' => $cart->orderTotal,
-            'lines' => array_map([$this, 'serializeCartLine'], $cart->lines),
-        ];
+        $payload = $this->cartMapper->map($order, $channel);
+        $cartId = self::stringFromPayload($payload['id'] ?? null);
 
-        $cartUrl = sprintf('%secommerce/stores/%s/carts/%s', $this->baseUrl, $storeId, $cart->id);
+        $cartUrl = sprintf('%secommerce/stores/%s/carts/%s', $this->baseUrl, $storeId, $cartId);
         $this->logger->debug('[Mailchimp] GET {url}', ['url' => $cartUrl]);
 
         $getResponse = $this->httpClient->request('GET', $cartUrl, [
@@ -364,21 +336,22 @@ final class MailchimpClient implements MailchimpClientInterface
                 'json' => $payload,
             ]);
         } else {
-            unset($payload['id']);
-            $this->logger->debug('[Mailchimp] PATCH {url}', ['url' => $cartUrl, 'payload' => $payload]);
+            $patchPayload = $payload;
+            unset($patchPayload['id']);
+            $this->logger->debug('[Mailchimp] PATCH {url}', ['url' => $cartUrl, 'payload' => $patchPayload]);
 
             $response = $this->httpClient->request('PATCH', $cartUrl, [
                 'auth_basic' => ['anystring', $this->getApiKey()],
-                'json' => $payload,
+                'json' => $patchPayload,
             ]);
         }
 
         $statusCode = $response->getStatusCode();
         if ($statusCode >= 400) {
-            $this->handleErrorResponse($statusCode, $response->getContent(false), $cart->id);
+            $this->handleErrorResponse($statusCode, $response->getContent(false), $cartId);
         }
 
-        $this->logger->info('[Mailchimp] Cart {id} upserted in store {store}.', ['id' => $cart->id, 'store' => $storeId]);
+        $this->logger->info('[Mailchimp] Cart {id} upserted in store {store}.', ['id' => $cartId, 'store' => $storeId]);
     }
 
     #[\Override]
@@ -400,31 +373,15 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertOrder(string $storeId, Order $order): void
+    public function upsertOrder(string $storeId, OrderInterface&MailchimpOrderAwareInterface $order, bool $isInRealTime = false): void
     {
-        $payload = [
-            'id' => $order->id,
-            'customer' => $this->serializeEcommerceCustomer($order->customer),
-            'currency_code' => $order->currencyCode,
-            'order_total' => $order->orderTotal,
-            'tax_total' => $order->taxTotal,
-            'shipping_total' => $order->shippingTotal,
-            'discount_total' => $order->discountTotal,
-            'lines' => array_map([$this, 'serializeOrderLine'], $order->lines),
-        ];
-
-        if ($order->processedAt !== null) {
-            $payload['processed_at_foreign'] = $order->processedAt->format(\DateTimeInterface::ATOM);
-        }
-
-        if ($order->cartId !== null) {
-            $payload['cart_id'] = $order->cartId;
-        }
+        $payload = $this->orderMapper->map($order, $isInRealTime);
+        $orderId = self::stringFromPayload($payload['id'] ?? null);
 
         $this->upsertEcommerceResource(
-            sprintf('%secommerce/stores/%s/orders/%s', $this->baseUrl, $storeId, $order->id),
+            sprintf('%secommerce/stores/%s/orders/%s', $this->baseUrl, $storeId, $orderId),
             $payload,
-            $order->id,
+            $orderId,
         );
     }
 
@@ -443,12 +400,15 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertEcommerceCustomer(string $storeId, EcommerceCustomer $customer): void
+    public function upsertEcommerceCustomer(string $storeId, OrderInterface $order): void
     {
+        $payload = $this->ecommerceCustomerMapper->mapFromOrder($order);
+        $customerId = self::stringFromPayload($payload['id'] ?? null);
+
         $this->upsertEcommerceResource(
-            sprintf('%secommerce/stores/%s/customers/%s', $this->baseUrl, $storeId, $customer->id),
-            $this->serializeEcommerceCustomer($customer),
-            $customer->id,
+            sprintf('%secommerce/stores/%s/customers/%s', $this->baseUrl, $storeId, $customerId),
+            $payload,
+            $customerId,
         );
     }
 
@@ -554,78 +514,6 @@ final class MailchimpClient implements MailchimpClientInterface
         return $payload;
     }
 
-    /** @return array<string, mixed> */
-    private function serializeProductVariant(ProductVariant $variant): array
-    {
-        $payload = [
-            'id' => $variant->id,
-            'title' => $variant->title,
-            'url' => $variant->url,
-            'sku' => $variant->sku,
-            'price' => $variant->price,
-            'inventory_quantity' => $variant->inventoryQuantity,
-        ];
-
-        if ($variant->imageUrl !== '') {
-            $payload['image_url'] = $variant->imageUrl;
-        }
-
-        return $payload;
-    }
-
-    /** @return array<string, mixed> */
-    private function serializeEcommerceCustomer(EcommerceCustomer $customer): array
-    {
-        $payload = [
-            'id' => $customer->id,
-            'email_address' => $customer->emailAddress,
-            'first_name' => $customer->firstName,
-            'last_name' => $customer->lastName,
-            'opt_in_status' => $customer->optInStatus,
-        ];
-
-        if ($customer->address !== null) {
-            $payload['address'] = [
-                'name' => $customer->address->name,
-                'address1' => $customer->address->address1,
-                'address2' => $customer->address->address2,
-                'city' => $customer->address->city,
-                'province' => $customer->address->province,
-                'province_code' => $customer->address->provinceCode,
-                'postal_code' => $customer->address->postalCode,
-                'country' => $customer->address->country,
-                'country_code' => $customer->address->countryCode,
-            ];
-        }
-
-        return $payload;
-    }
-
-    /** @return array<string, mixed> */
-    private function serializeCartLine(CartLine $line): array
-    {
-        return [
-            'id' => $line->id,
-            'product_id' => $line->productId,
-            'product_variant_id' => $line->productVariantId,
-            'quantity' => $line->quantity,
-            'price' => $line->price,
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function serializeOrderLine(OrderLine $line): array
-    {
-        return [
-            'id' => $line->id,
-            'product_id' => $line->productId,
-            'product_variant_id' => $line->productVariantId,
-            'quantity' => $line->quantity,
-            'price' => $line->price,
-            'discount' => $line->discount,
-        ];
-    }
-
     private function handleErrorResponse(int $statusCode, string $body, string $context): never
     {
         /** @var array{title?: string, detail?: string, extra?: array{resubscribe_url?: string}} $data */
@@ -650,5 +538,10 @@ final class MailchimpClient implements MailchimpClientInterface
     private function getApiKey(): string
     {
         return $this->apiKey;
+    }
+
+    private static function stringFromPayload(mixed $value): string
+    {
+        return is_string($value) ? $value : '';
     }
 }

@@ -11,7 +11,6 @@ use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Repository\ProductRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
@@ -23,7 +22,6 @@ final class ProductUpdateHandler
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly ChannelRepositoryInterface $channelRepository,
-        private readonly ProductMapperInterface $productMapper,
         private readonly AudienceProviderInterface $audienceProvider,
         private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
         private readonly MailchimpClientInterface $mailchimpClient,
@@ -49,8 +47,7 @@ final class ProductUpdateHandler
 
         $audience = $this->audienceProvider->getAudience($channel, $message->locale);
         $storeId = $this->storeIdentifierResolver->resolve($audience);
-        $mappedProduct = $this->productMapper->map($product, $channel, $message->locale);
-        $this->mailchimpClient->upsertProduct($storeId, $mappedProduct);
+        $this->mailchimpClient->upsertProduct($storeId, $product, $channel, $message->locale);
         $this->logger->info('[Mailchimp] Product #{id} updated in store {store}.', ['id' => $message->productId, 'store' => $storeId]);
     }
 }

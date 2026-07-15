@@ -15,7 +15,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductVariantMapperInterface;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\ProductVariant as ProductVariantVO;
 
 final class ProductMapperTest extends TestCase
 {
@@ -68,17 +67,17 @@ final class ProductMapperTest extends TestCase
             ->with('sylius_shop_product_show', ['slug' => 'cool-tshirt', '_locale' => 'en_US'], UrlGeneratorInterface::ABSOLUTE_URL)
             ->willReturn('https://example.com/en_US/products/cool-tshirt');
 
-        $mappedVariant = new ProductVariantVO(id: 'TSHIRT-L', title: 'Cool T-Shirt (TSHIRT-L)', url: 'https://example.com/en_US/products/cool-tshirt');
+        $mappedVariant = ['id' => 'TSHIRT-L', 'title' => 'Cool T-Shirt (TSHIRT-L)', 'url' => 'https://example.com/en_US/products/cool-tshirt', 'sku' => 'TSHIRT-L', 'price' => 0.0, 'inventory_quantity' => 0];
         $this->productVariantMapper->method('map')->willReturn($mappedVariant);
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 
-        $this->assertSame('TSHIRT', $mapped->id);
-        $this->assertSame('Cool T-Shirt', $mapped->title);
-        $this->assertSame('https://example.com/en_US/products/cool-tshirt', $mapped->url);
-        $this->assertSame('A cool t-shirt', $mapped->description);
-        $this->assertCount(1, $mapped->variants);
-        $this->assertSame('TSHIRT-L', $mapped->variants[0]->id);
+        $this->assertSame('TSHIRT', $mapped['id']);
+        $this->assertSame('Cool T-Shirt', $mapped['title']);
+        $this->assertSame('https://example.com/en_US/products/cool-tshirt', $mapped['url']);
+        $this->assertSame('A cool t-shirt', $mapped['description']);
+        $this->assertCount(1, $mapped['variants']);
+        $this->assertSame('TSHIRT-L', $mapped['variants'][0]['id']);
     }
 
     public function test_maps_product_image_url(): void
@@ -112,7 +111,7 @@ final class ProductMapperTest extends TestCase
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 
-        $this->assertSame('https://example.com/media/cache/sylius_shop_product_large_thumbnail/product/ab/cd/image.webp', $mapped->imageUrl);
+        $this->assertSame('https://example.com/media/cache/sylius_shop_product_large_thumbnail/product/ab/cd/image.webp', $mapped['image_url']);
     }
 
     public function test_image_url_is_empty_when_product_has_no_images(): void
@@ -137,7 +136,7 @@ final class ProductMapperTest extends TestCase
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 
-        $this->assertSame('', $mapped->imageUrl);
+        $this->assertArrayNotHasKey('image_url', $mapped);
     }
 
     public function test_falls_back_to_hostname_when_no_slug(): void
@@ -160,7 +159,7 @@ final class ProductMapperTest extends TestCase
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 
-        $this->assertSame('https://example.com', $mapped->url);
+        $this->assertSame('https://example.com', $mapped['url']);
     }
 
     public function test_maps_product_with_no_variants(): void
@@ -184,6 +183,6 @@ final class ProductMapperTest extends TestCase
 
         $mapped = $this->mapper->map($product, $channel, 'en_US');
 
-        $this->assertSame([], $mapped->variants);
+        $this->assertSame([], $mapped['variants']);
     }
 }

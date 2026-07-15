@@ -13,23 +13,20 @@ use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
+use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
 
 #[AsMessageHandler]
 final class CartCreateHandler
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly CartMapper $cartMapper,
         private readonly AudienceProviderInterface $audienceProvider,
         private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
-        private readonly ProductMapperInterface $productMapper,
         private readonly MailchimpClientInterface $mailchimpClient,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
@@ -57,9 +54,8 @@ final class CartCreateHandler
         $storeId = $this->storeIdentifierResolver->resolve($audience);
         $this->upsertCartProducts($order, $storeId, $channel, $locale);
 
-        $cart = $this->cartMapper->map($order, $channel);
-        $this->mailchimpClient->upsertCart($storeId, $cart);
-        $order->setMailchimpCartId($cart->id);
+        $this->mailchimpClient->upsertCart($storeId, $order, $channel);
+        $order->setMailchimpCartId(IdSanitizer::sanitize((string) $order->getId()));
         $order->setMailchimpCartError(null);
         $this->entityManager->flush();
         $this->logger->info('[Mailchimp] Cart created for order #{id} in store {store}.', ['id' => $message->orderId, 'store' => $storeId]);
@@ -84,8 +80,7 @@ final class CartCreateHandler
                 continue;
             }
 
-            $mappedProduct = $this->productMapper->map($product, $channel, $locale);
-            $this->mailchimpClient->upsertProduct($storeId, $mappedProduct);
+            $this->mailchimpClient->upsertProduct($storeId, $product, $channel, $locale);
             $syncedProductIds[$productId] = true;
             $this->logger->debug('[Mailchimp] Upserted product #{id} before CartCreate.', ['id' => $productId]);
         }

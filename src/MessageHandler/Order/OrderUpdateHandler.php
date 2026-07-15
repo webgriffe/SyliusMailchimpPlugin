@@ -13,23 +13,20 @@ use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
+use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
 
 #[AsMessageHandler]
 final class OrderUpdateHandler
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly OrderMapper $orderMapper,
         private readonly AudienceProviderInterface $audienceProvider,
         private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
-        private readonly ProductMapperInterface $productMapper,
         private readonly MailchimpClientInterface $mailchimpClient,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
@@ -57,9 +54,8 @@ final class OrderUpdateHandler
         $storeId = $this->storeIdentifierResolver->resolve($audience);
         $this->upsertOrderProducts($order, $storeId, $channel, $locale);
 
-        $mappedOrder = $this->orderMapper->map($order);
-        $this->mailchimpClient->upsertOrder($storeId, $mappedOrder);
-        $order->setMailchimpOrderId($mappedOrder->id);
+        $this->mailchimpClient->upsertOrder($storeId, $order);
+        $order->setMailchimpOrderId(IdSanitizer::sanitize((string) $order->getId()));
         $order->setMailchimpOrderError(null);
         $this->entityManager->flush();
         $this->logger->info('[Mailchimp] Order updated for order #{id} in store {store}.', ['id' => $message->orderId, 'store' => $storeId]);
@@ -84,8 +80,7 @@ final class OrderUpdateHandler
                 continue;
             }
 
-            $mappedProduct = $this->productMapper->map($product, $channel, $locale);
-            $this->mailchimpClient->upsertProduct($storeId, $mappedProduct);
+            $this->mailchimpClient->upsertProduct($storeId, $product, $channel, $locale);
             $syncedProductIds[$productId] = true;
             $this->logger->debug('[Mailchimp] Upserted product #{id} before OrderUpdate.', ['id' => $productId]);
         }

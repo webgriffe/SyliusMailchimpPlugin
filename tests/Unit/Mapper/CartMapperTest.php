@@ -59,17 +59,17 @@ final class CartMapperTest extends TestCase
 
         $cart = $this->mapper->map($order, $channel);
 
-        $this->assertSame('42', $cart->id);
-        $this->assertSame('john@example.com', $cart->customer->emailAddress);
-        $this->assertSame('https://example.com/checkout', $cart->checkoutUrl);
-        $this->assertSame('EUR', $cart->currencyCode);
-        $this->assertSame(39.98, $cart->orderTotal);
-        $this->assertCount(1, $cart->lines);
-        $this->assertSame('10_TSHIRT-L', $cart->lines[0]->id);
-        $this->assertSame('TSHIRT', $cart->lines[0]->productId);
-        $this->assertSame('TSHIRT-L', $cart->lines[0]->productVariantId);
-        $this->assertSame(2, $cart->lines[0]->quantity);
-        $this->assertSame(19.99, $cart->lines[0]->price);
+        $this->assertSame('42', $cart['id']);
+        $this->assertSame('john@example.com', $cart['customer']['email_address']);
+        $this->assertSame('https://example.com/checkout', $cart['checkout_url']);
+        $this->assertSame('EUR', $cart['currency_code']);
+        $this->assertSame(39.98, $cart['order_total']);
+        $this->assertCount(1, $cart['lines']);
+        $this->assertSame('10_TSHIRT-L', $cart['lines'][0]['id']);
+        $this->assertSame('TSHIRT', $cart['lines'][0]['product_id']);
+        $this->assertSame('TSHIRT-L', $cart['lines'][0]['product_variant_id']);
+        $this->assertSame(2, $cart['lines'][0]['quantity']);
+        $this->assertSame(19.99, $cart['lines'][0]['price']);
     }
 
     public function test_skips_item_with_no_variant(): void
@@ -91,7 +91,7 @@ final class CartMapperTest extends TestCase
 
         $cart = $this->mapper->map($order, $channel);
 
-        $this->assertCount(0, $cart->lines);
+        $this->assertCount(0, $cart['lines']);
     }
 
     private static function setQuantity(OrderItem $item, int $quantity): void

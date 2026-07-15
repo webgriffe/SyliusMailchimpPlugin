@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\OrderMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\ProductMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapper;
-use Webgriffe\SyliusMailchimpPlugin\Mapper\StoreMapperInterface;
-use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
-use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartUpdateHandler;
@@ -28,6 +21,8 @@ use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductUpdateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Store\StoreCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Store\StoreRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Store\StoreUpdateHandler;
+use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -67,7 +62,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(StoreCreateHandler::class)
         ->arg('$channelRepository', service('sylius.repository.channel'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
-        ->arg('$storeMapper', service(StoreMapperInterface::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('messenger.message_handler');
@@ -75,7 +69,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(StoreUpdateHandler::class)
         ->arg('$channelRepository', service('sylius.repository.channel'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
-        ->arg('$storeMapper', service(StoreMapperInterface::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('messenger.message_handler');
@@ -88,7 +81,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ProductCreateHandler::class)
         ->arg('$productRepository', service('sylius.repository.product'))
         ->arg('$channelRepository', service('sylius.repository.channel'))
-        ->arg('$productMapper', service(ProductMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
@@ -98,7 +90,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ProductUpdateHandler::class)
         ->arg('$productRepository', service('sylius.repository.product'))
         ->arg('$channelRepository', service('sylius.repository.channel'))
-        ->arg('$productMapper', service(ProductMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
@@ -112,10 +103,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(CartCreateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$cartMapper', service(CartMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
-        ->arg('$productMapper', service(ProductMapper::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
@@ -123,10 +112,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(CartUpdateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$cartMapper', service(CartMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
-        ->arg('$productMapper', service(ProductMapper::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
@@ -139,10 +126,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(OrderCreateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$orderMapper', service(OrderMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
-        ->arg('$productMapper', service(ProductMapper::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
@@ -150,10 +135,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(OrderUpdateHandler::class)
         ->arg('$orderRepository', service('sylius.repository.order'))
-        ->arg('$orderMapper', service(OrderMapper::class))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
         ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
-        ->arg('$productMapper', service(ProductMapper::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))

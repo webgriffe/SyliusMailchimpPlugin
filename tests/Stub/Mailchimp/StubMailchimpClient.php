@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp;
 
+use Sylius\Component\Core\Model\ChannelInterface;
+use Sylius\Component\Core\Model\OrderInterface;
+use Sylius\Component\Core\Model\ProductInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Cart;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\EcommerceCustomer;
+use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\Audience;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Order;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Product;
-use Webgriffe\SyliusMailchimpPlugin\ValueObject\Store;
 
 /**
  * Tracks all calls in a temporary file so they are visible across processes
@@ -69,7 +70,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
         return self::readCalls()['upsertMember'] ?? [];
     }
 
-    /** @return array<array{storeId: string, cart: Cart}> */
+    /** @return array<array{storeId: string, order: OrderInterface}> */
     public function getUpsertCartCalls(): array
     {
         return self::readCalls()['upsertCart'] ?? [];
@@ -81,7 +82,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
         return self::readCalls()['removeCart'] ?? [];
     }
 
-    /** @return array<array{storeId: string, order: Order}> */
+    /** @return array<array{storeId: string, order: OrderInterface&MailchimpOrderAwareInterface}> */
     public function getUpsertOrderCalls(): array
     {
         return self::readCalls()['upsertOrder'] ?? [];
@@ -93,7 +94,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
         return self::readCalls()['removeOrder'] ?? [];
     }
 
-    /** @return array<array{store: Store}> */
+    /** @return array<array{audience: Audience}> */
     public function getUpsertStoreCalls(): array
     {
         return self::readCalls()['upsertStore'] ?? [];
@@ -105,7 +106,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
         return self::readCalls()['removeStore'] ?? [];
     }
 
-    /** @return array<array{storeId: string, product: Product}> */
+    /** @return array<array{storeId: string, product: ProductInterface, channel: ChannelInterface, locale: string}> */
     public function getUpsertProductCalls(): array
     {
         return self::readCalls()['upsertProduct'] ?? [];
@@ -117,7 +118,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
         return self::readCalls()['removeProduct'] ?? [];
     }
 
-    public function getLastUpsertOrderCall(): ?Order
+    public function getLastUpsertOrderCall(): null|(OrderInterface&MailchimpOrderAwareInterface)
     {
         $calls = self::readCalls()['upsertOrder'] ?? [];
         if ($calls === []) {
@@ -160,10 +161,10 @@ final class StubMailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertStore(Store $store): void
+    public function upsertStore(Audience $audience): void
     {
         $calls = self::readCalls();
-        $calls['upsertStore'][] = ['store' => $store];
+        $calls['upsertStore'][] = ['audience' => $audience];
         self::writeCalls($calls);
     }
 
@@ -176,10 +177,10 @@ final class StubMailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertProduct(string $storeId, Product $product): void
+    public function upsertProduct(string $storeId, ProductInterface $product, ChannelInterface $channel, string $locale): void
     {
         $calls = self::readCalls();
-        $calls['upsertProduct'][] = ['storeId' => $storeId, 'product' => $product];
+        $calls['upsertProduct'][] = ['storeId' => $storeId, 'product' => $product, 'channel' => $channel, 'locale' => $locale];
         self::writeCalls($calls);
     }
 
@@ -192,10 +193,10 @@ final class StubMailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertCart(string $storeId, Cart $cart): void
+    public function upsertCart(string $storeId, OrderInterface $order, ChannelInterface&ChannelMailchimpAwareInterface $channel): void
     {
         $calls = self::readCalls();
-        $calls['upsertCart'][] = ['storeId' => $storeId, 'cart' => $cart];
+        $calls['upsertCart'][] = ['storeId' => $storeId, 'order' => $order];
         self::writeCalls($calls);
     }
 
@@ -208,7 +209,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertOrder(string $storeId, Order $order): void
+    public function upsertOrder(string $storeId, OrderInterface&MailchimpOrderAwareInterface $order, bool $isInRealTime = false): void
     {
         $calls = self::readCalls();
         $calls['upsertOrder'][] = ['storeId' => $storeId, 'order' => $order];
@@ -224,7 +225,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function upsertEcommerceCustomer(string $storeId, EcommerceCustomer $customer): void
+    public function upsertEcommerceCustomer(string $storeId, OrderInterface $order): void
     {
     }
 

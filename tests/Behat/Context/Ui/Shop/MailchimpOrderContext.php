@@ -100,9 +100,9 @@ final class MailchimpOrderContext implements Context
         $order = $this->stubMailchimpClient->getLastUpsertOrderCall();
         Assert::notNull($order, 'Expected upsertOrder to be called at least once, but it was not called.');
         Assert::count(
-            $order->lines,
+            $order->getItems()->toArray(),
             $count,
-            sprintf('Expected last order sync to have %d line(s), got %d.', $count, count($order->lines)),
+            sprintf('Expected last order sync to have %d line(s), got %d.', $count, $order->getItems()->count()),
         );
     }
 
@@ -113,10 +113,12 @@ final class MailchimpOrderContext implements Context
     {
         $order = $this->stubMailchimpClient->getLastUpsertOrderCall();
         Assert::notNull($order, 'Expected upsertOrder to be called at least once, but it was not called.');
+        Assert::isInstanceOf($order, MailchimpOrderAwareInterface::class);
+        $cartId = $order->getMailchimpCartId();
         Assert::same(
-            $order->cartId,
+            $cartId,
             $this->syncedCartId,
-            sprintf('Expected order cart_id to be "%s", got "%s".', $this->syncedCartId, $order->cartId),
+            sprintf('Expected order cart_id to be "%s", got "%s".', $this->syncedCartId, $cartId),
         );
     }
 

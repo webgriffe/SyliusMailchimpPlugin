@@ -62,11 +62,11 @@ final class ProductVariantMapperTest extends TestCase
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com/en_US/products/tshirt');
 
-        $this->assertSame('TSHIRT-L', $pv->id);
-        $this->assertSame('T-Shirt (TSHIRT-L)', $pv->title);
-        $this->assertSame('https://example.com/en_US/products/tshirt', $pv->url);
-        $this->assertSame('TSHIRT-L', $pv->sku);
-        $this->assertSame(29.99, $pv->price);
+        $this->assertSame('TSHIRT-L', $pv['id']);
+        $this->assertSame('T-Shirt (TSHIRT-L)', $pv['title']);
+        $this->assertSame('https://example.com/en_US/products/tshirt', $pv['url']);
+        $this->assertSame('TSHIRT-L', $pv['sku']);
+        $this->assertSame(29.99, $pv['price']);
     }
 
     public function test_maps_inventory_quantity_when_tracked(): void
@@ -97,7 +97,7 @@ final class ProductVariantMapperTest extends TestCase
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com');
 
-        $this->assertSame(7, $pv->inventoryQuantity);
+        $this->assertSame(7, $pv['inventory_quantity']);
     }
 
     public function test_inventory_quantity_is_zero_when_not_tracked(): void
@@ -127,7 +127,7 @@ final class ProductVariantMapperTest extends TestCase
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com');
 
-        $this->assertSame(0, $pv->inventoryQuantity);
+        $this->assertSame(0, $pv['inventory_quantity']);
     }
 
     public function test_maps_variant_image_url(): void
@@ -164,7 +164,7 @@ final class ProductVariantMapperTest extends TestCase
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com');
 
-        $this->assertSame('https://example.com/media/cache/sylius_shop_product_large_thumbnail/product/ab/cd/variant-image.webp', $pv->imageUrl);
+        $this->assertSame('https://example.com/media/cache/sylius_shop_product_large_thumbnail/product/ab/cd/variant-image.webp', $pv['image_url']);
     }
 
     public function test_image_url_is_empty_when_variant_has_no_images(): void
@@ -193,6 +193,6 @@ final class ProductVariantMapperTest extends TestCase
 
         $pv = $this->mapper->map($variant, $channel, 'https://example.com');
 
-        $this->assertSame('', $pv->imageUrl);
+        $this->assertArrayNotHasKey('image_url', $pv);
     }
 }
