@@ -67,7 +67,17 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
         }
 
         $subscriberHash = md5(strtolower($email));
-        $remoteMember = $this->mailchimpClient->getMember($listId, $subscriberHash);
+
+        try {
+            $remoteMember = $this->mailchimpClient->getMember($listId, $subscriberHash);
+        } catch (\Throwable $e) {
+            $this->logger->warning('[Mailchimp] Could not check remote member for customer #{id}, assuming new: {msg}', [
+                'id' => $customerId,
+                'msg' => $e->getMessage(),
+            ]);
+            $remoteMember = null;
+        }
+
         if ($remoteMember !== null) {
             $this->dispatchSafely(new MemberUpdate($customerId, $listId));
             $this->logger->debug('[Mailchimp] Dispatched MemberUpdate for customer #{id} (existing remote member).', ['id' => $customerId]);

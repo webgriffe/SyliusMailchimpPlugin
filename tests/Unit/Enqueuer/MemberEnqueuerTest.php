@@ -12,6 +12,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
@@ -100,6 +101,21 @@ final class MemberEnqueuerTest extends TestCase
         $customer = $this->buildCustomer(1, 'test@example.com', null);
         $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
         $this->mailchimpClient->method('getMember')->willReturn(null);
+
+        $this->messageBus->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(MemberCreate::class))
+            ->willReturn(new Envelope(new MemberCreate(1, 'list-abc')));
+
+        $this->enqueuer->enqueue($customer);
+    }
+
+    public function test_falls_back_to_member_create_when_get_member_fails(): void
+    {
+        $customer = $this->buildCustomer(1, 'test@example.com', null);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->mailchimpClient->method('getMember')
+            ->willThrowException(ClientException::fromResponse(500, 'Server error'));
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
