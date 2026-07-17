@@ -7,6 +7,8 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\ProductInterface;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
@@ -57,7 +59,35 @@ final class StubMailchimpClient implements MailchimpClientInterface
             'removeStore' => [],
             'upsertProduct' => [],
             'removeProduct' => [],
+            'upsertEcommerceCustomer' => [],
+            'removeEcommerceCustomer' => [],
+            'throwOn' => [],
         ];
+    }
+
+    /**
+     * Configures the stub to throw when the given client method is called.
+     * Cleared by reset().
+     */
+    public function failWith(string $method, string $type = 'client', string $message = 'Simulated Mailchimp failure'): void
+    {
+        $calls = self::readCalls();
+        $calls['throwOn'][$method] = ['type' => $type, 'message' => $message];
+        self::writeCalls($calls);
+    }
+
+    private function maybeThrow(string $method): void
+    {
+        $config = self::readCalls()['throwOn'][$method] ?? null;
+        if ($config === null) {
+            return;
+        }
+
+        if ($config['type'] === 'compliance') {
+            throw ComplianceStateException::forEmail($config['message']);
+        }
+
+        throw ClientException::fromResponse(500, $config['message']);
     }
 
     public function reset(): void
@@ -125,6 +155,18 @@ final class StubMailchimpClient implements MailchimpClientInterface
         return self::readCalls()['removeProduct'] ?? [];
     }
 
+    /** @return array<array{storeId: string, order: OrderInterface}> */
+    public function getUpsertEcommerceCustomerCalls(): array
+    {
+        return self::readCalls()['upsertEcommerceCustomer'] ?? [];
+    }
+
+    /** @return array<array{storeId: string, customerId: string}> */
+    public function getRemoveEcommerceCustomerCalls(): array
+    {
+        return self::readCalls()['removeEcommerceCustomer'] ?? [];
+    }
+
     public function getLastUpsertOrderCall(): null|(OrderInterface&MailchimpOrderAwareInterface)
     {
         $calls = self::readCalls()['upsertOrder'] ?? [];
@@ -138,6 +180,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertMember(string $listId, Member $member): string
     {
+        $this->maybeThrow('upsertMember');
         $calls = self::readCalls();
         $calls['upsertMember'][] = ['listId' => $listId, 'member' => $member];
         self::writeCalls($calls);
@@ -148,12 +191,15 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function getMember(string $listId, string $subscriberHash): ?Member
     {
+        $this->maybeThrow('getMember');
+
         return null;
     }
 
     #[\Override]
     public function removeMember(string $listId, string $subscriberHash): void
     {
+        $this->maybeThrow('removeMember');
         $calls = self::readCalls();
         $calls['removeMember'][] = ['listId' => $listId, 'subscriberHash' => $subscriberHash];
         self::writeCalls($calls);
@@ -173,6 +219,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertStore(Audience $audience): void
     {
+        $this->maybeThrow('upsertStore');
         $calls = self::readCalls();
         $calls['upsertStore'][] = ['audience' => $audience];
         self::writeCalls($calls);
@@ -181,6 +228,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function removeStore(string $storeId): void
     {
+        $this->maybeThrow('removeStore');
         $calls = self::readCalls();
         $calls['removeStore'][] = ['storeId' => $storeId];
         self::writeCalls($calls);
@@ -189,6 +237,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertProduct(string $storeId, ProductInterface $product, ChannelInterface $channel, string $locale): void
     {
+        $this->maybeThrow('upsertProduct');
         $calls = self::readCalls();
         $calls['upsertProduct'][] = ['storeId' => $storeId, 'product' => $product, 'channel' => $channel, 'locale' => $locale];
         self::writeCalls($calls);
@@ -197,6 +246,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function removeProduct(string $storeId, string $productId): void
     {
+        $this->maybeThrow('removeProduct');
         $calls = self::readCalls();
         $calls['removeProduct'][] = ['storeId' => $storeId, 'productId' => $productId];
         self::writeCalls($calls);
@@ -205,6 +255,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertCart(string $storeId, OrderInterface $order, ChannelInterface&ChannelMailchimpAwareInterface $channel): void
     {
+        $this->maybeThrow('upsertCart');
         $calls = self::readCalls();
         $calls['upsertCart'][] = ['storeId' => $storeId, 'order' => $order];
         self::writeCalls($calls);
@@ -213,6 +264,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function removeCart(string $storeId, string $cartId): void
     {
+        $this->maybeThrow('removeCart');
         $calls = self::readCalls();
         $calls['removeCart'][] = ['storeId' => $storeId, 'cartId' => $cartId];
         self::writeCalls($calls);
@@ -221,6 +273,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertOrder(string $storeId, OrderInterface&MailchimpOrderAwareInterface $order, bool $isInRealTime = false): void
     {
+        $this->maybeThrow('upsertOrder');
         $calls = self::readCalls();
         $calls['upsertOrder'][] = ['storeId' => $storeId, 'order' => $order];
         self::writeCalls($calls);
@@ -229,6 +282,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function removeOrder(string $storeId, string $orderId): void
     {
+        $this->maybeThrow('removeOrder');
         $calls = self::readCalls();
         $calls['removeOrder'][] = ['storeId' => $storeId, 'orderId' => $orderId];
         self::writeCalls($calls);
@@ -237,6 +291,19 @@ final class StubMailchimpClient implements MailchimpClientInterface
     #[\Override]
     public function upsertEcommerceCustomer(string $storeId, OrderInterface $order): void
     {
+        $this->maybeThrow('upsertEcommerceCustomer');
+        $calls = self::readCalls();
+        $calls['upsertEcommerceCustomer'][] = ['storeId' => $storeId, 'order' => $order];
+        self::writeCalls($calls);
+    }
+
+    #[\Override]
+    public function removeEcommerceCustomer(string $storeId, string $customerId): void
+    {
+        $this->maybeThrow('removeEcommerceCustomer');
+        $calls = self::readCalls();
+        $calls['removeEcommerceCustomer'][] = ['storeId' => $storeId, 'customerId' => $customerId];
+        self::writeCalls($calls);
     }
 
     #[\Override]
