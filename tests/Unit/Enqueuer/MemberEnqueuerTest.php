@@ -219,6 +219,30 @@ final class MemberEnqueuerTest extends TestCase
         $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
     }
 
+    public function test_enqueue_does_not_throw_when_dispatch_fails(): void
+    {
+        $customer = $this->buildCustomer(1, 'test@example.com', null);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->mailchimpClient->method('getMember')->willReturn(null);
+        $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
+
+        $this->enqueuer->enqueue($customer);
+
+        $this->expectNotToPerformAssertions();
+    }
+
+    public function test_enqueue_email_change_does_not_throw_when_dispatch_fails(): void
+    {
+        $customer = $this->buildCustomer(1, 'new@example.com', null);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->mailchimpClient->method('getMember')->willReturn(null);
+        $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
+
+        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
+
+        $this->expectNotToPerformAssertions();
+    }
+
     public function test_enqueue_removal_dispatches_member_remove(): void
     {
         $expectedHash = md5(strtolower('test@example.com'));

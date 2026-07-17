@@ -15,6 +15,7 @@ use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
+use Webgriffe\SyliusMailchimpPlugin\Util\MailchimpErrorClassifier;
 
 #[AsMessageHandler]
 final class ProductUpdateHandler
@@ -45,9 +46,16 @@ final class ProductUpdateHandler
             return;
         }
 
-        $audience = $this->audienceProvider->getAudience($channel, $message->locale);
-        $storeId = $this->storeIdentifierResolver->resolve($audience);
-        $this->mailchimpClient->upsertProduct($storeId, $product, $channel, $message->locale);
-        $this->logger->info('[Mailchimp] Product #{id} updated in store {store}.', ['id' => $message->productId, 'store' => $storeId]);
+        try {
+            $audience = $this->audienceProvider->getAudience($channel, $message->locale);
+            $storeId = $this->storeIdentifierResolver->resolve($audience);
+            $this->mailchimpClient->upsertProduct($storeId, $product, $channel, $message->locale);
+            $this->logger->info('[Mailchimp] Product #{id} updated in store {store}.', ['id' => $message->productId, 'store' => $storeId]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to sync product #{id}: {msg}', ['id' => $message->productId, 'msg' => $e->getMessage()]);
+            if (!MailchimpErrorClassifier::isPermanent($e)) {
+                throw $e;
+            }
+        }
     }
 }

@@ -60,7 +60,7 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
 
         $existingMailchimpId = $customer->getMailchimpId();
         if ($existingMailchimpId !== null && $existingMailchimpId !== '') {
-            $this->messageBus->dispatch(new MemberUpdate($customerId, $listId));
+            $this->dispatchSafely(new MemberUpdate($customerId, $listId));
             $this->logger->debug('[Mailchimp] Dispatched MemberUpdate for customer #{id}.', ['id' => $customerId]);
 
             return;
@@ -69,10 +69,10 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
         $subscriberHash = md5(strtolower($email));
         $remoteMember = $this->mailchimpClient->getMember($listId, $subscriberHash);
         if ($remoteMember !== null) {
-            $this->messageBus->dispatch(new MemberUpdate($customerId, $listId));
+            $this->dispatchSafely(new MemberUpdate($customerId, $listId));
             $this->logger->debug('[Mailchimp] Dispatched MemberUpdate for customer #{id} (existing remote member).', ['id' => $customerId]);
         } else {
-            $this->messageBus->dispatch(new MemberCreate($customerId, $listId));
+            $this->dispatchSafely(new MemberCreate($customerId, $listId));
             $this->logger->debug('[Mailchimp] Dispatched MemberCreate for customer #{id}.', ['id' => $customerId]);
         }
     }
@@ -108,7 +108,23 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     {
         $subscriberHash = md5(strtolower($email));
         $this->logger->debug('[Mailchimp] Dispatching MemberRemove for customer #{id}.', ['id' => $customerId]);
-        $this->messageBus->dispatch(new MemberRemove($customerId, $listId, $subscriberHash));
+        $this->dispatchSafely(new MemberRemove($customerId, $listId, $subscriberHash));
+    }
+
+    /**
+     * With a synchronous transport, handler exceptions surface here in the middle of a
+     * storefront HTTP request: a Mailchimp sync failure must not break the main flow.
+     */
+    private function dispatchSafely(object $message): void
+    {
+        try {
+            $this->messageBus->dispatch($message);
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to process {message}: {msg}', [
+                'message' => $message::class,
+                'msg' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

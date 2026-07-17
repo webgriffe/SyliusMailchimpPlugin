@@ -71,6 +71,18 @@ final class OrderEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($order);
     }
 
+    public function test_enqueue_does_not_throw_when_dispatch_fails(): void
+    {
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 10, channel: $channel, mailchimpOrderId: null);
+
+        $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
+
+        $this->enqueuer->enqueue($order);
+
+        $this->expectNotToPerformAssertions();
+    }
+
     public function test_enqueue_passes_is_in_real_time_flag(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');

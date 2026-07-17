@@ -49,15 +49,24 @@ final class ProductEnqueuer implements ProductEnqueuerInterface
                 'id' => $productId,
                 'channel' => $channelId,
             ]);
-            $this->messageBus->dispatch($message);
+
+            try {
+                $this->messageBus->dispatch($message);
+            } catch (\Throwable $e) {
+                $this->logger->error('[Mailchimp] Failed to enqueue product sync for product #{id} in channel #{channel}: {msg}', ['id' => $productId, 'channel' => $channelId, 'msg' => $e->getMessage()]);
+            }
         }
     }
 
     #[\Override]
     public function enqueueRemoval(string $storeId, string $productId): void
     {
-        $this->logger->debug('[Mailchimp] Dispatching ProductRemove for product {id} in store {store}.', ['id' => $productId, 'store' => $storeId]);
-        $this->messageBus->dispatch(new ProductRemove($storeId, $productId));
+        try {
+            $this->logger->debug('[Mailchimp] Dispatching ProductRemove for product {id} in store {store}.', ['id' => $productId, 'store' => $storeId]);
+            $this->messageBus->dispatch(new ProductRemove($storeId, $productId));
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to enqueue product removal for product {id}: {msg}', ['id' => $productId, 'msg' => $e->getMessage()]);
+        }
     }
 
     #[\Override]

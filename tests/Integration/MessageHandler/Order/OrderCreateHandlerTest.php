@@ -9,6 +9,7 @@ use Fidry\AliceDataFixtures\LoaderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderCreate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Order\OrderCreateHandler;
 
@@ -41,6 +42,35 @@ final class OrderCreateHandlerTest extends KernelTestCase
         self::assertCount(1, $this->stub->getUpsertOrderCalls());
         $em->refresh($order);
         self::assertSame((string) $order->getId(), $order->getMailchimpOrderId());
+    }
+
+    public function test_order_create_throws_on_transient_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $this->stub->failWith('upsertOrder');
+
+        $handler = self::getContainer()->get(OrderCreateHandler::class);
+
+        $this->expectException(ClientException::class);
+        $handler(new OrderCreate($order->getId()));
+    }
+
+    public function test_order_create_persists_order_error_on_permanent_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $this->stub->failWith('upsertOrder', statusCode: 400);
+
+        $handler = self::getContainer()->get(OrderCreateHandler::class);
+        $handler(new OrderCreate($order->getId()));
+
+        $em->refresh($order);
+        self::assertNotNull($order->getMailchimpOrderError());
     }
 
     public function test_order_create_skips_when_order_not_found(): void

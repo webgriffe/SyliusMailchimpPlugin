@@ -69,10 +69,10 @@ final class StubMailchimpClient implements MailchimpClientInterface
      * Configures the stub to throw when the given client method is called.
      * Cleared by reset().
      */
-    public function failWith(string $method, string $type = 'client', string $message = 'Simulated Mailchimp failure'): void
+    public function failWith(string $method, string $type = 'client', string $message = 'Simulated Mailchimp failure', int $statusCode = 500): void
     {
         $calls = self::readCalls();
-        $calls['throwOn'][$method] = ['type' => $type, 'message' => $message];
+        $calls['throwOn'][$method] = ['type' => $type, 'message' => $message, 'statusCode' => $statusCode];
         self::writeCalls($calls);
     }
 
@@ -87,7 +87,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
             throw ComplianceStateException::forEmail($config['message']);
         }
 
-        throw ClientException::fromResponse(500, $config['message']);
+        throw ClientException::fromResponse($config['statusCode'] ?? 500, $config['message']);
     }
 
     public function reset(): void

@@ -32,12 +32,16 @@ final class StoreEnqueuer implements StoreEnqueuerInterface
             return;
         }
 
-        $audience = $this->audienceProvider->getAudience($channel);
-        $storeId = $this->storeIdentifierResolver->resolve($audience);
-        $this->logger->info('[Mailchimp] Enqueueing store sync for channel #{id} (store {store}).', [
-            'id' => $channelId,
-            'store' => $storeId,
-        ]);
-        $this->messageBus->dispatch(new StoreCreate($channelId));
+        try {
+            $audience = $this->audienceProvider->getAudience($channel);
+            $storeId = $this->storeIdentifierResolver->resolve($audience);
+            $this->logger->info('[Mailchimp] Enqueueing store sync for channel #{id} (store {store}).', [
+                'id' => $channelId,
+                'store' => $storeId,
+            ]);
+            $this->messageBus->dispatch(new StoreCreate($channelId));
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to enqueue store sync for channel #{id}: {msg}', ['id' => $channelId, 'msg' => $e->getMessage()]);
+        }
     }
 }

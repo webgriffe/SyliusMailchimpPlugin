@@ -8,6 +8,7 @@ use Fidry\AliceDataFixtures\LoaderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Message\Store\StoreUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Store\StoreUpdateHandler;
 
@@ -39,5 +40,35 @@ final class StoreUpdateHandlerTest extends KernelTestCase
         $handler(new StoreUpdate($channel->getId()));
 
         self::assertCount(1, $this->stub->getUpsertStoreCalls());
+    }
+
+    public function test_store_update_throws_on_transient_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/channel.yaml']);
+
+        $channel = self::getContainer()->get('doctrine.orm.entity_manager')
+            ->getRepository(Channel::class)
+            ->findOneBy(['code' => 'STORE_UPDATE_TEST']);
+        $this->stub->failWith('upsertStore');
+
+        $handler = self::getContainer()->get(StoreUpdateHandler::class);
+
+        $this->expectException(ClientException::class);
+        $handler(new StoreUpdate($channel->getId()));
+    }
+
+    public function test_store_update_does_not_throw_on_permanent_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/channel.yaml']);
+
+        $channel = self::getContainer()->get('doctrine.orm.entity_manager')
+            ->getRepository(Channel::class)
+            ->findOneBy(['code' => 'STORE_UPDATE_TEST']);
+        $this->stub->failWith('upsertStore', statusCode: 400);
+
+        $handler = self::getContainer()->get(StoreUpdateHandler::class);
+        $handler(new StoreUpdate($channel->getId()));
+
+        self::assertCount(0, $this->stub->getUpsertStoreCalls());
     }
 }

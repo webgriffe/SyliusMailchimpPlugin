@@ -9,6 +9,7 @@ use Fidry\AliceDataFixtures\LoaderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberCreate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberCreateHandler;
 
@@ -42,6 +43,35 @@ final class MemberCreateHandlerTest extends KernelTestCase
         $em->refresh($customer);
         self::assertNotNull($customer->getMailchimpId());
         self::assertNotNull($customer->getMailchimpSyncedAt());
+    }
+
+    public function test_member_create_throws_on_transient_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/customer.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'member-create@test.com']);
+        $this->stub->failWith('upsertMember');
+
+        $handler = self::getContainer()->get(MemberCreateHandler::class);
+
+        $this->expectException(ClientException::class);
+        $handler(new MemberCreate($customer->getId(), 'test-list-id'));
+    }
+
+    public function test_member_create_persists_error_on_permanent_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/customer.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'member-create@test.com']);
+        $this->stub->failWith('upsertMember', statusCode: 400);
+
+        $handler = self::getContainer()->get(MemberCreateHandler::class);
+        $handler(new MemberCreate($customer->getId(), 'test-list-id'));
+
+        $em->refresh($customer);
+        self::assertNotNull($customer->getMailchimpError());
     }
 
     public function test_member_create_skips_when_customer_not_found(): void

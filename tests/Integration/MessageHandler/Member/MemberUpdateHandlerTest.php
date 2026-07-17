@@ -9,6 +9,7 @@ use Fidry\AliceDataFixtures\LoaderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberUpdateHandler;
 
@@ -41,5 +42,34 @@ final class MemberUpdateHandlerTest extends KernelTestCase
         self::assertCount(1, $this->stub->getUpsertMemberCalls());
         $em->refresh($customer);
         self::assertNotNull($customer->getMailchimpId());
+    }
+
+    public function test_member_update_throws_on_transient_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/customer.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'member-update@test.com']);
+        $this->stub->failWith('upsertMember');
+
+        $handler = self::getContainer()->get(MemberUpdateHandler::class);
+
+        $this->expectException(ClientException::class);
+        $handler(new MemberUpdate($customer->getId(), 'test-list-id'));
+    }
+
+    public function test_member_update_persists_error_on_permanent_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/customer.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'member-update@test.com']);
+        $this->stub->failWith('upsertMember', statusCode: 400);
+
+        $handler = self::getContainer()->get(MemberUpdateHandler::class);
+        $handler(new MemberUpdate($customer->getId(), 'test-list-id'));
+
+        $em->refresh($customer);
+        self::assertNotNull($customer->getMailchimpError());
     }
 }

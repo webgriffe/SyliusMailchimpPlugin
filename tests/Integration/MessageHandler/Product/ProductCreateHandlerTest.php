@@ -10,6 +10,7 @@ use Sylius\Component\Core\Model\Product;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Message\Product\ProductCreate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Product\ProductCreateHandler;
 
@@ -41,6 +42,36 @@ final class ProductCreateHandlerTest extends KernelTestCase
         $handler(new ProductCreate($product->getId(), $channel->getId(), 'en_US'));
 
         self::assertCount(1, $this->stub->getUpsertProductCalls());
+    }
+
+    public function test_product_create_throws_on_transient_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/product.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $channel = $em->getRepository(Channel::class)->findOneBy(['code' => 'PRODUCT_CREATE_TEST']);
+        $product = $em->getRepository(Product::class)->findOneBy(['code' => 'PRODUCT_CREATE_PRODUCT']);
+        $this->stub->failWith('upsertProduct');
+
+        $handler = self::getContainer()->get(ProductCreateHandler::class);
+
+        $this->expectException(ClientException::class);
+        $handler(new ProductCreate($product->getId(), $channel->getId(), 'en_US'));
+    }
+
+    public function test_product_create_does_not_throw_on_permanent_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/product.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $channel = $em->getRepository(Channel::class)->findOneBy(['code' => 'PRODUCT_CREATE_TEST']);
+        $product = $em->getRepository(Product::class)->findOneBy(['code' => 'PRODUCT_CREATE_PRODUCT']);
+        $this->stub->failWith('upsertProduct', statusCode: 400);
+
+        $handler = self::getContainer()->get(ProductCreateHandler::class);
+        $handler(new ProductCreate($product->getId(), $channel->getId(), 'en_US'));
+
+        self::assertCount(0, $this->stub->getUpsertProductCalls());
     }
 
     public function test_product_create_skips_when_product_not_found(): void

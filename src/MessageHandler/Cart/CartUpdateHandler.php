@@ -19,6 +19,7 @@ use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\Util\IdSanitizer;
+use Webgriffe\SyliusMailchimpPlugin\Util\MailchimpErrorClassifier;
 
 #[AsMessageHandler]
 final class CartUpdateHandler
@@ -49,16 +50,34 @@ final class CartUpdateHandler
             return;
         }
 
-        $locale = $order->getLocaleCode() ?? $channel->getDefaultLocale()?->getCode() ?? 'en';
-        $audience = $this->audienceProvider->getAudience($channel, $locale);
-        $storeId = $this->storeIdentifierResolver->resolve($audience);
-        $this->upsertCartProducts($order, $storeId, $channel, $locale);
+        try {
+            $locale = $order->getLocaleCode() ?? $channel->getDefaultLocale()?->getCode() ?? 'en';
+            $audience = $this->audienceProvider->getAudience($channel, $locale);
+            $storeId = $this->storeIdentifierResolver->resolve($audience);
+            $this->upsertCartProducts($order, $storeId, $channel, $locale);
 
-        $this->mailchimpClient->upsertCart($storeId, $order, $channel);
-        $order->setMailchimpCartId(IdSanitizer::sanitize((string) $order->getId()));
-        $order->setMailchimpCartError(null);
-        $this->entityManager->flush();
-        $this->logger->info('[Mailchimp] Cart updated for order #{id} in store {store}.', ['id' => $message->orderId, 'store' => $storeId]);
+            $this->mailchimpClient->upsertCart($storeId, $order, $channel);
+            $order->setMailchimpCartId(IdSanitizer::sanitize((string) $order->getId()));
+            $order->setMailchimpCartError(null);
+            $this->entityManager->flush();
+            $this->logger->info('[Mailchimp] Cart updated for order #{id} in store {store}.', ['id' => $message->orderId, 'store' => $storeId]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to sync cart for order #{id}: {msg}', ['id' => $message->orderId, 'msg' => $e->getMessage()]);
+            if (!MailchimpErrorClassifier::isPermanent($e)) {
+                throw $e;
+            }
+            $this->persistError($order, $e);
+        }
+    }
+
+    private function persistError(MailchimpOrderAwareInterface $order, \Throwable $e): void
+    {
+        try {
+            $order->setMailchimpCartError($e->getMessage());
+            $this->entityManager->flush();
+        } catch (\Throwable $flushError) {
+            $this->logger->error('[Mailchimp] Could not persist cart sync error: {msg}', ['msg' => $flushError->getMessage()]);
+        }
     }
 
     private function upsertCartProducts(OrderInterface $order, string $storeId, ChannelInterface $channel, string $locale): void

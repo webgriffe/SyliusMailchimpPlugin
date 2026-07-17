@@ -70,6 +70,18 @@ final class StoreEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($channel);
     }
 
+    public function test_enqueue_does_not_throw_when_dispatch_fails(): void
+    {
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $this->audienceProvider->method('getAudience')->willReturn(new Audience('aud123', $channel));
+        $this->storeIdentifierResolver->method('resolve')->willReturn('WEB-aud123');
+        $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
+
+        $this->enqueuer->enqueue($channel);
+
+        $this->expectNotToPerformAssertions();
+    }
+
     private function createChannel(int $id, string $code): Channel
     {
         $channel = new Channel();

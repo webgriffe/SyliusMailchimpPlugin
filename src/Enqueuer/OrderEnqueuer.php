@@ -43,12 +43,16 @@ final class OrderEnqueuer implements OrderEnqueuerInterface
             return;
         }
 
-        if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpOrderId() !== null) {
-            $this->messageBus->dispatch(new OrderUpdate($orderId));
-            $this->logger->debug('[Mailchimp] Dispatched OrderUpdate for order #{id}.', ['id' => $orderId]);
-        } else {
-            $this->messageBus->dispatch(new OrderCreate($orderId, $isInRealTime));
-            $this->logger->debug('[Mailchimp] Dispatched OrderCreate for order #{id}.', ['id' => $orderId]);
+        try {
+            if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpOrderId() !== null) {
+                $this->messageBus->dispatch(new OrderUpdate($orderId));
+                $this->logger->debug('[Mailchimp] Dispatched OrderUpdate for order #{id}.', ['id' => $orderId]);
+            } else {
+                $this->messageBus->dispatch(new OrderCreate($orderId, $isInRealTime));
+                $this->logger->debug('[Mailchimp] Dispatched OrderCreate for order #{id}.', ['id' => $orderId]);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to enqueue order sync for order #{id}: {msg}', ['id' => $orderId, 'msg' => $e->getMessage()]);
         }
     }
 
@@ -69,9 +73,13 @@ final class OrderEnqueuer implements OrderEnqueuerInterface
             return;
         }
 
-        $audience = $this->audienceProvider->getAudience($channel, $order->getLocaleCode());
-        $storeId = $this->storeIdentifierResolver->resolve($audience);
-        $this->logger->debug('[Mailchimp] Dispatching OrderRemove for order {orderId} in store {store}.', ['orderId' => $mailchimpOrderId, 'store' => $storeId]);
-        $this->messageBus->dispatch(new OrderRemove($storeId, $mailchimpOrderId));
+        try {
+            $audience = $this->audienceProvider->getAudience($channel, $order->getLocaleCode());
+            $storeId = $this->storeIdentifierResolver->resolve($audience);
+            $this->logger->debug('[Mailchimp] Dispatching OrderRemove for order {orderId} in store {store}.', ['orderId' => $mailchimpOrderId, 'store' => $storeId]);
+            $this->messageBus->dispatch(new OrderRemove($storeId, $mailchimpOrderId));
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to enqueue order removal for order {orderId}: {msg}', ['orderId' => $mailchimpOrderId, 'msg' => $e->getMessage()]);
+        }
     }
 }

@@ -44,12 +44,16 @@ final class CartEnqueuer implements CartEnqueuerInterface
             return;
         }
 
-        if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpCartId() !== null) {
-            $this->messageBus->dispatch(new CartUpdate($orderId), [new DelayStamp(1000)]);
-            $this->logger->debug('[Mailchimp] Dispatched CartUpdate for order #{id}.', ['id' => $orderId]);
-        } else {
-            $this->messageBus->dispatch(new CartCreate($orderId), [new DelayStamp(1000)]);
-            $this->logger->debug('[Mailchimp] Dispatched CartCreate for order #{id}.', ['id' => $orderId]);
+        try {
+            if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpCartId() !== null) {
+                $this->messageBus->dispatch(new CartUpdate($orderId), [new DelayStamp(1000)]);
+                $this->logger->debug('[Mailchimp] Dispatched CartUpdate for order #{id}.', ['id' => $orderId]);
+            } else {
+                $this->messageBus->dispatch(new CartCreate($orderId), [new DelayStamp(1000)]);
+                $this->logger->debug('[Mailchimp] Dispatched CartCreate for order #{id}.', ['id' => $orderId]);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to enqueue cart sync for order #{id}: {msg}', ['id' => $orderId, 'msg' => $e->getMessage()]);
         }
     }
 
@@ -70,9 +74,13 @@ final class CartEnqueuer implements CartEnqueuerInterface
             return;
         }
 
-        $audience = $this->audienceProvider->getAudience($channel, $order->getLocaleCode());
-        $storeId = $this->storeIdentifierResolver->resolve($audience);
-        $this->logger->debug('[Mailchimp] Dispatching CartRemove for cart {cartId} in store {store}.', ['cartId' => $cartId, 'store' => $storeId]);
-        $this->messageBus->dispatch(new CartRemove($storeId, $cartId), [new DelayStamp(1000)]);
+        try {
+            $audience = $this->audienceProvider->getAudience($channel, $order->getLocaleCode());
+            $storeId = $this->storeIdentifierResolver->resolve($audience);
+            $this->logger->debug('[Mailchimp] Dispatching CartRemove for cart {cartId} in store {store}.', ['cartId' => $cartId, 'store' => $storeId]);
+            $this->messageBus->dispatch(new CartRemove($storeId, $cartId), [new DelayStamp(1000)]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to enqueue cart removal for cart {cartId}: {msg}', ['cartId' => $cartId, 'msg' => $e->getMessage()]);
+        }
     }
 }

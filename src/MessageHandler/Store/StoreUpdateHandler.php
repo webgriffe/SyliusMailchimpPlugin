@@ -12,6 +12,7 @@ use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Store\StoreUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Util\MailchimpErrorClassifier;
 
 #[AsMessageHandler]
 final class StoreUpdateHandler
@@ -33,8 +34,15 @@ final class StoreUpdateHandler
             return;
         }
 
-        $audience = $this->audienceProvider->getAudience($channel);
-        $this->mailchimpClient->upsertStore($audience);
-        $this->logger->info('[Mailchimp] Store updated for channel #{id}.', ['id' => $message->channelId]);
+        try {
+            $audience = $this->audienceProvider->getAudience($channel);
+            $this->mailchimpClient->upsertStore($audience);
+            $this->logger->info('[Mailchimp] Store updated for channel #{id}.', ['id' => $message->channelId]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to sync store for channel #{id}: {msg}', ['id' => $message->channelId, 'msg' => $e->getMessage()]);
+            if (!MailchimpErrorClassifier::isPermanent($e)) {
+                throw $e;
+            }
+        }
     }
 }

@@ -15,6 +15,7 @@ use Webgriffe\SyliusMailchimpPlugin\Exception\MissingCustomerEmailException;
 use Webgriffe\SyliusMailchimpPlugin\Mapper\MemberMapperInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Util\MailchimpErrorClassifier;
 
 #[AsMessageHandler]
 final class MemberUpdateHandler
@@ -70,6 +71,18 @@ final class MemberUpdateHandler
             $this->logger->warning('[Mailchimp] Compliance state for customer #{id}: {msg}', ['id' => $message->customerId, 'msg' => $e->getMessage()]);
         } catch (MissingCustomerEmailException $e) {
             $this->logger->warning('[Mailchimp] Missing email for customer #{id}: {msg}', ['id' => $message->customerId, 'msg' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[Mailchimp] Failed to sync member for customer #{id}: {msg}', ['id' => $message->customerId, 'msg' => $e->getMessage()]);
+            if (!MailchimpErrorClassifier::isPermanent($e)) {
+                throw $e;
+            }
+
+            try {
+                $customer->setMailchimpError($e->getMessage());
+                $this->entityManager->flush();
+            } catch (\Throwable $flushError) {
+                $this->logger->error('[Mailchimp] Could not persist member sync error: {msg}', ['msg' => $flushError->getMessage()]);
+            }
         }
     }
 }

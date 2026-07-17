@@ -9,6 +9,7 @@ use Fidry\AliceDataFixtures\LoaderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderUpdate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Order\OrderUpdateHandler;
 
@@ -41,5 +42,38 @@ final class OrderUpdateHandlerTest extends KernelTestCase
         $handler(new OrderUpdate($order->getId()));
 
         self::assertCount(1, $this->stub->getUpsertOrderCalls());
+    }
+
+    public function test_order_update_throws_on_transient_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $order->setMailchimpOrderId((string) $order->getId());
+        $em->flush();
+        $this->stub->failWith('upsertOrder');
+
+        $handler = self::getContainer()->get(OrderUpdateHandler::class);
+
+        $this->expectException(ClientException::class);
+        $handler(new OrderUpdate($order->getId()));
+    }
+
+    public function test_order_update_persists_order_error_on_permanent_mailchimp_failure(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $order->setMailchimpOrderId((string) $order->getId());
+        $em->flush();
+        $this->stub->failWith('upsertOrder', statusCode: 400);
+
+        $handler = self::getContainer()->get(OrderUpdateHandler::class);
+        $handler(new OrderUpdate($order->getId()));
+
+        $em->refresh($order);
+        self::assertNotNull($order->getMailchimpOrderError());
     }
 }

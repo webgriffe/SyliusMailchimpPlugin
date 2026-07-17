@@ -81,6 +81,18 @@ final class ProductEnqueuerTest extends TestCase
         $this->enqueuer->enqueueRemoval('WEB', 'TSHIRT');
     }
 
+    public function test_enqueue_does_not_throw_when_dispatch_fails(): void
+    {
+        $channel = $this->createChannel(id: 1);
+        $product = $this->createProduct(id: 10, channels: [$channel]);
+
+        $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
+
+        $this->enqueuer->enqueue($product);
+
+        $this->expectNotToPerformAssertions();
+    }
+
     private function createProduct(int $id, array $channels = []): ProductInterface
     {
         $product = new Product();

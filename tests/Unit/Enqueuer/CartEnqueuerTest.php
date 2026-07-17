@@ -98,6 +98,32 @@ final class CartEnqueuerTest extends TestCase
         $this->enqueuer->enqueueRemoval($order);
     }
 
+    public function test_enqueue_does_not_throw_when_dispatch_fails(): void
+    {
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: null);
+
+        $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
+
+        $this->enqueuer->enqueue($order);
+
+        $this->expectNotToPerformAssertions();
+    }
+
+    public function test_enqueue_removal_does_not_throw_when_dispatch_fails(): void
+    {
+        $channel = $this->createChannel(id: 1, code: 'WEB', audienceId: 'abc123');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: 'cart-token-abc');
+
+        $this->audienceProvider->method('getAudience')->willReturn(new Audience('abc123', $channel));
+        $this->storeIdentifierResolver->method('resolve')->willReturn('WEB-abc123');
+        $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
+
+        $this->enqueuer->enqueueRemoval($order);
+
+        $this->expectNotToPerformAssertions();
+    }
+
     private function createOrder(int $id, Channel $channel, ?string $mailchimpCartId): Order
     {
         $order = new Order();
