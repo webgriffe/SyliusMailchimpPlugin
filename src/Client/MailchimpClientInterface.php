@@ -50,6 +50,8 @@ interface MailchimpClientInterface
     // Ecommerce Customers
     public function upsertEcommerceCustomer(string $storeId, OrderInterface $order): void;
 
+    public function removeEcommerceCustomer(string $storeId, string $customerId): void;
+
     // Utility
     public function ping(): void;
 

@@ -413,6 +413,24 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
+    public function removeEcommerceCustomer(string $storeId, string $customerId): void
+    {
+        $url = sprintf('%secommerce/stores/%s/customers/%s', $this->baseUrl, $storeId, $customerId);
+        $this->logger->debug('[Mailchimp] DELETE {url}', ['url' => $url]);
+
+        $response = $this->httpClient->request('DELETE', $url, [
+            'auth_basic' => ['anystring', $this->getApiKey()],
+        ]);
+
+        $statusCode = $response->getStatusCode();
+        if ($statusCode !== 204 && $statusCode !== 404 && $statusCode >= 400) {
+            $this->handleErrorResponse($statusCode, $response->getContent(false), $customerId);
+        }
+
+        $this->logger->info('[Mailchimp] Ecommerce customer {id} removed from store {store}.', ['id' => $customerId, 'store' => $storeId]);
+    }
+
+    #[\Override]
     public function ping(): void
     {
         $url = sprintf('%sping', $this->baseUrl);
