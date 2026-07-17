@@ -1,0 +1,31 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_email_change:
+        code: 'EMAIL_CHANGE_TEST'
+        name: 'Email Change Test Store'
+        hostname: 'https://email-change.test'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_email_change:
+        email: 'email-change@test.com'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
+    order_email_change:
+        channel: '@channel_email_change'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        customer: '@customer_email_change'

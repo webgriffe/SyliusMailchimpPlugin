@@ -9,6 +9,7 @@ use Sylius\Component\Core\Model\CustomerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
+use Webgriffe\SyliusMailchimpPlugin\Message\EcommerceCustomer\EcommerceCustomerEmailChange;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
@@ -77,7 +78,6 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
             ]);
             $remoteMember = null;
         }
-
         if ($remoteMember !== null) {
             $this->dispatchSafely(new MemberUpdate($customerId, $listId));
             $this->logger->debug('[Mailchimp] Dispatched MemberUpdate for customer #{id} (existing remote member).', ['id' => $customerId]);
@@ -90,6 +90,18 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     #[\Override]
     public function enqueueEmailChange(CustomerInterface $customer, string $oldEmail): void
     {
+        // The Mailchimp ecommerce customer must be recreated on email change (its email is
+        // immutable), even for customers that are not newsletter-subscribed and when the
+        // current channel has no audience configured.
+        if ($customer instanceof MailchimpAwareInterface) {
+            /** @var mixed $customerId */
+            $customerId = $customer->getId();
+            if (is_int($customerId)) {
+                $this->dispatchSafely(new EcommerceCustomerEmailChange($customerId));
+                $this->logger->debug('[Mailchimp] Dispatched EcommerceCustomerEmailChange for customer #{id}.', ['id' => $customerId]);
+            }
+        }
+
         $context = $this->resolveAudienceContext($customer, 'email change enqueue');
         if ($context === null) {
             return;

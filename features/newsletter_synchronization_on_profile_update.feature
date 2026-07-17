@@ -31,6 +31,7 @@ Feature: Mailchimp newsletter synchronization on customer profile update
         And I save my changes
         Then I should be notified that it has been successfully edited
         And the Mailchimp member with email "john@example.com" should have been removed
+        And the Mailchimp ecommerce customer should have been removed
         And the customer with email "john.new@example.com" should be synced to Mailchimp
 
     Scenario: Non-subscribed customer updates their profile
@@ -50,4 +51,5 @@ Feature: Mailchimp newsletter synchronization on customer profile update
         And I save my changes
         Then I should be notified that it has been successfully edited
         And the Mailchimp member with email "john@example.com" should have been removed
+        And the Mailchimp ecommerce customer should have been removed
         And the customer should not be synced to Mailchimp

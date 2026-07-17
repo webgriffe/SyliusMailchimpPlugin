@@ -42,6 +42,17 @@ final class MailchimpProfileContext implements Context
     }
 
     /**
+     * @Then the Mailchimp ecommerce customer should have been removed
+     */
+    public function theMailchimpEcommerceCustomerShouldHaveBeenRemoved(): void
+    {
+        Assert::notEmpty(
+            $this->stubMailchimpClient->getRemoveEcommerceCustomerCalls(),
+            'Expected removeEcommerceCustomer to be called, but it was not.',
+        );
+    }
+
+    /**
      * @Then the customer with email :email should be synced to Mailchimp
      */
     public function theCustomerWithEmailShouldBeSyncedToMailchimp(string $email): void

@@ -7,6 +7,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartUpdateHandler;
+use Webgriffe\SyliusMailchimpPlugin\MessageHandler\EcommerceCustomer\EcommerceCustomerEmailChangeHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberSubscriptionUpdateHandler;
@@ -144,6 +145,17 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(OrderRemoveHandler::class)
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
+        ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->tag('messenger.message_handler');
+
+    $services->set(EcommerceCustomerEmailChangeHandler::class)
+        ->arg('$customerRepository', service('sylius.repository.customer'))
+        ->arg('$channelRepository', service('sylius.repository.channel'))
+        ->arg('$orderRepository', service('sylius.repository.order'))
+        ->arg('$audienceProvider', service(AudienceProviderInterface::class))
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
+        ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
+        ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('messenger.message_handler');
 };

@@ -16,6 +16,7 @@ use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
+use Webgriffe\SyliusMailchimpPlugin\Message\EcommerceCustomer\EcommerceCustomerEmailChange;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
@@ -173,6 +174,46 @@ final class MemberEnqueuerTest extends TestCase
         $this->mailchimpClient->method('getMember')->willReturn(null);
 
         $dispatched = [];
+        $this->messageBus->expects($this->exactly(3))->method('dispatch')
+            ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
+                $dispatched[] = $msg;
+
+                return new Envelope($msg);
+            });
+
+        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
+
+        $this->assertInstanceOf(EcommerceCustomerEmailChange::class, $dispatched[0]);
+        $this->assertInstanceOf(MemberRemove::class, $dispatched[1]);
+        $this->assertInstanceOf(MemberCreate::class, $dispatched[2]);
+    }
+
+    public function test_enqueue_email_change_dispatches_ecommerce_customer_email_change_with_customer_id(): void
+    {
+        $customer = $this->buildCustomer(42, 'new@example.com', null);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->mailchimpClient->method('getMember')->willReturn(null);
+
+        $dispatched = [];
+        $this->messageBus->method('dispatch')
+            ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
+                $dispatched[] = $msg;
+
+                return new Envelope($msg);
+            });
+
+        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
+
+        $this->assertInstanceOf(EcommerceCustomerEmailChange::class, $dispatched[0]);
+        $this->assertSame(42, $dispatched[0]->customerId);
+    }
+
+    public function test_enqueue_email_change_dispatches_only_remove_when_not_subscribed(): void
+    {
+        $customer = $this->buildCustomer(1, 'new@example.com', null, false);
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+
+        $dispatched = [];
         $this->messageBus->expects($this->exactly(2))->method('dispatch')
             ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
                 $dispatched[] = $msg;
@@ -182,27 +223,8 @@ final class MemberEnqueuerTest extends TestCase
 
         $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
 
-        $this->assertInstanceOf(MemberRemove::class, $dispatched[0]);
-        $this->assertInstanceOf(MemberCreate::class, $dispatched[1]);
-    }
-
-    public function test_enqueue_email_change_dispatches_only_remove_when_not_subscribed(): void
-    {
-        $customer = $this->buildCustomer(1, 'new@example.com', null, false);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
-
-        $dispatched = [];
-        $this->messageBus->expects($this->once())->method('dispatch')
-            ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
-                $dispatched[] = $msg;
-
-                return new Envelope($msg);
-            });
-
-        $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
-
-        $this->assertCount(1, $dispatched);
-        $this->assertInstanceOf(MemberRemove::class, $dispatched[0]);
+        $this->assertInstanceOf(EcommerceCustomerEmailChange::class, $dispatched[0]);
+        $this->assertInstanceOf(MemberRemove::class, $dispatched[1]);
     }
 
     public function test_enqueue_email_change_dispatches_only_remove_when_new_email_is_empty(): void
@@ -211,7 +233,7 @@ final class MemberEnqueuerTest extends TestCase
         $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
 
         $dispatched = [];
-        $this->messageBus->expects($this->once())->method('dispatch')
+        $this->messageBus->expects($this->exactly(2))->method('dispatch')
             ->willReturnCallback(function (object $msg) use (&$dispatched): Envelope {
                 $dispatched[] = $msg;
 
@@ -220,17 +242,20 @@ final class MemberEnqueuerTest extends TestCase
 
         $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
 
-        $this->assertCount(1, $dispatched);
-        $this->assertInstanceOf(MemberRemove::class, $dispatched[0]);
+        $this->assertInstanceOf(EcommerceCustomerEmailChange::class, $dispatched[0]);
+        $this->assertInstanceOf(MemberRemove::class, $dispatched[1]);
     }
 
-    public function test_enqueue_email_change_skips_when_audience_not_found(): void
+    public function test_enqueue_email_change_dispatches_ecommerce_customer_email_change_even_when_audience_not_found(): void
     {
         $customer = $this->buildCustomer(1, 'new@example.com', null);
         $this->audienceContext->method('getAudienceId')
             ->willThrowException(new AudienceNotFoundException('No audience'));
 
-        $this->messageBus->expects($this->never())->method('dispatch');
+        $this->messageBus->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(EcommerceCustomerEmailChange::class))
+            ->willReturn(new Envelope(new EcommerceCustomerEmailChange(1)));
 
         $this->enqueuer->enqueueEmailChange($customer, 'old@example.com');
     }
