@@ -25,6 +25,7 @@ webgriffe_sylius_mailchimp:
         sync_error: 'Errore sincronizzazione'
         subscribed_to_newsletter: 'Iscritto alla newsletter'
         view_on_mailchimp: 'Visualizza su Mailchimp'
+        view_contact_detail: 'Visualizza dettaglio contatto'
         mailchimp_sync_status: 'Stato Sincronizzazione Mailchimp'
         members_synced: 'Membri sincronizzati'
         members_error: 'Membri con errore'

@@ -25,6 +25,7 @@ webgriffe_sylius_mailchimp:
         sync_error: 'Sync error'
         subscribed_to_newsletter: 'Subscribed to newsletter'
         view_on_mailchimp: 'View on Mailchimp'
+        view_contact_detail: 'View contact detail'
         mailchimp_sync_status: 'Mailchimp Sync Status'
         members_synced: 'Members synced'
         members_error: 'Members with error'

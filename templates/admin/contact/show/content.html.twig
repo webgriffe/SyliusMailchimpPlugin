@@ -1,3 +1,4 @@
+{% import '@SyliusAdmin/shared/helper/field/boolean.html.twig' as boolean %}
 {% set customer = hookable_metadata.context.customer %}
 {% set orders = hookable_metadata.context.orders %}
 {% set carts = hookable_metadata.context.carts %}
@@ -46,7 +47,7 @@
                                 {% if customer.mailchimpId %}
                                     <code>{{ customer.mailchimpId }}</code>
                                     {% set badge = mailchimp_sync_badge(customer) %}
-                                    <span class="badge bg-{{ badge.color }}">{{ badge.label }}</span>
+                                    <span class="badge bg-{{ badge.color }} text-white">{{ badge.label }}</span>
                                     <a href="{{ mailchimp_member_url(customer.mailchimpId, customer.mailchimpId) }}" target="_blank" rel="noopener noreferrer" class="ms-1">
                                         {{ ux_icon('tabler:external-link') }}
                                     </a>
@@ -98,13 +99,7 @@
                             <dd class="col-sm-7">{{ customer.phoneNumber ?: '—' }}</dd>
 
                             <dt class="col-sm-5">{{ 'sylius.ui.subscribed_to_newsletter'|trans }}</dt>
-                            <dd class="col-sm-7">
-                                {% if customer.subscribedToNewsletter %}
-                                    <span class="badge bg-success">{{ 'sylius.ui.yes'|trans }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ 'sylius.ui.no'|trans }}</span>
-                                {% endif %}
-                            </dd>
+                            <dd class="col-sm-7">{{ boolean.default(customer.subscribedToNewsletter) }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -141,7 +136,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <span class="badge bg-{{ order.state == 'fulfilled' ? 'success' : (order.state == 'cancelled' ? 'danger' : 'warning') }}">
+                                                <span class="badge bg-{{ order.state == 'fulfilled' ? 'success' : (order.state == 'cancelled' ? 'danger' : 'warning') }} text-white">
                                                     {{ ('sylius.ui.' ~ order.state)|trans }}
                                                 </span>
                                             </td>
