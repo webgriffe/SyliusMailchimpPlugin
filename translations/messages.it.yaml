@@ -3,6 +3,8 @@ webgriffe_sylius_mailchimp:
         mailchimp: 'Mailchimp'
         contacts: 'Contatti Mailchimp'
         view_customer: 'Vedi cliente'
+        sync_to_mailchimp: 'Sincronizza con Mailchimp'
+        sync_queued: 'Sincronizzazione del contatto con Mailchimp accodata.'
         mailchimp_sync_data: 'Dati sincronizzazione Mailchimp'
         customer_info: 'Informazioni cliente'
         orders: 'Ordini'

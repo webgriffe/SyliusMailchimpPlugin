@@ -21,3 +21,9 @@ webgriffe_sylius_mailchimp_contact_show:
     methods: [GET]
     defaults:
         _controller: Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController::showAction
+
+webgriffe_sylius_mailchimp_contact_sync:
+    path: /admin/mailchimp/contacts/{id}/sync
+    methods: [POST]
+    defaults:
+        _controller: Webgriffe\SyliusMailchimpPlugin\Controller\Admin\ContactController::syncAction

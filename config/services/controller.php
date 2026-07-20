@@ -43,5 +43,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$customerRepository', service('sylius.repository.customer'))
         ->arg('$orderRepository', service('sylius.repository.order'))
         ->arg('$twig', service('twig'))
+        ->arg('$memberEnqueuer', service('Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface'))
+        ->arg('$urlGenerator', service('router'))
+        ->arg('$csrfTokenManager', service('security.csrf.token_manager'))
         ->tag('controller.service_arguments');
 };

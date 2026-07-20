@@ -28,6 +28,13 @@
                         {{ ux_icon('tabler:user') }}
                         {{ 'webgriffe_sylius_mailchimp.ui.view_customer'|trans }}
                     </a>
+                    <form action="{{ path('webgriffe_sylius_mailchimp_contact_sync', {'id': customer.id}) }}" method="post" class="d-inline">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('webgriffe_sylius_mailchimp_contact_sync') }}">
+                        <button type="submit" class="btn btn-primary">
+                            {{ ux_icon('tabler:refresh') }}
+                            {{ 'webgriffe_sylius_mailchimp.ui.sync_to_mailchimp'|trans }}
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
