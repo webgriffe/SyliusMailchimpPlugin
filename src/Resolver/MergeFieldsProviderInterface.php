@@ -9,7 +9,7 @@ use Sylius\Component\Core\Model\CustomerInterface;
 interface MergeFieldsProviderInterface
 {
     /**
-     * @return array<string, string>
+     * @return array<string, string|array<string, string>>
      */
     public function provide(CustomerInterface $customer): array;
 }

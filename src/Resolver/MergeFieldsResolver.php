@@ -23,11 +23,11 @@ final class MergeFieldsResolver
 
         foreach ($this->providers as $provider) {
             $fields = $provider->provide($customer);
-            if (isset($fields['FNAME'])) {
+            if (isset($fields['FNAME']) && is_string($fields['FNAME'])) {
                 $firstName = $fields['FNAME'];
             }
 
-            if (isset($fields['LNAME'])) {
+            if (isset($fields['LNAME']) && is_string($fields['LNAME'])) {
                 $lastName = $fields['LNAME'];
             }
 

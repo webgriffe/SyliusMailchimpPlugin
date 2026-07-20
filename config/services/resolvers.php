@@ -8,6 +8,8 @@ use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContext;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\ChannelAudienceProvider;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\AddressMergeFieldsProvider;
+use Webgriffe\SyliusMailchimpPlugin\Resolver\ContactInfoMergeFieldsProvider;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\FnameLnameMergeFieldsProvider;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\MemberStatusResolver;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\MemberStatusResolverInterface;
@@ -46,6 +48,12 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(FnameLnameMergeFieldsProvider::class)
         ->tag('webgriffe_sylius_mailchimp.merge_fields_provider');
     $services->alias(MergeFieldsProviderInterface::class, FnameLnameMergeFieldsProvider::class);
+
+    $services->set(ContactInfoMergeFieldsProvider::class)
+        ->tag('webgriffe_sylius_mailchimp.merge_fields_provider');
+
+    $services->set(AddressMergeFieldsProvider::class)
+        ->tag('webgriffe_sylius_mailchimp.merge_fields_provider');
 
     // Tags
     $services->set(TagsResolver::class);
