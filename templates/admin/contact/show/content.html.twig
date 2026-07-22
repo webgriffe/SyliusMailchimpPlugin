@@ -166,6 +166,14 @@
                                                     {{ ux_icon('tabler:eye') }}
                                                     {{ 'sylius.ui.show'|trans }}
                                                 </a>
+                                                {% if order.mailchimpOrderError or order.mailchimpCartError %}
+                                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#order-error-modal-{{ order.id }}">
+                                                        {{ ux_icon('tabler:alert-triangle') }}
+                                                        {{ 'webgriffe_sylius_mailchimp.ui.error'|trans }}
+                                                    </button>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -179,6 +187,44 @@
                     {% endif %}
                 </div>
             </div>
+
+            {# Order error modals #}
+            {% for order in orders %}
+                {% if order.mailchimpOrderError or order.mailchimpCartError %}
+                    <div class="modal modal-blur fade" id="order-error-modal-{{ order.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        {{ 'webgriffe_sylius_mailchimp.ui.sync_error'|trans }} — <strong>#{{ order.number }}</strong>
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    {% if order.mailchimpOrderError %}
+                                        {% include '@WebgriffeSyliusMailchimp/admin/contact/show/_error_details.html.twig' with {
+                                            message: order.mailchimpOrderError,
+                                            label: 'webgriffe_sylius_mailchimp.ui.mailchimp_order_id'|trans,
+                                        } %}
+                                    {% endif %}
+                                    {% if order.mailchimpOrderError and order.mailchimpCartError %}
+                                        <hr>
+                                    {% endif %}
+                                    {% if order.mailchimpCartError %}
+                                        {% include '@WebgriffeSyliusMailchimp/admin/contact/show/_error_details.html.twig' with {
+                                            message: order.mailchimpCartError,
+                                            label: 'webgriffe_sylius_mailchimp.ui.mailchimp_cart_id'|trans,
+                                        } %}
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'sylius.ui.close'|trans }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
 
             {# Abandoned carts #}
             {% if carts|length > 0 %}
@@ -222,6 +268,14 @@
                                                     {{ ux_icon('tabler:shopping-cart') }}
                                                     {{ 'webgriffe_sylius_mailchimp.ui.view_cart_details'|trans }}
                                                 </button>
+                                                {% if cart.mailchimpCartError %}
+                                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#cart-error-modal-{{ cart.id }}">
+                                                        {{ ux_icon('tabler:alert-triangle') }}
+                                                        {{ 'webgriffe_sylius_mailchimp.ui.error'|trans }}
+                                                    </button>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -296,6 +350,30 @@
                             </div>
                         </div>
                     </div>
+
+                    {% if cart.mailchimpCartError %}
+                        <div class="modal modal-blur fade" id="cart-error-modal-{{ cart.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">
+                                            {{ 'webgriffe_sylius_mailchimp.ui.sync_error'|trans }} — <code>{{ cart.tokenValue }}</code>
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% include '@WebgriffeSyliusMailchimp/admin/contact/show/_error_details.html.twig' with {
+                                            message: cart.mailchimpCartError,
+                                            label: null,
+                                        } %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'sylius.ui.close'|trans }}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
 

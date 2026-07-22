@@ -11,6 +11,8 @@ webgriffe_sylius_mailchimp:
         no_orders: 'No orders found.'
         mailchimp_order_id: 'Mailchimp Order ID'
         mailchimp_cart_id: 'Mailchimp Cart ID'
+        error: 'Error'
+        raw_error: 'Raw error details'
         abandoned_carts: 'Abandoned Carts'
         cart_token: 'Cart token'
         items_count: 'Items'

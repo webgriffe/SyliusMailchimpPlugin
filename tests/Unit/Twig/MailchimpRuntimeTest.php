@@ -98,6 +98,52 @@ final class MailchimpRuntimeTest extends TestCase
         $this->assertSame(7, $this->runtime->getPendingOrdersCount());
     }
 
+    public function test_parses_mailchimp_api_error_with_title_and_detail(): void
+    {
+        $message = 'Mailchimp API error 400: {"type":"about:blank","title":"Invalid Resource","detail":"The resource submitted could not be validated.","status":400}';
+
+        $error = $this->runtime->parseError($message);
+
+        $this->assertSame(400, $error->statusCode);
+        $this->assertSame('Invalid Resource', $error->title);
+        $this->assertSame('The resource submitted could not be validated.', $error->detail);
+        $this->assertSame($message, $error->raw);
+    }
+
+    public function test_parses_mailchimp_api_error_with_non_json_body(): void
+    {
+        $message = 'Mailchimp API error 500: Internal Server Error';
+
+        $error = $this->runtime->parseError($message);
+
+        $this->assertSame(500, $error->statusCode);
+        $this->assertNull($error->title);
+        $this->assertNull($error->detail);
+        $this->assertSame('Internal Server Error', $error->prettyRaw);
+    }
+
+    public function test_parses_unrecognized_error_format_as_raw_only(): void
+    {
+        $message = 'Member "foo@example.com" is in compliance state and cannot be subscribed.';
+
+        $error = $this->runtime->parseError($message);
+
+        $this->assertNull($error->statusCode);
+        $this->assertNull($error->title);
+        $this->assertNull($error->detail);
+        $this->assertSame($message, $error->raw);
+        $this->assertSame($message, $error->prettyRaw);
+    }
+
+    public function test_parses_null_error_as_empty(): void
+    {
+        $error = $this->runtime->parseError(null);
+
+        $this->assertNull($error->statusCode);
+        $this->assertSame('', $error->raw);
+        $this->assertSame('', $error->prettyRaw);
+    }
+
     private function createCustomerMock(?string $mailchimpId, ?\DateTimeInterface $syncedAt, ?string $error): MailchimpAwareInterface
     {
         $customer = $this->createMock(MailchimpAwareInterface::class);

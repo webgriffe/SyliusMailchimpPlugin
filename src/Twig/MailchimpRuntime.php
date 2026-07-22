@@ -8,6 +8,7 @@ use Twig\Extension\RuntimeExtensionInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpCustomerRepositoryInterface;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpOrderRepositoryInterface;
+use Webgriffe\SyliusMailchimpPlugin\ValueObject\ParsedError;
 
 final class MailchimpRuntime implements RuntimeExtensionInterface
 {
@@ -60,5 +61,29 @@ final class MailchimpRuntime implements RuntimeExtensionInterface
     public function getPendingOrdersCount(): int
     {
         return $this->orderRepository->countMailchimpPendingOrders();
+    }
+
+    public function parseError(?string $error): ParsedError
+    {
+        $raw = $error ?? '';
+
+        if (preg_match('/^Mailchimp API error (\d+): (.+)$/s', $raw, $matches) !== 1) {
+            return new ParsedError(null, null, null, $raw, $raw);
+        }
+
+        $statusCode = (int) $matches[1];
+        $body = $matches[2];
+
+        /** @var mixed $decoded */
+        $decoded = json_decode($body, true);
+        if (!is_array($decoded)) {
+            return new ParsedError($statusCode, null, null, $raw, $body);
+        }
+
+        $title = isset($decoded['title']) && is_string($decoded['title']) ? $decoded['title'] : null;
+        $detail = isset($decoded['detail']) && is_string($decoded['detail']) ? $decoded['detail'] : null;
+        $prettyRaw = json_encode($decoded, \JSON_PRETTY_PRINT);
+
+        return new ParsedError($statusCode, $title, $detail, $raw, $prettyRaw !== false ? $prettyRaw : $body);
     }
 }

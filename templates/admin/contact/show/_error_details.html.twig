@@ -1,0 +1,19 @@
+{% set error = mailchimp_parse_error(message) %}
+{% if label %}
+    <p class="text-muted mb-1">{{ label }}</p>
+{% endif %}
+{% if error.statusCode %}
+    <span class="badge bg-danger text-white mb-2">HTTP {{ error.statusCode }}</span>
+{% endif %}
+{% if error.title %}
+    <h4 class="mb-1">{{ error.title }}</h4>
+{% endif %}
+{% if error.detail %}
+    <p class="mb-2">{{ error.detail }}</p>
+{% elseif not error.title %}
+    <p class="mb-2">{{ error.raw }}</p>
+{% endif %}
+<details class="mt-2">
+    <summary class="text-muted small">{{ 'webgriffe_sylius_mailchimp.ui.raw_error'|trans }}</summary>
+    <pre class="mt-2 mb-0 small">{{ error.prettyRaw }}</pre>
+</details>
