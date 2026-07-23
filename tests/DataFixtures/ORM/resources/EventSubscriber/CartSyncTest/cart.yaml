@@ -57,10 +57,15 @@ Sylius\Component\Core\Model\OrderItemUnit:
         __construct:
             - '@order_item_cart_sync'
 
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_cart_sync:
+        email: 'cart-sync@test.com'
+
 Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
     order_cart_sync:
         channel: '@channel_cart_sync'
         currencyCode: 'USD'
         localeCode: 'en_US'
+        customer: '@customer_cart_sync'
         __calls:
             - addItem: ['@order_item_cart_sync']

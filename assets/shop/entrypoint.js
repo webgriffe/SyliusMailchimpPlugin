@@ -58,12 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const subscribeUrl = checkbox.dataset.subscribeUrl;
             if (!subscribeUrl) return;
 
-            // Find the email field in the parent form (Sylius uses sylius_customer_registration[email])
+            // Prefer the email rendered server-side (e.g. checkout complete step, where the
+            // form has no email field of its own); fall back to the parent form's email field
+            // (Sylius uses sylius_customer_registration[email]).
             const emailInput = parentForm.querySelector('input[type=email]');
-            if (!emailInput || !emailInput.value) return;
+            const email = checkbox.dataset.email || (emailInput && emailInput.value);
+            if (!email) return;
 
             const body = new URLSearchParams();
-            body.set('newsletter_subscribe[email]', emailInput.value);
+            body.set('newsletter_subscribe[email]', email);
 
             // Fire-and-forget: don't block the main form submit
             fetch(subscribeUrl, {

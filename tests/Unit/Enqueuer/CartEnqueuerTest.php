@@ -10,6 +10,7 @@ use Psr\Log\NullLogger;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
+use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
@@ -98,6 +99,16 @@ final class CartEnqueuerTest extends TestCase
         $this->enqueuer->enqueueRemoval($order);
     }
 
+    public function test_enqueue_skips_when_order_has_no_customer_email(): void
+    {
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: null, withCustomerEmail: null);
+
+        $this->messageBus->expects($this->never())->method('dispatch');
+
+        $this->enqueuer->enqueue($order);
+    }
+
     public function test_enqueue_does_not_throw_when_dispatch_fails(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB');
@@ -124,13 +135,18 @@ final class CartEnqueuerTest extends TestCase
         $this->expectNotToPerformAssertions();
     }
 
-    private function createOrder(int $id, Channel $channel, ?string $mailchimpCartId): Order
+    private function createOrder(int $id, Channel $channel, ?string $mailchimpCartId, ?string $withCustomerEmail = 'customer@example.com'): Order
     {
         $order = new Order();
         self::setIdOnObject($order, $id);
         $order->setChannel($channel);
         if ($mailchimpCartId !== null) {
             $order->setMailchimpCartId($mailchimpCartId);
+        }
+        if ($withCustomerEmail !== null) {
+            $customer = new Customer();
+            $customer->setEmail($withCustomerEmail);
+            $order->setCustomer($customer);
         }
 
         return $order;

@@ -82,6 +82,7 @@ return static function (ContainerConfigurator $containerConfigurator) {
                 service('sylius.behat.shared_storage'),
                 service('doctrine.orm.entity_manager'),
                 service('event_dispatcher'),
+                service('sylius.repository.customer'),
             ]
         )
         ->public();

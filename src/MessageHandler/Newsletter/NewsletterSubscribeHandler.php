@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Webgriffe\SyliusMailchimpPlugin\MessageHandler\Newsletter;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Sylius\Component\Core\Model\CustomerInterface;
+use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
@@ -18,6 +21,8 @@ final class NewsletterSubscribeHandler
     public function __construct(
         private readonly MailchimpClientInterface $mailchimpClient,
         private readonly string $memberDefaultStatus,
+        private readonly CustomerRepositoryInterface $customerRepository,
+        private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -47,6 +52,12 @@ final class NewsletterSubscribeHandler
             ]);
 
             throw $e;
+        }
+
+        $customer = $this->customerRepository->findOneBy(['email' => $message->email]);
+        if ($customer instanceof CustomerInterface && !$customer->isSubscribedToNewsletter()) {
+            $customer->setSubscribedToNewsletter(true);
+            $this->entityManager->flush();
         }
     }
 }

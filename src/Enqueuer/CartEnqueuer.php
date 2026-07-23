@@ -44,6 +44,12 @@ final class CartEnqueuer implements CartEnqueuerInterface
             return;
         }
 
+        if ($order->getCustomer()?->getEmail() === null) {
+            $this->logger->debug('[Mailchimp] Order #{id} has no customer email yet, skipping CartEnqueuer.', ['id' => $orderId]);
+
+            return;
+        }
+
         try {
             if ($order instanceof MailchimpOrderAwareInterface && $order->getMailchimpCartId() !== null) {
                 $this->messageBus->dispatch(new CartUpdate($orderId), [new DelayStamp(1000)]);

@@ -1,0 +1,4 @@
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_newsletter_subscribe:
+        email: 'newsletter-subscribe@test.com'
+        subscribedToNewsletter: false

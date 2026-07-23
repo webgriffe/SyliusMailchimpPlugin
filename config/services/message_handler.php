@@ -57,6 +57,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(NewsletterSubscribeHandler::class)
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$memberDefaultStatus', param('webgriffe_sylius_mailchimp.member_default_status'))
+        ->arg('$customerRepository', service('sylius.repository.customer'))
+        ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('messenger.message_handler');
 

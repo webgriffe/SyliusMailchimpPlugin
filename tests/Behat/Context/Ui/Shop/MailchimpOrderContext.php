@@ -6,16 +6,19 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Behat\Context\Ui\Shop;
 
 use Behat\Behat\Context\Context;
 use Behat\Behat\Hook\Scope\BeforeScenarioScope;
+use Behat\MinkExtension\Context\RawMinkContext;
 use Doctrine\ORM\EntityManagerInterface;
 use Sylius\Behat\Service\SharedStorageInterface;
+use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
+use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpOrderAwareInterface;
 use Webmozart\Assert\Assert;
 
-final class MailchimpOrderContext implements Context
+final class MailchimpOrderContext extends RawMinkContext implements Context
 {
     private ?string $syncedCartId = null;
 
@@ -24,6 +27,7 @@ final class MailchimpOrderContext implements Context
         private readonly SharedStorageInterface $sharedStorage,
         private readonly EntityManagerInterface $entityManager,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly CustomerRepositoryInterface $customerRepository,
     ) {
     }
 
@@ -59,6 +63,49 @@ final class MailchimpOrderContext implements Context
         $order->setMailchimpOrderId($orderId);
         $this->entityManager->flush();
         $this->syncedCartId = $orderId;
+    }
+
+    /**
+     * @When I check the newsletter subscription checkbox
+     */
+    public function iCheckTheNewsletterSubscriptionCheckbox(): void
+    {
+        $checkbox = $this->getSession()->getPage()->find('css', '.js-mailchimp-newsletter-checkbox');
+        Assert::notNull($checkbox, 'Could not find the newsletter subscription checkbox on the page.');
+        $checkbox->check();
+    }
+
+    /**
+     * @Then the customer should be subscribed to the newsletter
+     */
+    public function theCustomerShouldBeSubscribedToTheNewsletter(): void
+    {
+        $order = $this->getCurrentCart();
+        $email = $order->getCustomer()?->getEmail();
+        Assert::notNull($email, 'Expected order to have a customer email.');
+
+        $customer = $this->waitForSubscribedCustomer($email);
+
+        Assert::notNull($customer, sprintf('Customer with email "%s" was never marked as subscribed to the newsletter.', $email));
+        Assert::notEmpty(
+            $this->stubMailchimpClient->getUpsertMemberCalls(),
+            'Expected upsertMember to be called at least once, but it was not called.',
+        );
+    }
+
+    private function waitForSubscribedCustomer(string $email): ?CustomerInterface
+    {
+        $deadline = microtime(true) + 5;
+        do {
+            $this->entityManager->clear();
+            $customer = $this->customerRepository->findOneBy(['email' => $email]);
+            if ($customer instanceof CustomerInterface && $customer->isSubscribedToNewsletter()) {
+                return $customer;
+            }
+            usleep(100000);
+        } while (microtime(true) < $deadline);
+
+        return null;
     }
 
     /**

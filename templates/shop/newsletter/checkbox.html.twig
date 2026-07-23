@@ -1,3 +1,4 @@
+{% set order = hookable_metadata is defined and hookable_metadata.context.order is defined ? hookable_metadata.context.order : null %}
 {% if app.user is null or not app.user.customer.subscribedToNewsletter %}
     <div class="webgriffe-mailchimp-newsletter-checkbox field">
         <div class="ui checkbox">
@@ -8,6 +9,7 @@
                 value="1"
                 class="js-mailchimp-newsletter-checkbox"
                 data-subscribe-url="{{ path('webgriffe_sylius_mailchimp_newsletter_subscribe') }}"
+                data-email="{{ order and order.customer ? order.customer.email : '' }}"
             />
             <label for="mailchimp_newsletter_opt_in">
                 {{ 'webgriffe_sylius_mailchimp.ui.newsletter.opt_in_label'|trans }}
