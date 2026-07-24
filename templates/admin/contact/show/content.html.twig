@@ -1,4 +1,5 @@
 {% import '@SyliusAdmin/shared/helper/field/boolean.html.twig' as boolean %}
+{% from '@SyliusAdmin/shared/helper/breadcrumbs.html.twig' import breadcrumbs %}
 {% set customer = hookable_metadata.context.customer %}
 {% set orders = hookable_metadata.context.orders %}
 {% set carts = hookable_metadata.context.carts %}
@@ -16,6 +17,11 @@
 
         {# Page header #}
         <div class="page-header d-print-none mt-3">
+            {{ breadcrumbs([
+                { name: 'sylius.ui.dashboard', url: path('sylius_admin_dashboard'), active: false },
+                { name: 'webgriffe_sylius_mailchimp.ui.contacts', url: path('webgriffe_sylius_mailchimp_contact_index'), active: false },
+                { name: customer.email, active: true },
+            ]) }}
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="page-title">
