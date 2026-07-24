@@ -69,8 +69,10 @@ final class EcommerceCustomerEmailChangeHandler
 
             try {
                 $storeId = $this->storeIdentifierResolver->resolve($audience);
-                $this->mailchimpClient->removeEcommerceCustomer($storeId, (string) $message->customerId);
+                // Carts must go first: Mailchimp refuses to delete a customer that still has
+                // associated orders/carts.
                 $this->removeOpenCarts($customer, $channel, $storeId);
+                $this->mailchimpClient->removeEcommerceCustomer($storeId, (string) $message->customerId);
                 $this->logger->info('[Mailchimp] Ecommerce customer #{id} removed from store {store} after email change.', [
                     'id' => $message->customerId,
                     'store' => $storeId,

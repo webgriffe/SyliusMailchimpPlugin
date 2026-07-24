@@ -344,6 +344,16 @@ final class MailchimpClient implements MailchimpClientInterface
                 'auth_basic' => ['anystring', $this->getApiKey()],
                 'json' => $patchPayload,
             ]);
+
+            if ($response->getStatusCode() === 400 && self::isCustomerEmailImmutableError($response->getContent(false))) {
+                $this->logger->warning('[Mailchimp] Cart {id} customer email changed since creation; recreating in store {store}.', [
+                    'id' => $cartId,
+                    'store' => $storeId,
+                ]);
+                $this->recreateCartAfterCustomerEmailChange($storeId, $cartId, $payload);
+
+                return;
+            }
         }
 
         $statusCode = $response->getStatusCode();
@@ -352,6 +362,50 @@ final class MailchimpClient implements MailchimpClientInterface
         }
 
         $this->logger->info('[Mailchimp] Cart {id} upserted in store {store}.', ['id' => $cartId, 'store' => $storeId]);
+    }
+
+    /**
+     * Mailchimp forbids changing the email of an ecommerce customer once created (see
+     * EcommerceCustomerEmailChangeHandler); if the local cleanup missed this cart — e.g. it
+     * was created before the customer's email changed and never re-synced since — the PATCH
+     * above fails permanently. Self-heal by removing the stale customer/cart and recreating
+     * both fresh with the current payload, instead of leaving the cart stuck erroring forever.
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function recreateCartAfterCustomerEmailChange(string $storeId, string $cartId, array $payload): void
+    {
+        /** @var array{id?: string}|null $customer */
+        $customer = $payload['customer'] ?? null;
+        $customerId = is_array($customer) ? self::stringFromPayload($customer['id'] ?? null) : '';
+
+        if ($customerId !== '') {
+            $this->removeEcommerceCustomer($storeId, $customerId);
+        }
+        $this->removeCart($storeId, $cartId);
+
+        $createUrl = sprintf('%secommerce/stores/%s/carts', $this->baseUrl, $storeId);
+        $this->logger->debug('[Mailchimp] POST {url}', ['url' => $createUrl, 'payload' => $payload]);
+
+        $response = $this->httpClient->request('POST', $createUrl, [
+            'auth_basic' => ['anystring', $this->getApiKey()],
+            'json' => $payload,
+        ]);
+
+        $statusCode = $response->getStatusCode();
+        if ($statusCode >= 400) {
+            $this->handleErrorResponse($statusCode, $response->getContent(false), $cartId);
+        }
+
+        $this->logger->info('[Mailchimp] Cart {id} recreated in store {store} after customer email change.', ['id' => $cartId, 'store' => $storeId]);
+    }
+
+    private static function isCustomerEmailImmutableError(string $body): bool
+    {
+        /** @var array{detail?: string} $data */
+        $data = json_decode($body, true) ?? [];
+
+        return str_contains($data['detail'] ?? '', 'email address may not be changed');
     }
 
     #[\Override]

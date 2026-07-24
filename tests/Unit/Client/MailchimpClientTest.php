@@ -399,6 +399,52 @@ final class MailchimpClientTest extends TestCase
         $this->client->upsertCart('store-1', $order, $channel);
     }
 
+    public function test_upsert_cart_recreates_cart_when_customer_email_changed(): void
+    {
+        $existingCart = $this->mockResponse(200, '{"id":"cart-1"}');
+        $immutableEmailError = $this->mockResponse(400, '{"title":"Invalid Resource","detail":"An email address may not be changed once a customer is created."}');
+        $customerRemoved = $this->mockResponse(204, '');
+        $cartRemoved = $this->mockResponse(204, '');
+        $created = $this->mockResponse(200, '{}');
+
+        $calls = [];
+        $this->httpClient->expects($this->exactly(5))->method('request')
+            ->willReturnCallback(static function (string $method, string $url) use (
+                &$calls,
+                $existingCart,
+                $immutableEmailError,
+                $customerRemoved,
+                $cartRemoved,
+                $created,
+            ): ResponseInterface {
+                $calls[] = $method;
+
+                return match (true) {
+                    $method === 'GET' => $existingCart,
+                    $method === 'PATCH' => $immutableEmailError,
+                    $method === 'DELETE' && str_contains($url, '/customers/') => $customerRemoved,
+                    $method === 'DELETE' && str_contains($url, '/carts/') => $cartRemoved,
+                    $method === 'POST' => $created,
+                };
+            });
+
+        $order = $this->createMock(OrderInterface::class);
+        /** @var ChannelInterface&ChannelMailchimpAwareInterface $channel */
+        $channel = $this->createMockForIntersectionOfInterfaces([ChannelInterface::class, ChannelMailchimpAwareInterface::class]);
+        $this->cartMapper->method('map')->willReturn([
+            'id' => 'cart-1',
+            'customer' => ['id' => 'cust-1', 'email_address' => 'new@example.com', 'opt_in_status' => false],
+            'checkout_url' => 'https://example.com/checkout',
+            'currency_code' => 'EUR',
+            'order_total' => 9.99,
+            'lines' => [],
+        ]);
+
+        $this->client->upsertCart('store-1', $order, $channel);
+
+        $this->assertSame(['GET', 'PATCH', 'DELETE', 'DELETE', 'POST'], $calls);
+    }
+
     public function test_upsert_order_includes_processed_at_when_set(): void
     {
         $response = $this->mockResponse(200, '{}');

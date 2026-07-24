@@ -113,4 +113,30 @@ final class EcommerceCustomerEmailChangeHandlerTest extends KernelTestCase
 
         self::assertCount(0, $this->stub->getRemoveEcommerceCustomerCalls());
     }
+
+    /**
+     * Mailchimp refuses to delete a customer that still has associated carts/orders
+     * ("A customer may only be deleted if no orders are associated with that customer").
+     * Open carts must therefore be removed before the customer, so a failure removing the
+     * customer must not prevent the cart cleanup that would otherwise unblock it.
+     */
+    public function test_it_removes_open_carts_even_when_customer_removal_fails(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/customer.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'email-change@test.com']);
+        $order = $em->getRepository(Order::class)->findOneBy(['customer' => $customer]);
+        $order->setMailchimpCartId((string) $order->getId());
+        $em->flush();
+
+        $this->stub->failWith('removeEcommerceCustomer', statusCode: 400);
+
+        $handler = self::getContainer()->get(EcommerceCustomerEmailChangeHandler::class);
+        $handler(new EcommerceCustomerEmailChange($customer->getId()));
+
+        self::assertCount(1, $this->stub->getRemoveCartCalls());
+        $em->refresh($order);
+        self::assertNull($order->getMailchimpCartId());
+    }
 }
