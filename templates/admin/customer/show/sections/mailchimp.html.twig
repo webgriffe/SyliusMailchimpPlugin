@@ -27,7 +27,7 @@
                 <td>{{ 'webgriffe_sylius_mailchimp.ui.mailchimp_id'|trans }}</td>
                 <td>
                     <code>{{ customer.mailchimpId }}</code>
-                    <a href="{{ mailchimp_member_url(customer.mailchimpId, customer.mailchimpId) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm ms-2">
+                    <a href="{{ mailchimp_member_url(customer.mailchimpId) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm ms-2">
                         {{ ux_icon('tabler:external-link') }}
                         {{ 'webgriffe_sylius_mailchimp.ui.view_on_mailchimp'|trans }}
                     </a>

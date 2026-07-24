@@ -55,7 +55,7 @@
                                     <code>{{ customer.mailchimpId }}</code>
                                     {% set badge = mailchimp_sync_badge(customer) %}
                                     <span class="badge bg-{{ badge.color }} text-white">{{ badge.label }}</span>
-                                    <a href="{{ mailchimp_member_url(customer.mailchimpId, customer.mailchimpId) }}" target="_blank" rel="noopener noreferrer" class="ms-1">
+                                    <a href="{{ mailchimp_member_url(customer.mailchimpId) }}" target="_blank" rel="noopener noreferrer" class="ms-1">
                                         {{ ux_icon('tabler:external-link') }}
                                     </a>
                                 {% else %}

@@ -22,7 +22,7 @@ final class MailchimpRuntimeTest extends TestCase
     {
         $this->customerRepository = $this->createMock(MailchimpCustomerRepositoryInterface::class);
         $this->orderRepository = $this->createMock(MailchimpOrderRepositoryInterface::class);
-        $this->runtime = new MailchimpRuntime($this->customerRepository, $this->orderRepository);
+        $this->runtime = new MailchimpRuntime($this->customerRepository, $this->orderRepository, 'abc123-us6');
     }
 
     public function test_returns_green_synced_badge_when_mailchimp_id_set(): void
@@ -57,10 +57,9 @@ final class MailchimpRuntimeTest extends TestCase
 
     public function test_returns_member_url(): void
     {
-        $url = $this->runtime->getMemberUrl('audience-id', 'mailchimp-id');
+        $url = $this->runtime->getMemberUrl('mailchimp-id');
 
-        $this->assertStringContainsString('mailchimp.com', $url);
-        $this->assertStringContainsString('mailchimp-id', $url);
+        $this->assertSame('https://us6.admin.mailchimp.com/audience/contact-profile?contact_id=mailchimp-id', $url);
     }
 
     public function test_returns_members_synced_count(): void

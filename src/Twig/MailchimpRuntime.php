@@ -15,6 +15,7 @@ final class MailchimpRuntime implements RuntimeExtensionInterface
     public function __construct(
         private readonly MailchimpCustomerRepositoryInterface $customerRepository,
         private readonly MailchimpOrderRepositoryInterface $orderRepository,
+        private readonly string $apiKey,
     ) {
     }
 
@@ -32,10 +33,11 @@ final class MailchimpRuntime implements RuntimeExtensionInterface
         return ['label' => 'never', 'color' => 'grey'];
     }
 
-    /** @psalm-suppress UnusedParam The $audienceId parameter is reserved for future use (audience-specific URLs) */
-    public function getMemberUrl(string $audienceId, string $mailchimpId): string
+    public function getMemberUrl(string $mailchimpId): string
     {
-        return sprintf('https://us1.admin.mailchimp.com/lists/members/view?id=%s', $mailchimpId);
+        $dc = substr($this->apiKey, (int) strrpos($this->apiKey, '-') + 1);
+
+        return sprintf('https://%s.admin.mailchimp.com/audience/contact-profile?contact_id=%s', $dc, $mailchimpId);
     }
 
     public function getMembersSyncedCount(): int
