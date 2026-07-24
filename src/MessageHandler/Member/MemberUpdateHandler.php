@@ -50,8 +50,8 @@ final class MemberUpdateHandler
             return;
         }
 
-        if (!$customer->isSubscribedToNewsletter()) {
-            $this->logger->debug('[Mailchimp] Customer #{id} is not subscribed to newsletter, skipping MemberUpdate.', ['id' => $message->customerId]);
+        if ($customer->getMailchimpId() === null && !$customer->isSubscribedToNewsletter()) {
+            $this->logger->debug('[Mailchimp] Customer #{id} has no Mailchimp id and is not subscribed to newsletter, skipping MemberUpdate.', ['id' => $message->customerId]);
 
             return;
         }

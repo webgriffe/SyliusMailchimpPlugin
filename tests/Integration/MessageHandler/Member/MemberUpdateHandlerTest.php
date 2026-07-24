@@ -72,4 +72,19 @@ final class MemberUpdateHandlerTest extends KernelTestCase
         $em->refresh($customer);
         self::assertNotNull($customer->getMailchimpError());
     }
+
+    public function test_member_update_pushes_unsubscribed_status_for_already_synced_customer(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/customer_unsubscribing.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'member-update-unsubscribing@test.com']);
+
+        $handler = self::getContainer()->get(MemberUpdateHandler::class);
+        $handler(new MemberUpdate($customer->getId(), 'test-list-id'));
+
+        $calls = $this->stub->getUpsertMemberCalls();
+        self::assertCount(1, $calls);
+        self::assertSame('unsubscribed', $calls[0]['member']->status);
+    }
 }

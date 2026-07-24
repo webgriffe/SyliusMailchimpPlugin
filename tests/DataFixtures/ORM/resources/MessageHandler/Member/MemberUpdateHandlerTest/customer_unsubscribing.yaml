@@ -1,0 +1,5 @@
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_member_update_unsubscribing:
+        email: 'member-update-unsubscribing@test.com'
+        subscribedToNewsletter: false
+        mailchimpId: 'existing-mailchimp-id'

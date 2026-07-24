@@ -14,6 +14,7 @@ final class MemberStatusResolverTest extends TestCase
     {
         $resolver = new MemberStatusResolver('subscribed');
         $customer = new Customer();
+        $customer->setSubscribedToNewsletter(true);
 
         $this->assertSame('subscribed', $resolver->resolve($customer));
     }
@@ -22,7 +23,17 @@ final class MemberStatusResolverTest extends TestCase
     {
         $resolver = new MemberStatusResolver('pending');
         $customer = new Customer();
+        $customer->setSubscribedToNewsletter(true);
 
         $this->assertSame('pending', $resolver->resolve($customer));
+    }
+
+    public function test_returns_unsubscribed_when_customer_is_not_subscribed_to_newsletter(): void
+    {
+        $resolver = new MemberStatusResolver('subscribed');
+        $customer = new Customer();
+        $customer->setSubscribedToNewsletter(false);
+
+        $this->assertSame('unsubscribed', $resolver->resolve($customer));
     }
 }

@@ -16,6 +16,10 @@ final class MemberStatusResolver implements MemberStatusResolverInterface
     #[\Override]
     public function resolve(CustomerInterface $customer): string
     {
+        if (!$customer->isSubscribedToNewsletter()) {
+            return 'unsubscribed';
+        }
+
         return $this->defaultStatus;
     }
 }
