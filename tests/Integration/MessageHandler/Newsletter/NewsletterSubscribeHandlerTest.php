@@ -42,6 +42,9 @@ final class NewsletterSubscribeHandlerTest extends KernelTestCase
         $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'newsletter-subscribe@test.com']);
         $em->refresh($customer);
         self::assertTrue($customer->isSubscribedToNewsletter());
+        self::assertSame(md5('newsletter-subscribe@test.com'), $customer->getMailchimpId());
+        self::assertNotNull($customer->getMailchimpSyncedAt());
+        self::assertNull($customer->getMailchimpError());
     }
 
     public function test_it_does_not_fail_when_no_customer_matches_the_email(): void
@@ -68,7 +71,10 @@ final class NewsletterSubscribeHandlerTest extends KernelTestCase
         } finally {
             $em = self::getContainer()->get(EntityManagerInterface::class);
             $customer = $em->getRepository(Customer::class)->findOneBy(['email' => 'newsletter-subscribe@test.com']);
+            $em->refresh($customer);
             self::assertFalse($customer->isSubscribedToNewsletter());
+            self::assertNull($customer->getMailchimpId());
+            self::assertNotNull($customer->getMailchimpError());
         }
     }
 }
