@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Webgriffe\SyliusMailchimpPlugin\MessageHandler\Newsletter;
+namespace Webgriffe\SyliusMailchimpPlugin\Updater;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
-use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\Message\Newsletter\NewsletterSubscribe;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
-use Webgriffe\SyliusMailchimpPlugin\Util\MailchimpErrorClassifier;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 
-#[AsMessageHandler]
-final class NewsletterSubscribeHandler
+/**
+ * Subscribes an email to a Mailchimp audience synchronously, in-process (no Messenger),
+ * so the caller can report the real outcome to the end user. See docs/adr/0002.
+ */
+final class NewsletterSubscriber implements NewsletterSubscriberInterface
 {
     public function __construct(
         private readonly MailchimpClientInterface $mailchimpClient,
@@ -29,10 +29,10 @@ final class NewsletterSubscribeHandler
     ) {
     }
 
-    public function __invoke(NewsletterSubscribe $message): void
+    public function subscribe(string $email, string $listId): void
     {
         $member = new Member(
-            emailAddress: $message->email,
+            emailAddress: $email,
             status: $this->memberDefaultStatus,
             mergeFields: new MergeFields('', ''),
             tags: [],
@@ -41,13 +41,13 @@ final class NewsletterSubscribeHandler
             ipSignup: '',
         );
 
-        $customer = $this->customerRepository->findOneBy(['email' => $message->email]);
+        $customer = $this->customerRepository->findOneBy(['email' => $email]);
 
         try {
-            $mailchimpId = $this->mailchimpClient->upsertMember($message->listId, $member);
+            $mailchimpId = $this->mailchimpClient->upsertMember($listId, $member);
             $this->logger->info('[Mailchimp] Newsletter subscribed: {email} to list {list}.', [
-                'email' => $message->email,
-                'list' => $message->listId,
+                'email' => $email,
+                'list' => $listId,
             ]);
 
             if ($customer instanceof CustomerInterface && $customer instanceof MailchimpAwareInterface) {
@@ -59,7 +59,7 @@ final class NewsletterSubscribeHandler
             }
         } catch (ComplianceStateException $e) {
             $this->logger->warning('[Mailchimp] Newsletter compliance state for {email}: {msg}', [
-                'email' => $message->email,
+                'email' => $email,
                 'msg' => $e->getMessage(),
             ]);
 
@@ -71,18 +71,16 @@ final class NewsletterSubscribeHandler
             throw $e;
         } catch (\Throwable $e) {
             $this->logger->error('[Mailchimp] Newsletter subscribe failed for {email}: {msg}', [
-                'email' => $message->email,
+                'email' => $email,
                 'msg' => $e->getMessage(),
             ]);
-
-            if (!MailchimpErrorClassifier::isPermanent($e)) {
-                throw $e;
-            }
 
             if ($customer instanceof MailchimpAwareInterface) {
                 $customer->setMailchimpError($e->getMessage());
                 $this->entityManager->flush();
             }
+
+            throw $e;
         }
     }
 }

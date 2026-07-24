@@ -9,20 +9,19 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Messenger\Exception\HandlerFailedException;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Twig\Environment;
+use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Form\Type\NewsletterSubscribeType;
-use Webgriffe\SyliusMailchimpPlugin\Message\Newsletter\NewsletterSubscribe;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
+use Webgriffe\SyliusMailchimpPlugin\Updater\NewsletterSubscriberInterface;
 
 final class NewsletterController
 {
     public function __construct(
         private readonly FormFactoryInterface $formFactory,
-        private readonly MessageBusInterface $messageBus,
+        private readonly NewsletterSubscriberInterface $newsletterSubscriber,
         private readonly AudienceContextInterface $audienceContext,
         private readonly LoggerInterface $logger,
         private readonly Environment $twig,
@@ -71,32 +70,24 @@ final class NewsletterController
         }
 
         try {
-            $this->messageBus->dispatch(new NewsletterSubscribe($email, $listId));
-        } catch (HandlerFailedException $e) {
-            foreach ($e->getWrappedExceptions() as $wrappedException) {
-                if ($wrappedException instanceof ComplianceStateException) {
-                    $this->logger->warning('[Mailchimp] Newsletter subscribe: compliance state for {email}: {msg}', ['email' => $email, 'msg' => $wrappedException->getMessage()]);
-
-                    $errorMessage = $wrappedException->getMessage();
-                    $resubscribeUrl = $wrappedException->getResubscribeUrl();
-                    if ($resubscribeUrl !== null) {
-                        $errorMessage .= sprintf(' You can resubscribe at %s', $resubscribeUrl);
-                    }
-
-                    return new JsonResponse(['success' => false, 'errors' => [$errorMessage]], Response::HTTP_UNPROCESSABLE_ENTITY);
-                }
+            $this->newsletterSubscriber->subscribe($email, $listId);
+        } catch (ComplianceStateException $e) {
+            $errorMessage = $e->getMessage();
+            $resubscribeUrl = $e->getResubscribeUrl();
+            if ($resubscribeUrl !== null) {
+                $errorMessage .= sprintf(' You can resubscribe at %s', $resubscribeUrl);
             }
 
-            $this->logger->error('[Mailchimp] Newsletter subscribe failed for {email}: {msg}', ['email' => $email, 'msg' => $e->getMessage()]);
+            return new JsonResponse(['success' => false, 'errors' => [$errorMessage]], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ClientException $e) {
+            if ($e->getStatusCode() >= 400 && $e->getStatusCode() < 500 && $e->getStatusCode() !== 429) {
+                return new JsonResponse(['success' => false, 'errors' => ['Please check the email address you entered.']], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
 
             return new JsonResponse(['success' => false, 'errors' => ['Subscription is temporarily unavailable.']], Response::HTTP_INTERNAL_SERVER_ERROR);
-        } catch (\Throwable $e) {
-            $this->logger->error('[Mailchimp] Newsletter subscribe failed for {email}: {msg}', ['email' => $email, 'msg' => $e->getMessage()]);
-
+        } catch (\Throwable) {
             return new JsonResponse(['success' => false, 'errors' => ['Subscription is temporarily unavailable.']], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $this->logger->info('[Mailchimp] Newsletter subscribe: dispatched NewsletterSubscribe for {email}.', ['email' => $email]);
 
         return new JsonResponse(['success' => true]);
     }

@@ -12,7 +12,6 @@ use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberSubscriptionUpdateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Member\MemberUpdateHandler;
-use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Newsletter\NewsletterSubscribeHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Order\OrderCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Order\OrderRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Order\OrderUpdateHandler;
@@ -51,14 +50,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(MemberSubscriptionUpdateHandler::class)
         ->arg('$updater', service('Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater'))
-        ->arg('$logger', service('monolog.logger.mailchimp'))
-        ->tag('messenger.message_handler');
-
-    $services->set(NewsletterSubscribeHandler::class)
-        ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
-        ->arg('$memberDefaultStatus', param('webgriffe_sylius_mailchimp.member_default_status'))
-        ->arg('$customerRepository', service('sylius.repository.customer'))
-        ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('messenger.message_handler');
 
@@ -161,4 +152,3 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('messenger.message_handler');
 };
-

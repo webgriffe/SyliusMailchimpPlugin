@@ -12,9 +12,6 @@ use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Messenger\Envelope;
-use Symfony\Component\Messenger\Exception\HandlerFailedException;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Validator\Validation;
 use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
@@ -22,12 +19,12 @@ use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Form\Type\NewsletterSubscribeType;
-use Webgriffe\SyliusMailchimpPlugin\Message\Newsletter\NewsletterSubscribe;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
+use Webgriffe\SyliusMailchimpPlugin\Updater\NewsletterSubscriberInterface;
 
 final class NewsletterControllerTest extends TestCase
 {
-    private MockObject&MessageBusInterface $messageBus;
+    private MockObject&NewsletterSubscriberInterface $newsletterSubscriber;
 
     private MockObject&AudienceContextInterface $audienceContext;
 
@@ -37,7 +34,7 @@ final class NewsletterControllerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->messageBus = $this->createMock(MessageBusInterface::class);
+        $this->newsletterSubscriber = $this->createMock(NewsletterSubscriberInterface::class);
         $this->audienceContext = $this->createMock(AudienceContextInterface::class);
         $this->formFactory = Forms::createFormFactoryBuilder()
             ->addExtension(new HttpFoundationExtension())
@@ -46,7 +43,7 @@ final class NewsletterControllerTest extends TestCase
             ->getFormFactory();
         $this->controller = new NewsletterController(
             $this->formFactory,
-            $this->messageBus,
+            $this->newsletterSubscriber,
             $this->audienceContext,
             new NullLogger(),
             $this->createMock(Environment::class),
@@ -72,17 +69,14 @@ final class NewsletterControllerTest extends TestCase
         $this->assertSame(422, $response->getStatusCode());
     }
 
-    public function test_dispatches_newsletter_subscribe_message_on_valid_form(): void
+    public function test_subscribes_synchronously_on_valid_form(): void
     {
         $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
 
-        $this->messageBus
+        $this->newsletterSubscriber
             ->expects($this->once())
-            ->method('dispatch')
-            ->with($this->callback(static function (NewsletterSubscribe $msg): bool {
-                return $msg->email === 'user@example.com' && $msg->listId === 'list-abc';
-            }))
-            ->willReturn(new Envelope(new NewsletterSubscribe('user@example.com', 'list-abc')));
+            ->method('subscribe')
+            ->with('user@example.com', 'list-abc');
 
         $request = Request::create('/newsletter/subscribe', 'POST', [
             'newsletter_subscribe' => ['email' => 'user@example.com'],
@@ -95,15 +89,13 @@ final class NewsletterControllerTest extends TestCase
         $this->assertStringContainsString('"success":true', (string) $response->getContent());
     }
 
-    public function test_returns_error_response_when_handler_fails_with_compliance_state(): void
+    public function test_returns_error_response_when_subscriber_fails_with_compliance_state(): void
     {
         $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
 
-        $message = new NewsletterSubscribe('user@example.com', 'list-abc');
-        $this->messageBus->method('dispatch')->willThrowException(new HandlerFailedException(
-            new Envelope($message),
-            [ComplianceStateException::forEmail('user@example.com', 'https://mailchimp.com/resubscribe')],
-        ));
+        $this->newsletterSubscriber
+            ->method('subscribe')
+            ->willThrowException(ComplianceStateException::forEmail('user@example.com', 'https://mailchimp.com/resubscribe'));
 
         $request = Request::create('/newsletter/subscribe', 'POST', [
             'newsletter_subscribe' => ['email' => 'user@example.com'],
@@ -117,15 +109,13 @@ final class NewsletterControllerTest extends TestCase
         $this->assertStringContainsString('resubscribe', (string) $response->getContent());
     }
 
-    public function test_returns_generic_error_response_when_handler_fails(): void
+    public function test_returns_generic_error_response_when_subscriber_fails(): void
     {
         $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
 
-        $message = new NewsletterSubscribe('user@example.com', 'list-abc');
-        $this->messageBus->method('dispatch')->willThrowException(new HandlerFailedException(
-            new Envelope($message),
-            [ClientException::fromResponse(500, 'boom')],
-        ));
+        $this->newsletterSubscriber
+            ->method('subscribe')
+            ->willThrowException(ClientException::fromResponse(500, 'boom'));
 
         $request = Request::create('/newsletter/subscribe', 'POST', [
             'newsletter_subscribe' => ['email' => 'user@example.com'],
@@ -137,6 +127,45 @@ final class NewsletterControllerTest extends TestCase
         $this->assertSame(500, $response->getStatusCode());
         $this->assertStringContainsString('"success":false', (string) $response->getContent());
         $this->assertStringNotContainsString('boom', (string) $response->getContent());
+    }
+
+    public function test_returns_check_email_message_when_mailchimp_rejects_with_a_client_error(): void
+    {
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+
+        $this->newsletterSubscriber
+            ->method('subscribe')
+            ->willThrowException(ClientException::fromResponse(400, 'invalid_resource'));
+
+        $request = Request::create('/newsletter/subscribe', 'POST', [
+            'newsletter_subscribe' => ['email' => 'user@example.con'],
+        ]);
+        $request->headers->set('X-Requested-With', 'XMLHttpRequest');
+
+        $response = $this->controller->subscribeAction($request);
+
+        $this->assertSame(422, $response->getStatusCode());
+        $this->assertStringContainsString('"success":false', (string) $response->getContent());
+        $this->assertStringContainsString('check the email address', (string) $response->getContent());
+    }
+
+    public function test_returns_generic_error_response_when_mailchimp_rate_limits(): void
+    {
+        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+
+        $this->newsletterSubscriber
+            ->method('subscribe')
+            ->willThrowException(ClientException::fromResponse(429, 'too many requests'));
+
+        $request = Request::create('/newsletter/subscribe', 'POST', [
+            'newsletter_subscribe' => ['email' => 'user@example.com'],
+        ]);
+        $request->headers->set('X-Requested-With', 'XMLHttpRequest');
+
+        $response = $this->controller->subscribeAction($request);
+
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertStringNotContainsString('check the email address', (string) $response->getContent());
     }
 
     public function test_returns_500_when_audience_not_found(): void

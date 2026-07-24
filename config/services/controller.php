@@ -9,6 +9,8 @@ use Webgriffe\SyliusMailchimpPlugin\Controller\CartRecoveryController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
 use Webgriffe\SyliusMailchimpPlugin\Controller\WebhookController;
 use Webgriffe\SyliusMailchimpPlugin\Updater\MemberSubscriptionStatusUpdater;
+use Webgriffe\SyliusMailchimpPlugin\Updater\NewsletterSubscriber;
+use Webgriffe\SyliusMailchimpPlugin\Updater\NewsletterSubscriberInterface;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -17,6 +19,15 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$customerRepository', service('sylius.repository.customer'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'));
+
+    $services->set(NewsletterSubscriber::class)
+        ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
+        ->arg('$memberDefaultStatus', param('webgriffe_sylius_mailchimp.member_default_status'))
+        ->arg('$customerRepository', service('sylius.repository.customer'))
+        ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
+        ->arg('$logger', service('monolog.logger.mailchimp'));
+
+    $services->alias(NewsletterSubscriberInterface::class, NewsletterSubscriber::class);
 
     $services->set(WebhookController::class)
         ->arg('$messageBus', service('messenger.default_bus'))
@@ -27,7 +38,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(NewsletterController::class)
         ->arg('$formFactory', service('form.factory'))
-        ->arg('$messageBus', service('messenger.default_bus'))
+        ->arg('$newsletterSubscriber', service(NewsletterSubscriberInterface::class))
         ->arg('$audienceContext', service('Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$twig', service('twig'))

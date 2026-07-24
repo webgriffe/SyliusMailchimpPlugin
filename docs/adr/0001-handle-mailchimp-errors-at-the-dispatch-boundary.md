@@ -84,10 +84,9 @@ some enqueuers.
 - **Async transport:** `dispatch()` only enqueues and does not throw handler exceptions;
   the catch is inert and the worker gets native retry semantics.
 
-`NewsletterController` is its own dispatch boundary with richer handling, because the
-newsletter AJAX flow must give user feedback: it catches `HandlerFailedException`,
-returns 422 with the compliance message (and resubscribe URL) for
-`ComplianceStateException`, and a generic 500 JSON for anything else. The CLI `Sync*`
+`NewsletterController` does not go through Messenger at all — see
+[ADR 0002](0002-newsletter-subscribe-is-synchronous-in-process.md) for why that endpoint
+calls a plain synchronous service instead of dispatching a message. The CLI `Sync*`
 commands intentionally keep no boundary: visible failures are desirable there.
 
 ## Consequences
