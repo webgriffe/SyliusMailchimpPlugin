@@ -16,6 +16,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Validator\Validation;
+use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
@@ -48,6 +49,7 @@ final class NewsletterControllerTest extends TestCase
             $this->messageBus,
             $this->audienceContext,
             new NullLogger(),
+            $this->createMock(Environment::class),
         );
     }
 

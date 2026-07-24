@@ -4,3 +4,8 @@ sylius_twig_hooks:
             mailchimp_newsletter_checkbox:
                 template: '@WebgriffeSyliusMailchimpPlugin/shop/newsletter/checkbox.html.twig'
                 priority: 50
+
+        'sylius_shop.base.footer':
+            mailchimp_newsletter:
+                template: '@WebgriffeSyliusMailchimpPlugin/shop/newsletter/footer.html.twig'
+                priority: 100

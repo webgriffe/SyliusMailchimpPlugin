@@ -1,15 +1,24 @@
+{% form_theme form '@SyliusShop/form/theme.html.twig' %}
+{% import '@SyliusShop/shared/buttons.html.twig' as buttons %}
+
 <div class="webgriffe-mailchimp-newsletter">
-    <form
-        action="{{ path('webgriffe_sylius_mailchimp_newsletter_subscribe') }}"
-        method="post"
-        class="js-mailchimp-newsletter-form"
-        data-success-message="{{ 'webgriffe_sylius_mailchimp.ui.newsletter.subscribed_successfully'|trans }}"
-    >
+    <h2 class="h5 mb-3">{{ 'webgriffe_sylius_mailchimp.ui.newsletter.title'|trans }}</h2>
+
+    {{ form_start(form, {
+        action: path('webgriffe_sylius_mailchimp_newsletter_subscribe'),
+        attr: {
+            class: 'js-mailchimp-newsletter-form',
+            novalidate: 'novalidate',
+            'data-success-message': 'webgriffe_sylius_mailchimp.ui.newsletter.subscribed_successfully'|trans,
+        },
+    }) }}
         {{ form_row(form.email) }}
         {{ form_rest(form) }}
-        <button type="submit" class="ui button primary">
-            {{ 'webgriffe_sylius_mailchimp.ui.newsletter.subscribe'|trans }}
-        </button>
-        <div class="js-mailchimp-newsletter-message" style="display:none;"></div>
-    </form>
+
+        <div class="d-grid">
+            {{ buttons.submit('webgriffe_sylius_mailchimp.ui.newsletter.subscribe'|trans, 'mailchimp-newsletter-subscribe-button', null, 'btn-primary') }}
+        </div>
+
+        <div class="js-mailchimp-newsletter-message mt-3" style="display:none;"></div>
+    {{ form_end(form) }}
 </div>

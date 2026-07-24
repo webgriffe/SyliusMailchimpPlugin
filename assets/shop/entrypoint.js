@@ -24,17 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     messageEl.style.display = '';
                     if (data.success) {
                         messageEl.textContent = form.dataset.successMessage || '';
-                        messageEl.className = 'js-mailchimp-newsletter-message positive message';
+                        messageEl.className = 'js-mailchimp-newsletter-message alert alert-success';
                         form.reset();
                     } else {
                         messageEl.textContent = (data.errors || []).join(', ');
-                        messageEl.className = 'js-mailchimp-newsletter-message negative message';
+                        messageEl.className = 'js-mailchimp-newsletter-message alert alert-danger';
                     }
                 }
             } catch (e) {
                 if (messageEl) {
                     messageEl.style.display = '';
-                    messageEl.className = 'js-mailchimp-newsletter-message negative message';
+                    messageEl.className = 'js-mailchimp-newsletter-message alert alert-danger';
                     messageEl.textContent = 'An error occurred. Please try again.';
                 }
             } finally {

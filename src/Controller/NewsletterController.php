@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Form\Type\NewsletterSubscribeType;
@@ -24,7 +25,18 @@ final class NewsletterController
         private readonly MessageBusInterface $messageBus,
         private readonly AudienceContextInterface $audienceContext,
         private readonly LoggerInterface $logger,
+        private readonly Environment $twig,
     ) {
+    }
+
+    public function formAction(): Response
+    {
+        $form = $this->formFactory->create(NewsletterSubscribeType::class);
+
+        return new Response($this->twig->render(
+            '@WebgriffeSyliusMailchimpPlugin/shop/newsletter/subscribe_form.html.twig',
+            ['form' => $form->createView()],
+        ));
     }
 
     public function subscribeAction(Request $request): Response

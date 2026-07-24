@@ -20,6 +20,7 @@ webgriffe_sylius_mailchimp:
         cart_details: 'Cart details'
         cart_empty: 'The cart is empty.'
         newsletter:
+            title: 'Newsletter'
             subscribe: 'Subscribe to newsletter'
             subscribed_successfully: 'You have been successfully subscribed to our newsletter!'
             opt_in_label: 'Subscribe to our newsletter'

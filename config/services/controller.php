@@ -30,6 +30,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$audienceContext', service('Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->arg('$twig', service('twig'))
         ->tag('controller.service_arguments');
 
     $services->set(CartRecoveryController::class)
