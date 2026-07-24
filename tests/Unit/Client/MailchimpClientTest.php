@@ -80,6 +80,17 @@ final class MailchimpClientTest extends TestCase
         $this->assertSame('abc123hash', $id);
     }
 
+    public function test_upsert_member_prefers_contact_id_over_hash_id(): void
+    {
+        $response = $this->mockResponse(200, '{"id":"abc123hash","contact_id":"real-contact-id"}');
+        $this->httpClient->method('request')->willReturn($response);
+
+        $member = new Member('test@example.com', 'subscribed', new MergeFields('John', 'Doe'));
+        $id = $this->client->upsertMember(self::LIST_ID, $member);
+
+        $this->assertSame('real-contact-id', $id);
+    }
+
     public function test_upsert_member_fallback_to_subscriber_hash_if_no_id_in_response(): void
     {
         $email = 'test@example.com';

@@ -69,9 +69,11 @@ final class MailchimpClient implements MailchimpClientInterface
             $this->handleErrorResponse($statusCode, $body, $member->emailAddress);
         }
 
-        /** @var array{id?: string} $data */
+        /** @var array{id?: string, contact_id?: string} $data */
         $data = json_decode($body, true);
-        $id = $data['id'] ?? $subscriberHash;
+        // "contact_id" (used by the modern /audience/contact-profile admin UI) is distinct
+        // from "id" (the MD5 subscriber hash used in API URLs); prefer it when present.
+        $id = $data['contact_id'] ?? $data['id'] ?? $subscriberHash;
 
         $this->logger->info('[Mailchimp] Member upserted: {email}', ['email' => $member->emailAddress]);
 
