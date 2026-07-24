@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
+use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
+use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\AddressSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CartSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\CustomerSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\OrderSubscriber;
 use Webgriffe\SyliusMailchimpPlugin\EventSubscriber\ProductSubscriber;
-use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
-
-use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
-use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -25,6 +23,10 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$memberEnqueuer', service(MemberEnqueuerInterface::class))
         ->arg('$entityManager', service('doctrine.orm.entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->tag('kernel.event_subscriber');
+
+    $services->set(AddressSubscriber::class)
+        ->arg('$memberEnqueuer', service(MemberEnqueuerInterface::class))
         ->tag('kernel.event_subscriber');
 
     $services->set(OrderSubscriber::class)
@@ -46,4 +48,3 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('kernel.event_subscriber');
 };
-
