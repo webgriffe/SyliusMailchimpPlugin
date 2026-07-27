@@ -8,122 +8,78 @@
     </a>
 </p>
 
-<h1 align="center">Plugin Skeleton</h1>
+<h1 align="center">Mailchimp Plugin</h1>
+<p align="center">Sylius plugin to integrate Mailchimp: newsletter, abandoned carts, e-commerce sync</p>
+<p align="center"><a href="https://github.com/webgriffe/SyliusMailchimpPlugin/actions/workflows/build.yml"><img src="https://github.com/webgriffe/SyliusMailchimpPlugin/actions/workflows/build.yml/badge.svg" alt="Build Status" /></a></p>
 
-<p align="center">Skeleton for starting Sylius plugins.</p>
+<hr />
 
-## Documentation
+## What does this plugin do?
 
-For a comprehensive guide on Sylius Plugins development please go to Sylius documentation,
-there you will find the <a href="https://docs.sylius.com/plugins-development-guide/how-to-create-a-plugin-for-sylius">Plugin Development Guide</a> - it's a great place to start.
+The _SyliusMailchimpPlugin_ keeps a Sylius store's newsletter contacts, products, carts and orders in sync
+with **Mailchimp**: it creates/updates Mailchimp List Members from Sylius Customers, sets up a Mailchimp
+e-commerce Store per Channel, and syncs Products, abandoned Carts and completed Orders to it so you can run
+Mailchimp's abandoned-cart and e-commerce automations. It also exposes a synchronous newsletter subscribe
+endpoint and listens to Mailchimp webhooks to keep subscription status changes made on Mailchimp's side (e.g.
+manual unsubscribe) reflected in Sylius.
 
-For more information about the **Test Application** included in the skeleton, please refer to the [Sylius documentation](https://docs.sylius.com/plugins-development-guide/test-application).
+## Who is this plugin for?
 
-## Quickstart Installation
+Sylius stores that want to run Mailchimp campaigns and automations (abandoned cart recovery, product
+recommendations, newsletter) using their real, live store data instead of manual list exports/imports.
 
-Run `composer create-project sylius/plugin-skeleton ProjectName`.
+## How can I install the plugin on my Sylius store?
 
-### Traditional
+See [`docs/installation.md`](docs/installation.md).
 
-1. From the plugin skeleton root directory, run the following commands:
+## Is this plugin compliant with privacy?
 
-    ```bash
-    (cd vendor/sylius/test-application && yarn install)
-    (cd vendor/sylius/test-application && yarn build)
-    vendor/bin/console assets:install
-   
-    vendor/bin/console doctrine:database:create
-    vendor/bin/console doctrine:migrations:migrate -n
-    # Optionally load data fixtures
-    vendor/bin/console sylius:fixtures:load -n
+Transactional data (products, carts, orders) is synced regardless of newsletter consent, as it's necessary to
+run the store's e-commerce automations. Newsletter contact sync, on the other hand, **is gated by the
+customer's own newsletter subscription flag** and you choose single vs. double opt-in via configuration.
+**Webgriffe does not take any responsibility for incorrect use of this integration or for not respecting the
+wishes of the users of your e-commerce/website** — see [`docs/usage.md`](docs/usage.md#is-this-plugin-compliant-with-privacy-regulations)
+for the full picture.
+
+## Where do I start?
+
+Read the [documentation](docs/README.md): [Requirements](docs/requirements.md),
+[Installation](docs/installation.md), [Usage](docs/usage.md) and [Architecture](docs/architecture.md).
+
+## Local development
+
+1. Install dependencies and set up the test application:
+
+    ```shell
+    composer install
+    composer test-app-init
     ```
 
-To be able to set up a plugin's database, remember to configure your database credentials in `tests/TestApplication/.env` and `tests/TestApplication/.env.test`.
+   Set `MAILCHIMP_API_KEY` (and any other variable referenced in `tests/TestApplication/.env.test`) before
+   running the test application or the test suites.
 
 2. Run your local server:
 
-      ```bash
-      symfony server:ca:install
-      symfony server:start -d
-      ```
-
-3. Open your browser and navigate to `https://localhost:8000`.
-
-### Docker
-
-1. Execute `make init` to initialize the container and install the dependencies.
-
-2. Execute `make database-init` to create the database and run migrations.
-
-3. (Optional) Execute `make load-fixtures` to load the fixtures.
-
-4. Your app is available at `http://localhost`.
-
-## Usage
-
-### Running plugin tests
-
-  - PHPUnit
-
-    ```bash
-    vendor/bin/phpunit
-    ```
-
-  - Behat (non-JS scenarios)
-
-    ```bash
-    vendor/bin/behat --strict --tags="~@javascript&&~@mink:chromedriver"
-    ```
-
-  - Behat (JS scenarios)
- 
-    1. [Install Symfony CLI command](https://symfony.com/download).
- 
-    2. Start Headless Chrome:
-    
-      ```bash
-      google-chrome-stable --enable-automation --disable-background-networking --no-default-browser-check --no-first-run --disable-popup-blocking --disable-default-apps --allow-insecure-localhost --disable-translate --disable-extensions --no-sandbox --enable-features=Metal --headless --remote-debugging-port=9222 --window-size=2880,1800 --proxy-server='direct://' --proxy-bypass-list='*' http://127.0.0.1
-      ```
-    
-    3. Install SSL certificates (only once needed) and run test application's webserver on `127.0.0.1:8080`:
-    
-      ```bash
-      symfony server:ca:install
-      APP_ENV=test symfony server:start --port=8080 --daemon
-      ```
-    
-    4. Run Behat:
-    
-      ```bash
-      vendor/bin/behat --strict --tags="@javascript,@mink:chromedriver"
-      ```
-    
-  - Static Analysis
-      
-    - PHPStan
-    
-      ```bash
-      vendor/bin/phpstan analyse -c phpstan.neon -l max src/  
-      ```
-
-  - Coding Standard
-  
-    ```bash
-    vendor/bin/ecs check
-    ```
-
-### Opening Sylius with your plugin
-
-- Using `test` environment:
-
-    ```bash
-    APP_ENV=test vendor/bin/console sylius:fixtures:load -n
-    APP_ENV=test symfony server:start -d
-    ```
-    
-- Using `dev` environment:
-
-    ```bash
-    vendor/bin/console sylius:fixtures:load -n
+    ```shell
+    symfony server:ca:install
     symfony server:start -d
     ```
+
+### Running the test suite
+
+```shell
+composer ecs      # coding standard (add --fix to auto-fix)
+composer phpstan
+composer psalm
+composer phpunit
+composer phpspec
+composer behat
+composer suite     # all of the above
+```
+
+See [`AGENTS.md`](AGENTS.md) for conventions and the full command reference, and
+[`docs/ai/testing-guide.md`](docs/ai/testing-guide.md) for the in-depth testing guide.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).

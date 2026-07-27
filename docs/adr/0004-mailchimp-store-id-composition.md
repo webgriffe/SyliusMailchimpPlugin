@@ -1,8 +1,10 @@
-# Mailchimp Store ID Composition
+# ADR 0004 — Mailchimp store ID composition
 
-* Date: 2026-05-26
+## Status
 
-## Description
+Accepted (2026-05-26)
+
+## Context
 
 ### Problem to solve
 

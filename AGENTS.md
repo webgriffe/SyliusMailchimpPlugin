@@ -76,7 +76,7 @@ All code must be in English — class names, method names, variable names, comme
 
 ### Tests
 
-> **Full testing guide**: [`docs/testing-guide.md`](docs/testing-guide.md) — read this before writing or reviewing tests.
+> **Full testing guide**: [`docs/ai/testing-guide.md`](docs/ai/testing-guide.md) — read this before writing or reviewing tests.
 
 #### When to use Unit vs Integration
 - **Unit** (`tests/Unit/`, `PHPUnit\Framework\TestCase`): class has ≤2 external dependencies, purely in-memory logic (mappers, value objects, simple event subscribers, remove-only handlers).

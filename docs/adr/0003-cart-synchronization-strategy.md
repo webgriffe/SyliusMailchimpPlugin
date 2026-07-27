@@ -1,8 +1,10 @@
-# Cart Synchronization Strategy
+# ADR 0003 — Cart synchronization strategy
 
-* Date: 2026-05-26
+## Status
 
-## Description
+Accepted (2026-05-26)
+
+## Context
 
 ### Problem to solve
 
