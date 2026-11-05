@@ -159,13 +159,14 @@
 
    Take a look at `tests/TestApplication/config/config.yaml` and `tests/TestApplication/src` for a complete, working example.
 
-8. Generate and run the Doctrine migration for the new columns:
+8. Run the Doctrine migrations:
 
     ```shell
     bin/console cache:clear
-    bin/console doctrine:migrations:diff
     bin/console doctrine:migrations:migrate
     ```
+
+   The plugin ships its own migration (`Webgriffe\SyliusMailchimpPlugin\Migrations\Version20260428000001`), which adds the Mailchimp columns to the customer, order and channel tables. If you have already created those columns with your own `doctrine:migrations:diff` migration, the plugin migration is a no-op and is simply recorded as executed.
 
 9. Set your Channel's Mailchimp Audience id from the Sylius admin (Channel edit form), then run an initial full sync (see [First sync](usage.md#first-sync-and-scheduled-commands)).
 

@@ -39,7 +39,7 @@
                 <!-- Plugin entry-point classes are referenced by string in bundles.php -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\WebgriffeSyliusMailchimpPlugin" />
                 <!-- Migrations are loaded by Doctrine by class name string -->
-                <referencedClass name="DoctrineMigrations\*" />
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Migrations\*" />
                 <!-- Model interfaces and traits are extension points used by integrator code -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Model\*" />
                 <!-- Repository traits are extension points used by integrator code -->
