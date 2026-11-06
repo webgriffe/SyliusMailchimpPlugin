@@ -105,14 +105,12 @@
         "phpstan": "phpstan analyse",
         "psalm": "psalm --no-cache",
         "phpunit": "phpunit",
-        "phpspec": "phpspec run",
         "behat": "behat --strict -vvv --no-interaction || behat --strict -vvv --no-interaction --rerun",
         "suite": [
             "@ecs",
             "@phpstan",
             "@psalm",
             "@phpunit",
-            "@phpspec",
             "@behat"
         ],
         "auto-scripts": {

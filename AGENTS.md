@@ -25,7 +25,6 @@ vendor/bin/phpunit --testsuite=integration
 vendor/bin/phpunit --testsuite=non-unit               # functional + integration
 vendor/bin/phpunit --filter TestClassName             # single test class
 vendor/bin/phpunit tests/path/to/TestFile.php         # single test file
-vendor/bin/phpspec run
 vendor/bin/behat --strict --tags="~@javascript&&~@mink:chromedriver"   # non-JS Behat
 vendor/bin/behat --strict --tags="@javascript,@mink:chromedriver"      # JS Behat
 ```

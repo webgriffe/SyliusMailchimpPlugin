@@ -72,7 +72,6 @@ composer ecs      # coding standard (add --fix to auto-fix)
 composer phpstan
 composer psalm
 composer phpunit
-composer phpspec
 composer behat
 composer suite     # all of the above
 ```
