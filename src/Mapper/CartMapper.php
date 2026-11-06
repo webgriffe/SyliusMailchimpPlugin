@@ -48,14 +48,22 @@ final class CartMapper implements CartMapperInterface
 
     private function buildCheckoutUrl(OrderInterface $order, ChannelInterface $channel): string
     {
-        $hostname = rtrim((string) $channel->getHostname(), '/');
-        if (!str_contains($hostname, '://')) {
-            $hostname = 'https://' . $hostname;
-        }
-
         $parameters = ['tokenValue' => $order->getTokenValue()];
         if ($order->getLocaleCode() !== null) {
             $parameters['_locale'] = $order->getLocaleCode();
+        }
+
+        $hostname = rtrim((string) $channel->getHostname(), '/');
+        if ($hostname === '') {
+            return $this->urlGenerator->generate(
+                'webgriffe_sylius_mailchimp_cart_restore',
+                $parameters,
+                UrlGeneratorInterface::ABSOLUTE_URL,
+            );
+        }
+
+        if (!str_contains($hostname, '://')) {
+            $hostname = 'https://' . $hostname;
         }
 
         return $hostname . $this->urlGenerator->generate(

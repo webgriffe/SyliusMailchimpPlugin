@@ -152,6 +152,23 @@ final class CartMapperTest extends TestCase
         $this->assertSame('https://example.com/cart/restore/abc', $cart['checkout_url']);
     }
 
+    public function test_checkout_url_falls_back_to_the_router_absolute_url_without_hostname(): void
+    {
+        $channel = new Channel();
+        $order = $this->buildOrder('abc', 'it_IT');
+
+        $this->urlGenerator
+            ->expects(self::once())
+            ->method('generate')
+            ->with('webgriffe_sylius_mailchimp_cart_restore', ['tokenValue' => 'abc', '_locale' => 'it_IT'], UrlGeneratorInterface::ABSOLUTE_URL)
+            ->willReturn('https://router.example/it_IT/cart/restore/abc')
+        ;
+
+        $cart = $this->mapper->map($order, $channel);
+
+        $this->assertSame('https://router.example/it_IT/cart/restore/abc', $cart['checkout_url']);
+    }
+
     private function buildOrder(string $token, ?string $locale): Order
     {
         $customer = new Customer();

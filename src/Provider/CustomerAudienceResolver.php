@@ -29,7 +29,7 @@ final class CustomerAudienceResolver implements CustomerAudienceResolverInterfac
     {
         $channel = $this->resolveChannel($customer);
         if ($channel === null) {
-            $this->logger->warning('[Mailchimp] No channel context and no completed order for customer #{id}, cannot resolve the audience.', [
+            $this->logger->info('[Mailchimp] No channel context and no completed order for customer #{id}, cannot resolve the audience.', [
                 'id' => $customer->getId(),
             ]);
 

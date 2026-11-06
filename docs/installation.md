@@ -33,7 +33,7 @@
         resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/shop.yaml"
         prefix: /{_locale}
         requirements:
-            _locale: ^[a-z]{2}(?:_[A-Z]{2})?$
+            _locale: ^[A-Za-z]{2,4}(_([A-Za-z]{4}|[0-9]{3}))?(_([A-Za-z]{2}|[0-9]{3}))?$
 
     webgriffe_sylius_mailchimp_admin:
         resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/admin.yaml"
