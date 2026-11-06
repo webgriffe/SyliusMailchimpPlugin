@@ -56,7 +56,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->alias(ProductMapperInterface::class, ProductMapper::class);
 
     $services->set(CartMapper::class)
-        ->arg('$customerMapper', service(EcommerceCustomerMapper::class));
+        ->arg('$customerMapper', service(EcommerceCustomerMapper::class))
+        ->arg('$urlGenerator', service('router'));
 
     $services->alias(CartMapperInterface::class, CartMapper::class);
 

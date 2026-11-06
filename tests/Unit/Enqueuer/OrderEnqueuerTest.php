@@ -9,9 +9,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Sylius\Component\Core\OrderCheckoutStates;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityChecker;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\OrderEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderRemove;
@@ -42,6 +44,7 @@ final class OrderEnqueuerTest extends TestCase
             new NullLogger(),
             $this->audienceProvider,
             $this->storeIdentifierResolver,
+            new OrderSyncEligibilityChecker(false),
         );
     }
 
@@ -102,6 +105,17 @@ final class OrderEnqueuerTest extends TestCase
         $this->assertTrue($dispatched->isInRealTime);
     }
 
+    public function test_it_does_not_enqueue_a_cart_as_order(): void
+    {
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 10, channel: $channel, mailchimpOrderId: null);
+        $order->setCheckoutState(OrderCheckoutStates::STATE_CART);
+
+        $this->messageBus->expects($this->never())->method('dispatch');
+
+        $this->enqueuer->enqueue($order);
+    }
+
     public function test_enqueue_removal_dispatches_order_remove_with_correct_store_id(): void
     {
         $channel = $this->createChannel(id: 1, code: 'WEB', audienceId: 'abc123');
@@ -134,6 +148,7 @@ final class OrderEnqueuerTest extends TestCase
         $order = new Order();
         self::setIdOnObject($order, $id);
         $order->setChannel($channel);
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
         if ($mailchimpOrderId !== null) {
             $order->setMailchimpOrderId($mailchimpOrderId);
         }

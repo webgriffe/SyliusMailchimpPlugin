@@ -8,19 +8,18 @@ use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
-use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Message\EcommerceCustomer\EcommerceCustomerEmailChange;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
-use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
+use Webgriffe\SyliusMailchimpPlugin\Provider\CustomerAudienceResolverInterface;
 
 final class MemberEnqueuer implements MemberEnqueuerInterface
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
-        private readonly AudienceContextInterface $audienceContext,
+        private readonly CustomerAudienceResolverInterface $customerAudienceResolver,
         private readonly MailchimpClientInterface $mailchimpClient,
         private readonly LoggerInterface $logger,
     ) {
@@ -109,7 +108,7 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
 
         $this->enqueueRemoval($context['customerId'], $context['listId'], $oldEmail);
 
-        if (!$this->canBeEnqueued($customer)) {
+        if (!$customer instanceof MailchimpAwareInterface || !$this->canBeEnqueued($customer)) {
             $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id}: mailchimp id null or not subscribed to newsletter.', [
                 'id' => $customer->getId(),
             ]);
@@ -171,14 +170,8 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
             return null;
         }
 
-        try {
-            $listId = $this->audienceContext->getAudienceId();
-        } catch (AudienceNotFoundException $e) {
-            $this->logger->warning('[Mailchimp] Could not resolve audience for customer #{id}: {msg}', [
-                'id' => $customerId,
-                'msg' => $e->getMessage(),
-            ]);
-
+        $listId = $this->customerAudienceResolver->resolveAudienceId($customer);
+        if ($listId === null) {
             return null;
         }
 
@@ -188,7 +181,7 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     /**
      * Do not sync customer never synced with Mailchimp or actually subscribed to NL
      */
-    private function canBeEnqueued(MailchimpAwareInterface|CustomerInterface $customer): bool
+    private function canBeEnqueued(MailchimpAwareInterface&CustomerInterface $customer): bool
     {
         return $customer->getMailchimpId() !== null || $customer->isSubscribedToNewsletter();
     }

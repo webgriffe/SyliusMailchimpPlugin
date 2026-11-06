@@ -47,7 +47,7 @@ final class CartSyncTest extends KernelTestCase
         );
 
         self::assertCount(1, $this->stub->getUpsertCartCalls());
-        self::assertSame((string) $order->getId(), $this->stub->getUpsertCartCalls()[0]['cart']->id);
+        self::assertSame($order->getId(), $this->stub->getUpsertCartCalls()[0]['order']->getId());
     }
 
     public function test_cart_is_updated_in_mailchimp_when_item_is_added_again(): void
@@ -66,7 +66,7 @@ final class CartSyncTest extends KernelTestCase
         );
 
         self::assertCount(1, $this->stub->getUpsertCartCalls());
-        self::assertSame((string) $order->getId(), $this->stub->getUpsertCartCalls()[0]['cart']->id);
+        self::assertSame($order->getId(), $this->stub->getUpsertCartCalls()[0]['order']->getId());
         self::assertCount(0, $this->stub->getRemoveCartCalls());
     }
 
@@ -86,7 +86,7 @@ final class CartSyncTest extends KernelTestCase
         );
 
         self::assertCount(1, $this->stub->getUpsertCartCalls());
-        self::assertSame((string) $order->getId(), $this->stub->getUpsertCartCalls()[0]['cart']->id);
+        self::assertSame($order->getId(), $this->stub->getUpsertCartCalls()[0]['order']->getId());
     }
 
     public function test_cart_is_removed_from_mailchimp_when_cleared(): void

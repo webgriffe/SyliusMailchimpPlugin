@@ -6,6 +6,8 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Integration\MessageHandler\Cart;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Fidry\AliceDataFixtures\LoaderInterface;
+use Sylius\Component\Core\OrderCheckoutStates;
+use Sylius\Component\Order\Model\OrderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
@@ -92,5 +94,22 @@ final class CartUpdateHandlerTest extends KernelTestCase
 
         $em->refresh($order);
         self::assertNull($order->getMailchimpCartError());
+    }
+
+    public function test_cart_update_skips_an_order_completed_after_enqueue(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $order->setMailchimpCartId((string) $order->getId());
+        $order->setState(OrderInterface::STATE_NEW);
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
+        $em->flush();
+
+        $handler = self::getContainer()->get(CartUpdateHandler::class);
+        $handler(new CartUpdate($order->getId()));
+
+        self::assertCount(0, $this->stub->getUpsertCartCalls());
     }
 }

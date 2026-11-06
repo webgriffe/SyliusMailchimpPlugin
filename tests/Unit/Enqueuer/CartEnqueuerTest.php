@@ -9,10 +9,13 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Sylius\Component\Core\OrderCheckoutStates;
+use Sylius\Component\Order\Model\OrderInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityChecker;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
@@ -43,6 +46,7 @@ final class CartEnqueuerTest extends TestCase
             new NullLogger(),
             $this->audienceProvider,
             $this->storeIdentifierResolver,
+            new OrderSyncEligibilityChecker(false),
         );
     }
 
@@ -68,6 +72,18 @@ final class CartEnqueuerTest extends TestCase
             ->method('dispatch')
             ->with($this->isInstanceOf(CartUpdate::class))
             ->willReturnCallback(fn (object $msg) => new Envelope($msg));
+
+        $this->enqueuer->enqueue($order);
+    }
+
+    public function test_it_does_not_enqueue_a_completed_order_as_cart(): void
+    {
+        $channel = $this->createChannel(id: 1, code: 'WEB');
+        $order = $this->createOrder(id: 5, channel: $channel, mailchimpCartId: null);
+        $order->setState(OrderInterface::STATE_NEW);
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
+
+        $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($order);
     }

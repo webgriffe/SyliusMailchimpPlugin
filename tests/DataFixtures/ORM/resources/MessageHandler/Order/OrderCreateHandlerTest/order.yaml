@@ -28,4 +28,5 @@ Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
         channel: '@channel_order_create'
         currencyCode: 'USD'
         localeCode: 'en_US'
+        checkoutState: 'completed'
         customer: '@customer_order_create'

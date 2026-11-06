@@ -28,6 +28,10 @@ The Mailchimp List Member is the equivalent of the Sylius Customer, kept in the 
 - **Sync is gated by newsletter consent**: a Member is only created if the customer
   `isSubscribedToNewsletter()`; if the customer already has a `mailchimpId`, updates are still sent even if
   they later unsubscribe (so the "unsubscribed" status itself can be pushed to Mailchimp).
+- The Audience of a customer is resolved by `CustomerAudienceResolverInterface`: the current channel's Audience,
+  or, when there is no channel context (CLI commands, with several channels), the one of the channel of the
+  customer's latest completed order. If none can be resolved the customer is skipped. Alias the interface to your
+  own service to choose the Audience differently (e.g. always by the customer's order channel).
 - New members are subscribed with the status configured via `member_default_status` (`subscribed` for single
   opt-in, `pending` for double opt-in — see [Configuration reference](#configuration-reference)).
 - **Email change**: since a Mailchimp List Member id is derived from the email address, changing a customer's
@@ -45,7 +49,7 @@ The Mailchimp List Member is the equivalent of the Sylius Customer, kept in the 
   "successfully enqueued" one. See [ADR 0002](adr/0002-newsletter-subscribe-is-synchronous-in-process.md).
   A Mailchimp "compliance state" rejection (a previously unsubscribed/complained address) is surfaced to the
   shopper as a 422 with a resubscribe URL, instead of a generic error.
-- Bulk sync command: `webgriffe:sylius-mailchimp:sync-members`.
+- Bulk sync command: `webgriffe:sylius-mailchimp:sync-members [--updated-last-days=N] [--customer-ids=ID ...] [--retry-failed]`.
 
 ## Store
 
@@ -80,12 +84,12 @@ that channel's Products, Carts and Orders on Mailchimp.
   scheduled `sync-carts` command running every 1–5 minutes as the real sync path.
 - When a cart is converted into a completed order, the Order payload sets Mailchimp's `cart_id` to the Sylius
   order id, telling Mailchimp the tracked cart was purchased (instead of deleting it).
-- Bulk sync command: `webgriffe:sylius-mailchimp:sync-carts [--updated-last-days=N]`.
+- Bulk sync command: `webgriffe:sylius-mailchimp:sync-carts [--updated-last-days=N] [--retry-failed]`.
 
 ## Order
 
 - Enqueued on `sylius.order.post_complete`.
-- Bulk sync command: `webgriffe:sylius-mailchimp:sync-orders [--updated-last-days=N] [--create-only]`
+- Bulk sync command: `webgriffe:sylius-mailchimp:sync-orders [--updated-last-days=N] [--create-only] [--retry-failed]`
   (`--create-only` skips orders already synced, syncing only never-synced ones).
 
 ## Ecommerce Customer
@@ -118,6 +122,11 @@ php bin/console webgriffe:sylius-mailchimp:sync-all
 This runs, in order: members, stores, products, carts, orders — stopping at the first command that fails.
 Each command also accepts being run on its own (see above for their specific options); this is what you should
 schedule on a cron for ongoing reconciliation, especially for carts (see [ADR 0003](adr/0003-cart-synchronization-strategy.md)).
+
+Records whose last sync failed permanently (an error is recorded on the Customer, Cart or Order) are skipped
+by scheduled `sync-members`, `sync-carts` and `sync-orders` runs. Fix the cause, then run the command once with
+`--retry-failed` to include them; a successful sync clears the recorded error. `sync-members --customer-ids`
+always retries the given customers.
 
 All commands (except `sync-all`) are wrapped with Symfony's `LockableTrait`, controlled by the
 `command_lock_enable` configuration flag, to prevent overlapping runs from cron.

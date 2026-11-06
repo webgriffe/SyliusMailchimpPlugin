@@ -16,6 +16,7 @@ Feature: Newsletter subscription from checkout complete step
         Given I have product "T-Shirt" added to the cart
         And I addressed the cart with email "guest-newsletter@example.com"
         And I chose "Free" shipping method and "Offline" payment method
+        And I check summary of my order
         When I check the newsletter subscription checkbox
         And I confirm my order
         Then I should see the thank you page
@@ -28,6 +29,7 @@ Feature: Newsletter subscription from checkout complete step
         And I have product "T-Shirt" added to the cart
         And I addressed the cart
         And I chose "Free" shipping method and "Offline" payment method
+        And I check summary of my order
         When I check the newsletter subscription checkbox
         And I confirm my order
         Then I should see the thank you page

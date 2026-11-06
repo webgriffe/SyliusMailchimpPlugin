@@ -6,10 +6,14 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Integration\MessageHandler\Cart;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Fidry\AliceDataFixtures\LoaderInterface;
+use Sylius\Component\Core\OrderCheckoutStates;
+use Sylius\Component\Order\Model\OrderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\CartMapper;
+use Webgriffe\SyliusMailchimpPlugin\Mapper\EcommerceCustomerMapper;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartCreateHandler;
 
@@ -42,6 +46,25 @@ final class CartCreateHandlerTest extends KernelTestCase
         self::assertCount(1, $this->stub->getUpsertCartCalls());
         $em->refresh($order);
         self::assertSame((string) $order->getId(), $order->getMailchimpCartId());
+    }
+
+    public function test_cart_create_assigns_a_token_to_a_cart_without_one(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        self::assertNull($order->getTokenValue());
+
+        $handler = self::getContainer()->get(CartCreateHandler::class);
+        $handler(new CartCreate($order->getId()));
+
+        $em->refresh($order);
+        self::assertNotNull($order->getTokenValue());
+        $calls = $this->stub->getUpsertCartCalls();
+        self::assertCount(1, $calls);
+        $cart = (new CartMapper(new EcommerceCustomerMapper(), self::getContainer()->get('router')))->map($calls[0]['order'], $order->getChannel());
+        self::assertStringContainsString($order->getTokenValue(), $cart['checkout_url']);
     }
 
     public function test_cart_create_throws_on_transient_mailchimp_failure(): void
@@ -82,5 +105,23 @@ final class CartCreateHandlerTest extends KernelTestCase
         $handler(new CartCreate(99999));
 
         self::assertCount(0, $this->stub->getUpsertCartCalls());
+    }
+
+    public function test_cart_create_skips_an_order_completed_after_enqueue(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $order->setState(OrderInterface::STATE_NEW);
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
+        $em->flush();
+
+        $handler = self::getContainer()->get(CartCreateHandler::class);
+        $handler(new CartCreate($order->getId()));
+
+        self::assertCount(0, $this->stub->getUpsertCartCalls());
+        $em->refresh($order);
+        self::assertNull($order->getMailchimpCartId());
     }
 }

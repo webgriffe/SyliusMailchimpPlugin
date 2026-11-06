@@ -31,12 +31,15 @@
     ```yaml
     webgriffe_sylius_mailchimp_shop:
         resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/shop.yaml"
+        prefix: /{_locale}
+        requirements:
+            _locale: ^[A-Za-z]{2,4}(_([A-Za-z]{4}|[0-9]{3}))?(_([A-Za-z]{2}|[0-9]{3}))?$
 
     webgriffe_sylius_mailchimp_admin:
         resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/admin.yaml"
     ```
 
-   The shop routes expose the newsletter subscribe endpoint and the abandoned-cart recovery link. The admin routes expose the Mailchimp webhook endpoint and the admin "Mailchimp contact" pages.
+   The shop routes expose the newsletter subscribe endpoint and the abandoned-cart recovery link. Import them with the `/{_locale}` prefix, exactly like the `sylius_shop` routes, so the recovery URL sent to Mailchimp carries the cart locale in its path (`https://shop.example/it_IT/cart/restore/<token>`) and Sylius' locale context resolves it; without the prefix the locale is appended as a `_locale` query parameter instead. The admin routes expose the Mailchimp webhook endpoint and the admin "Mailchimp contact" pages.
 
 5. Extend your Sylius entities. The plugin stores its own sync state (Mailchimp id, last sync date, last error) directly on `Customer`, `Channel` and `Order` — there is no extra association entity to create.
 
@@ -159,13 +162,14 @@
 
    Take a look at `tests/TestApplication/config/config.yaml` and `tests/TestApplication/src` for a complete, working example.
 
-8. Generate and run the Doctrine migration for the new columns:
+8. Run the Doctrine migrations:
 
     ```shell
     bin/console cache:clear
-    bin/console doctrine:migrations:diff
     bin/console doctrine:migrations:migrate
     ```
+
+   The plugin ships its own migration (`Webgriffe\SyliusMailchimpPlugin\Migrations\Version20260428000001`), which adds the Mailchimp columns to the customer, order and channel tables. If you have already created those columns with your own `doctrine:migrations:diff` migration, the plugin migration is a no-op and is simply recorded as executed.
 
 9. Set your Channel's Mailchimp Audience id from the Sylius admin (Channel edit form), then run an initial full sync (see [First sync](usage.md#first-sync-and-scheduled-commands)).
 

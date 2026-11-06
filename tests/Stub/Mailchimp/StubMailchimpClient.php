@@ -212,7 +212,7 @@ final class StubMailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function updateMemberTags(string $listId, string $subscriberHash, array $tags): void
+    public function updateMemberTags(string $listId, string $subscriberHash, array $tags, array $inactiveTags = []): void
     {
     }
 

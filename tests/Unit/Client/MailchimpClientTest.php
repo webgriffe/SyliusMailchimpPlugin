@@ -104,6 +104,51 @@ final class MailchimpClientTest extends TestCase
         $this->assertSame($expectedHash, $id);
     }
 
+    public function test_upsert_member_omits_merge_fields_when_names_are_null(): void
+    {
+        $payload = $this->captureUpsertMemberPayload(new Member('test@example.com', 'subscribed', new MergeFields()));
+
+        $this->assertArrayNotHasKey('merge_fields', $payload);
+    }
+
+    public function test_upsert_member_sends_empty_names_to_clear_them(): void
+    {
+        $payload = $this->captureUpsertMemberPayload(new Member('test@example.com', 'subscribed', new MergeFields('', '')));
+
+        $this->assertSame(['FNAME' => '', 'LNAME' => ''], $payload['merge_fields']);
+    }
+
+    public function test_upsert_member_sends_only_extra_merge_fields_when_names_are_null(): void
+    {
+        $payload = $this->captureUpsertMemberPayload(
+            new Member('test@example.com', 'subscribed', new MergeFields(extra: ['PHONE' => '123'])),
+        );
+
+        $this->assertSame(['PHONE' => '123'], $payload['merge_fields']);
+    }
+
+    public function test_upsert_member_omits_ip_signup_when_null(): void
+    {
+        $payload = $this->captureUpsertMemberPayload(new Member('test@example.com', 'subscribed', new MergeFields()));
+
+        $this->assertArrayNotHasKey('ip_signup', $payload);
+    }
+
+    /** @return array<string, mixed> */
+    private function captureUpsertMemberPayload(Member $member): array
+    {
+        $captured = [];
+        $this->httpClient->method('request')
+            ->willReturnCallback(function (string $method, string $url, array $options) use (&$captured): ResponseInterface {
+                $captured = $options['json'] ?? [];
+
+                return $this->mockResponse(200, '{"id":"hash"}');
+            });
+        $this->client->upsertMember(self::LIST_ID, $member);
+
+        return $captured;
+    }
+
     public function test_upsert_member_throws_client_exception_on_4xx(): void
     {
         $this->expectException(ClientException::class);
@@ -205,6 +250,33 @@ final class MailchimpClientTest extends TestCase
         $this->httpClient->expects($this->once())->method('request')
             ->with('POST', $this->stringContains('/tags'), $this->callback(
                 static fn (array $opts): bool => ($opts['json']['tags'][0]['status'] ?? '') === 'active',
+            ))
+            ->willReturn($response);
+
+        $this->client->updateMemberTags(self::LIST_ID, 'hash', ['VIP']);
+    }
+
+    public function test_update_member_tags_sends_inactive_tags(): void
+    {
+        $response = $this->mockResponse(204, '');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('POST', $this->stringContains('/tags'), $this->callback(
+                static fn (array $opts): bool => $opts['json']['tags'] === [
+                    ['name' => 'VIP', 'status' => 'active'],
+                    ['name' => 'Old', 'status' => 'inactive'],
+                ],
+            ))
+            ->willReturn($response);
+
+        $this->client->updateMemberTags(self::LIST_ID, 'hash', ['VIP'], ['Old']);
+    }
+
+    public function test_update_member_tags_payload_has_only_active_tags_without_inactive_tags(): void
+    {
+        $response = $this->mockResponse(204, '');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('POST', $this->stringContains('/tags'), $this->callback(
+                static fn (array $opts): bool => $opts['json'] === ['tags' => [['name' => 'VIP', 'status' => 'active']]],
             ))
             ->willReturn($response);
 

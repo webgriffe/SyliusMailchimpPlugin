@@ -24,8 +24,11 @@ interface MailchimpClientInterface
     /** @return string[] */
     public function getMemberTags(string $listId, string $subscriberHash): array;
 
-    /** @param string[] $tags */
-    public function updateMemberTags(string $listId, string $subscriberHash, array $tags): void;
+    /**
+     * @param string[] $tags
+     * @param list<string> $inactiveTags
+     */
+    public function updateMemberTags(string $listId, string $subscriberHash, array $tags, array $inactiveTags = []): void;
 
     // Stores (e-commerce)
     public function upsertStore(Audience $audience): void;

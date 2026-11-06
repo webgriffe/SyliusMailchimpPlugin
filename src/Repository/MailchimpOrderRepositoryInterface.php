@@ -9,16 +9,19 @@ use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 interface MailchimpOrderRepositoryInterface extends OrderRepositoryInterface
 {
     /** @return object[] */
-    public function findMailchimpCartSyncNeeded(): array;
+    public function findMailchimpCartSyncNeeded(bool $includeFailed = false): array;
 
     /** @return object[] */
-    public function findMailchimpCartSyncNeededUpdatedSince(\DateTimeInterface $since): array;
+    public function findMailchimpCartSyncNeededUpdatedSince(\DateTimeInterface $since, bool $includeFailed = false): array;
 
     /** @return object[] */
-    public function findMailchimpOrderSyncNeeded(): array;
+    public function findMailchimpOrderSyncNeeded(?\DateTimeInterface $updatedSince = null, bool $includeFailed = false): array;
 
     /** @return object[] */
-    public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since): array;
+    public function findMailchimpOrderSyncable(bool $includeFailed = false): array;
+
+    /** @return object[] */
+    public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since, bool $includeFailed = false): array;
 
     public function countMailchimpPendingCarts(): int;
 

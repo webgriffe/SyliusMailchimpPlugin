@@ -71,4 +71,16 @@ final class SyncCartsCommandTest extends TestCase
 
         self::assertSame(0, $tester->getStatusCode());
     }
+
+    public function test_retry_failed_option_includes_failed_records(): void
+    {
+        $this->orderRepository->expects(self::once())->method('findMailchimpCartSyncNeeded')
+            ->with(true)
+            ->willReturn([new Order()]);
+
+        $tester = new CommandTester($this->command);
+        $tester->execute(['--retry-failed' => true]);
+
+        self::assertSame(0, $tester->getStatusCode());
+    }
 }

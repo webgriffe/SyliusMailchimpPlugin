@@ -12,6 +12,7 @@ use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderUpdate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
@@ -31,6 +32,7 @@ final class OrderUpdateHandler
         private readonly MailchimpClientInterface $mailchimpClient,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
+        private readonly OrderSyncEligibilityCheckerInterface $eligibilityChecker,
     ) {
     }
 
@@ -39,6 +41,12 @@ final class OrderUpdateHandler
         $order = $this->orderRepository->find($message->orderId);
         if (!$order instanceof OrderInterface || !$order instanceof MailchimpOrderAwareInterface) {
             $this->logger->warning('[Mailchimp] Order #{id} not found or not Mailchimp-aware, skipping OrderUpdate.', ['id' => $message->orderId]);
+
+            return;
+        }
+
+        if (!$this->eligibilityChecker->isSyncableAsOrder($order)) {
+            $this->logger->info('[Mailchimp] Order #{id} is not eligible to be synced as order anymore, skipping OrderUpdate.', ['id' => $message->orderId]);
 
             return;
         }
@@ -95,7 +103,7 @@ final class OrderUpdateHandler
             }
 
             $productId = $product->getId();
-            if ($productId === null || isset($syncedProductIds[$productId])) {
+            if (!is_int($productId) || isset($syncedProductIds[$productId])) {
                 continue;
             }
 

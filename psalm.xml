@@ -39,7 +39,7 @@
                 <!-- Plugin entry-point classes are referenced by string in bundles.php -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\WebgriffeSyliusMailchimpPlugin" />
                 <!-- Migrations are loaded by Doctrine by class name string -->
-                <referencedClass name="DoctrineMigrations\*" />
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Migrations\*" />
                 <!-- Model interfaces and traits are extension points used by integrator code -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Model\*" />
                 <!-- Repository traits are extension points used by integrator code -->
@@ -55,6 +55,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Mapper\*" />
                 <!-- MessageHandler classes are invoked by Messenger -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\MessageHandler\*" />
+                <!-- Checker classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Checker\*" />
                 <!-- Enqueuer classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Enqueuer\*" />
                 <!-- EventSubscriber classes are wired via DI container -->

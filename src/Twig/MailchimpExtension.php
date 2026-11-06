@@ -21,6 +21,7 @@ final class MailchimpExtension extends AbstractExtension
             new TwigFunction('mailchimp_pending_carts_count', [MailchimpRuntime::class, 'getPendingCartsCount']),
             new TwigFunction('mailchimp_pending_orders_count', [MailchimpRuntime::class, 'getPendingOrdersCount']),
             new TwigFunction('mailchimp_parse_error', [MailchimpRuntime::class, 'parseError']),
+            new TwigFunction('mailchimp_newsletter_form', [NewsletterFormRuntime::class, 'createNewsletterFormView']),
         ];
     }
 }

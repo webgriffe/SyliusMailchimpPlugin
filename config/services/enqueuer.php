@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
@@ -15,6 +16,7 @@ use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Provider\CustomerAudienceResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -22,7 +24,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(MemberEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
-        ->arg('$audienceContext', service('Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface'))
+        ->arg('$customerAudienceResolver', service(CustomerAudienceResolverInterface::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'));
     $services->alias(MemberEnqueuerInterface::class, MemberEnqueuer::class);
@@ -43,14 +45,16 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
-        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class));
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class));
     $services->alias(CartEnqueuerInterface::class, CartEnqueuer::class);
 
     $services->set(OrderEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
-        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class));
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class));
     $services->alias(OrderEnqueuerInterface::class, OrderEnqueuer::class);
 };
 

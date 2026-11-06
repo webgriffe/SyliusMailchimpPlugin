@@ -58,7 +58,7 @@ final class WebgriffeSyliusMailchimpExtension extends AbstractResourceExtension 
     #[\Override]
     protected function getMigrationsNamespace(): string
     {
-        return 'DoctrineMigrations';
+        return 'Webgriffe\SyliusMailchimpPlugin\Migrations';
     }
 
     #[\Override]

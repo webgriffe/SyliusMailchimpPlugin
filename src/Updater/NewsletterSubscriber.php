@@ -11,6 +11,7 @@ use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
+use Webgriffe\SyliusMailchimpPlugin\Util\MailchimpErrorClassifier;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 
@@ -29,16 +30,17 @@ final class NewsletterSubscriber implements NewsletterSubscriberInterface
     ) {
     }
 
+    #[\Override]
     public function subscribe(string $email, string $listId): void
     {
         $member = new Member(
             emailAddress: $email,
             status: $this->memberDefaultStatus,
-            mergeFields: new MergeFields('', ''),
+            mergeFields: new MergeFields(),
             tags: [],
             interests: [],
             language: '',
-            ipSignup: '',
+            ipSignup: null,
         );
 
         $customer = $this->customerRepository->findOneBy(['email' => $email]);
@@ -75,7 +77,7 @@ final class NewsletterSubscriber implements NewsletterSubscriberInterface
                 'msg' => $e->getMessage(),
             ]);
 
-            if ($customer instanceof MailchimpAwareInterface) {
+            if ($customer instanceof MailchimpAwareInterface && MailchimpErrorClassifier::isPermanent($e)) {
                 $customer->setMailchimpError($e->getMessage());
                 $this->entityManager->flush();
             }

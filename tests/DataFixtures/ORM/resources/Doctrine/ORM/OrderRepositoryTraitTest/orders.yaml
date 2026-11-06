@@ -1,0 +1,76 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_repository:
+        code: 'REPOSITORY_TEST'
+        name: 'Repository Test Store'
+        hostname: 'https://repository.test'
+        mailchimpAudienceId: 'test-audience-id'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
+    cart_never_synced:
+        channel: '@channel_repository'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        state: 'cart'
+        checkoutState: 'cart'
+        updatedAt: '<(new \DateTime("-10 days"))>'
+    cart_synced_old:
+        channel: '@channel_repository'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        state: 'cart'
+        checkoutState: 'cart'
+        mailchimpCartId: 'cart-synced-old'
+        updatedAt: '<(new \DateTime("-10 days"))>'
+    completed_never_synced:
+        channel: '@channel_repository'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        state: 'new'
+        checkoutState: 'completed'
+        updatedAt: '<(new \DateTime())>'
+    completed_synced_recent:
+        channel: '@channel_repository'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        state: 'new'
+        checkoutState: 'completed'
+        mailchimpOrderId: 'order-synced-recent'
+        updatedAt: '<(new \DateTime())>'
+    completed_synced_old:
+        channel: '@channel_repository'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        state: 'new'
+        checkoutState: 'completed'
+        mailchimpOrderId: 'order-synced-old'
+        updatedAt: '<(new \DateTime("-10 days"))>'
+    cart_failed:
+        channel: '@channel_repository'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        state: 'cart'
+        checkoutState: 'cart'
+        mailchimpCartError: 'Bad Request'
+        updatedAt: '<(new \DateTime("-10 days"))>'
+    completed_failed:
+        channel: '@channel_repository'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        state: 'new'
+        checkoutState: 'completed'
+        mailchimpOrderError: 'Bad Request'
+        updatedAt: '<(new \DateTime())>'

@@ -22,7 +22,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(CustomerSubscriber::class)
         ->arg('$memberEnqueuer', service(MemberEnqueuerInterface::class))
         ->arg('$entityManager', service('doctrine.orm.entity_manager'))
-        ->arg('$logger', service('monolog.logger.mailchimp'))
         ->tag('kernel.event_subscriber');
 
     $services->set(AddressSubscriber::class)

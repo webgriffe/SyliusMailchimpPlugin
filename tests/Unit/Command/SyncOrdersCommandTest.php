@@ -36,7 +36,8 @@ final class SyncOrdersCommandTest extends TestCase
     public function test_syncs_all_orders_when_no_options(): void
     {
         $order = new Order();
-        $this->orderRepository->expects(self::once())->method('findAll')->willReturn([$order]);
+        $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncable')->willReturn([$order]);
+        $this->orderRepository->expects(self::never())->method('findAll');
 
         $this->orderEnqueuer->expects(self::once())->method('enqueue')->with($order);
 
@@ -59,11 +60,28 @@ final class SyncOrdersCommandTest extends TestCase
         self::assertSame(0, $tester->getStatusCode());
     }
 
-    public function test_syncs_orders_updated_since_when_updated_last_days_option_provided(): void
+    public function test_syncs_orders_updated_since_when_only_updated_last_days_option_provided(): void
     {
         $order = new Order();
         $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncNeededUpdatedSince')
             ->willReturn([$order]);
+        $this->orderRepository->expects(self::never())->method('findAll');
+
+        $this->orderEnqueuer->expects(self::once())->method('enqueue')->with($order);
+
+        $tester = new CommandTester($this->command);
+        $tester->execute(['--updated-last-days' => '7']);
+
+        self::assertSame(0, $tester->getStatusCode());
+    }
+
+    public function test_syncs_unsynced_orders_updated_since_when_both_options_provided(): void
+    {
+        $order = new Order();
+        $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncNeeded')
+            ->with(self::isInstanceOf(\DateTimeInterface::class))
+            ->willReturn([$order]);
+        $this->orderRepository->expects(self::never())->method('findAll');
 
         $this->orderEnqueuer->expects(self::once())->method('enqueue')->with($order);
 
@@ -75,9 +93,46 @@ final class SyncOrdersCommandTest extends TestCase
 
     public function test_skips_non_order_subjects(): void
     {
-        $this->orderRepository->method('findAll')->willReturn([new \stdClass()]);
+        $this->orderRepository->method('findMailchimpOrderSyncable')->willReturn([new \stdClass()]);
 
         $this->orderEnqueuer->expects(self::never())->method('enqueue');
+
+        $tester = new CommandTester($this->command);
+        $tester->execute([]);
+
+        self::assertSame(0, $tester->getStatusCode());
+    }
+
+    public function test_retry_failed_option_includes_failed_records(): void
+    {
+        $order = new Order();
+        $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncable')
+            ->with(true)
+            ->willReturn([$order]);
+
+        $tester = new CommandTester($this->command);
+        $tester->execute(['--retry-failed' => true]);
+
+        self::assertSame(0, $tester->getStatusCode());
+    }
+
+    public function test_retry_failed_option_is_passed_to_every_option_combination(): void
+    {
+        $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncNeeded')
+            ->with(self::isInstanceOf(\DateTimeInterface::class), true)
+            ->willReturn([]);
+
+        $tester = new CommandTester($this->command);
+        $tester->execute(['--updated-last-days' => '7', '--create-only' => true, '--retry-failed' => true]);
+
+        self::assertSame(0, $tester->getStatusCode());
+    }
+
+    public function test_failed_records_are_excluded_by_default(): void
+    {
+        $this->orderRepository->expects(self::once())->method('findMailchimpOrderSyncable')
+            ->with(false)
+            ->willReturn([]);
 
         $tester = new CommandTester($this->command);
         $tester->execute([]);

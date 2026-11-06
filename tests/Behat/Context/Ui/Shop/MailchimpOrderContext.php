@@ -71,7 +71,7 @@ final class MailchimpOrderContext extends RawMinkContext implements Context
     public function iCheckTheNewsletterSubscriptionCheckbox(): void
     {
         $checkbox = $this->getSession()->getPage()->find('css', '.js-mailchimp-newsletter-checkbox');
-        Assert::notNull($checkbox, 'Could not find the newsletter subscription checkbox on the page.');
+        Assert::notNull($checkbox, sprintf('Could not find the newsletter subscription checkbox on the page "%s".', $this->getSession()->getCurrentUrl()));
         $checkbox->check();
     }
 

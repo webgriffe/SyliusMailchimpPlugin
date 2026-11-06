@@ -13,8 +13,8 @@ final class MergeFieldsTest extends TestCase
     {
         $mergeFields = new MergeFields();
 
-        self::assertSame('', $mergeFields->firstName);
-        self::assertSame('', $mergeFields->lastName);
+        self::assertNull($mergeFields->firstName);
+        self::assertNull($mergeFields->lastName);
         self::assertSame([], $mergeFields->extra);
     }
 

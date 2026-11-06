@@ -14,7 +14,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuerInterface;
-use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Model\MailchimpAwareInterface;
 use Webgriffe\SyliusMailchimpPlugin\Repository\MailchimpCustomerRepositoryInterface;
 
@@ -49,7 +48,13 @@ final class SyncMembersCommand extends Command
                 'customer-ids',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                'Only sync customers with these IDs.',
+                'Only sync customers with these IDs (also retries failed ones).',
+            )
+            ->addOption(
+                'retry-failed',
+                null,
+                InputOption::VALUE_NONE,
+                'Also retry records whose last sync failed permanently.',
             );
     }
 
@@ -64,12 +69,13 @@ final class SyncMembersCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
 
-        $customers = $this->resolveCustomers($input);
+        $customers = $this->resolveCustomers($input, $input->getOption('retry-failed') === true);
         $total = count($customers);
         $io->writeln(sprintf('[Mailchimp] Syncing %d customer(s)…', $total));
 
         $enqueued = 0;
         $skipped = 0;
+        $failed = 0;
         foreach ($customers as $customer) {
             if (!$customer instanceof CustomerInterface) {
                 ++$skipped;
@@ -86,16 +92,16 @@ final class SyncMembersCommand extends Command
             try {
                 $this->memberEnqueuer->enqueue($customer);
                 ++$enqueued;
-            } catch (AudienceNotFoundException $e) {
-                $this->logger->warning('[Mailchimp] SyncMembers: audience not found for customer #{id}.', [
+            } catch (\Throwable $e) {
+                $this->logger->error('[Mailchimp] SyncMembers: failed to enqueue customer #{id}: {msg}', [
                     'id' => $customer->getId(),
                     'msg' => $e->getMessage(),
                 ]);
-                ++$skipped;
+                ++$failed;
             }
         }
 
-        $io->success(sprintf('Enqueued %d, skipped %d out of %d customer(s).', $enqueued, $skipped, $total));
+        $io->success(sprintf('Enqueued %d, skipped %d, failed %d out of %d customer(s).', $enqueued, $skipped, $failed, $total));
 
         $this->release();
 
@@ -103,7 +109,7 @@ final class SyncMembersCommand extends Command
     }
 
     /** @return object[] */
-    private function resolveCustomers(InputInterface $input): array
+    private function resolveCustomers(InputInterface $input, bool $includeFailed): array
     {
         /** @var string[]|null $customerIds */
         $customerIds = $input->getOption('customer-ids');
@@ -118,9 +124,9 @@ final class SyncMembersCommand extends Command
             /** @phpstan-ignore-next-line */
             $since = new \DateTimeImmutable(sprintf('-%d days', (int) $updatedLastDays));
 
-            return $this->customerRepository->findMailchimpSyncNeededSince($since);
+            return $this->customerRepository->findMailchimpSyncNeededSince($since, $includeFailed);
         }
 
-        return $this->customerRepository->findMailchimpSyncNeeded();
+        return $this->customerRepository->findMailchimpSyncNeeded($includeFailed);
     }
 }

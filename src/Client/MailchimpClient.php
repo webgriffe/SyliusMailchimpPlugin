@@ -164,11 +164,14 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function updateMemberTags(string $listId, string $subscriberHash, array $tags): void
+    public function updateMemberTags(string $listId, string $subscriberHash, array $tags, array $inactiveTags = []): void
     {
         $url = sprintf('%slists/%s/members/%s/tags', $this->baseUrl, $listId, $subscriberHash);
         $payload = [
-            'tags' => array_map(static fn (string $tag): array => ['name' => $tag, 'status' => 'active'], $tags),
+            'tags' => [
+                ...array_map(static fn (string $tag): array => ['name' => $tag, 'status' => 'active'], $tags),
+                ...array_map(static fn (string $tag): array => ['name' => $tag, 'status' => 'inactive'], $inactiveTags),
+            ],
         ];
 
         $this->logger->debug('[Mailchimp] POST {url}', ['url' => $url, 'payload' => $payload]);
@@ -560,14 +563,19 @@ final class MailchimpClient implements MailchimpClientInterface
         $payload = [
             'email_address' => $member->emailAddress,
             'status' => $member->status,
-            'merge_fields' => array_merge(
-                [
-                    'FNAME' => $member->mergeFields->firstName,
-                    'LNAME' => $member->mergeFields->lastName,
-                ],
-                $member->mergeFields->extra,
-            ),
         ];
+
+        $mergeFields = [];
+        if ($member->mergeFields->firstName !== null) {
+            $mergeFields['FNAME'] = $member->mergeFields->firstName;
+        }
+        if ($member->mergeFields->lastName !== null) {
+            $mergeFields['LNAME'] = $member->mergeFields->lastName;
+        }
+        $mergeFields = array_merge($mergeFields, $member->mergeFields->extra);
+        if ($mergeFields !== []) {
+            $payload['merge_fields'] = $mergeFields;
+        }
 
         if ($member->tags !== []) {
             $payload['tags'] = $member->tags;

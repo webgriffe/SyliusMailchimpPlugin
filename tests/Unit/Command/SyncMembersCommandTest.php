@@ -103,4 +103,39 @@ final class SyncMembersCommandTest extends TestCase
 
         $this->assertSame(0, $tester->getStatusCode());
     }
+
+    public function test_retry_failed_option_includes_failed_records(): void
+    {
+        $this->customerRepository->expects($this->once())->method('findMailchimpSyncNeeded')
+            ->with(true)
+            ->willReturn([]);
+
+        $tester = new CommandTester($this->command);
+        $tester->execute(['--retry-failed' => true]);
+
+        $this->assertSame(0, $tester->getStatusCode());
+    }
+
+    public function test_a_failure_on_one_customer_does_not_stop_the_run(): void
+    {
+        $first = new Customer();
+        $second = new Customer();
+        $this->customerRepository->method('findMailchimpSyncNeeded')->willReturn([$first, $second]);
+
+        $enqueued = [];
+        $this->memberEnqueuer->expects($this->exactly(2))->method('enqueue')
+            ->willReturnCallback(static function (CustomerInterface $customer) use ($first, &$enqueued): void {
+                if ($customer === $first) {
+                    throw new \RuntimeException('Boom');
+                }
+                $enqueued[] = $customer;
+            });
+
+        $tester = new CommandTester($this->command);
+        $tester->execute([]);
+
+        $this->assertSame(0, $tester->getStatusCode());
+        $this->assertSame([$second], $enqueued);
+        $this->assertStringContainsString('failed 1', $tester->getDisplay());
+    }
 }

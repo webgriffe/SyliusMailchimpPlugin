@@ -67,5 +67,6 @@ Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
         currencyCode: 'USD'
         localeCode: 'en_US'
         customer: '@customer_order_sync'
+        checkoutState: 'completed'
         __calls:
             - addItem: ['@order_item_order_sync']

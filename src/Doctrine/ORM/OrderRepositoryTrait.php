@@ -5,42 +5,90 @@ declare(strict_types=1);
 namespace Webgriffe\SyliusMailchimpPlugin\Doctrine\ORM;
 
 use Doctrine\ORM\QueryBuilder;
+use Sylius\Component\Core\OrderCheckoutStates;
+use Sylius\Component\Order\Model\OrderInterface;
 
 trait OrderRepositoryTrait
 {
-    public function createMailchimpCartSyncNeededQueryBuilder(string $alias): QueryBuilder
+    public function createMailchimpCartSyncableQueryBuilder(string $alias): QueryBuilder
     {
         return $this->createQueryBuilder($alias)
-            ->andWhere(sprintf('%s.mailchimpCartId IS NULL', $alias))
             ->andWhere(sprintf('%s.state = :cartState', $alias))
-            ->setParameter('cartState', \Sylius\Component\Order\Model\OrderInterface::STATE_CART)
+            ->setParameter('cartState', OrderInterface::STATE_CART)
+        ;
+    }
+
+    public function createMailchimpCartSyncNeededQueryBuilder(string $alias): QueryBuilder
+    {
+        return $this->createMailchimpCartSyncableQueryBuilder($alias)
+            ->andWhere(sprintf('%s.mailchimpCartId IS NULL', $alias))
         ;
     }
 
     public function createMailchimpOrderSyncNeededQueryBuilder(string $alias): QueryBuilder
     {
-        return $this->createQueryBuilder($alias)
+        return $this->createMailchimpOrderSyncableQueryBuilder($alias)
             ->andWhere(sprintf('%s.mailchimpOrderId IS NULL', $alias))
         ;
     }
 
-    /** @return object[] */
-    public function findMailchimpCartSyncNeeded(): array
+    public function createMailchimpOrderSyncableQueryBuilder(string $alias): QueryBuilder
     {
-        return $this->createMailchimpCartSyncNeededQueryBuilder('o')->getQuery()->getResult();
+        return $this->createQueryBuilder($alias)
+            ->andWhere(sprintf('%s.checkoutState = :completedCheckoutState', $alias))
+            ->setParameter('completedCheckoutState', OrderCheckoutStates::STATE_COMPLETED)
+        ;
     }
 
     /** @return object[] */
-    public function findMailchimpOrderSyncNeeded(): array
+    public function findMailchimpCartSyncNeeded(bool $includeFailed = false): array
     {
-        return $this->createMailchimpOrderSyncNeededQueryBuilder('o')->getQuery()->getResult();
+        $queryBuilder = $this->createMailchimpCartSyncNeededQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpCartError IS NULL');
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /** @return object[] */
-    public function findMailchimpCartSyncNeededUpdatedSince(\DateTimeInterface $since): array
+    public function findMailchimpOrderSyncNeeded(?\DateTimeInterface $updatedSince = null, bool $includeFailed = false): array
     {
-        return $this->createMailchimpCartSyncNeededQueryBuilder('o')
-            ->orWhere('o.updatedAt >= :since')
+        $queryBuilder = $this->createMailchimpOrderSyncNeededQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpOrderError IS NULL');
+        }
+        if ($updatedSince !== null) {
+            $queryBuilder
+                ->andWhere('o.updatedAt >= :since')
+                ->setParameter('since', $updatedSince)
+            ;
+        }
+
+        return $queryBuilder->getQuery()->getResult();
+    }
+
+    /** @return object[] */
+    public function findMailchimpOrderSyncable(bool $includeFailed = false): array
+    {
+        $queryBuilder = $this->createMailchimpOrderSyncableQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpOrderError IS NULL');
+        }
+
+        return $queryBuilder->getQuery()->getResult();
+    }
+
+    /** @return object[] */
+    public function findMailchimpCartSyncNeededUpdatedSince(\DateTimeInterface $since, bool $includeFailed = false): array
+    {
+        $queryBuilder = $this->createMailchimpCartSyncableQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpCartError IS NULL');
+        }
+
+        return $queryBuilder
+            ->andWhere($queryBuilder->expr()->orX('o.mailchimpCartId IS NULL', 'o.updatedAt >= :since'))
             ->setParameter('since', $since)
             ->getQuery()
             ->getResult()
@@ -48,10 +96,15 @@ trait OrderRepositoryTrait
     }
 
     /** @return object[] */
-    public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since): array
+    public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since, bool $includeFailed = false): array
     {
-        return $this->createMailchimpOrderSyncNeededQueryBuilder('o')
-            ->orWhere('o.updatedAt >= :since')
+        $queryBuilder = $this->createMailchimpOrderSyncableQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpOrderError IS NULL');
+        }
+
+        return $queryBuilder
+            ->andWhere($queryBuilder->expr()->orX('o.mailchimpOrderId IS NULL', 'o.updatedAt >= :since'))
             ->setParameter('since', $since)
             ->getQuery()
             ->getResult()
@@ -60,9 +113,8 @@ trait OrderRepositoryTrait
 
     public function countMailchimpPendingCarts(): int
     {
-        return (int) $this->createQueryBuilder('o')
+        return (int) $this->createMailchimpCartSyncNeededQueryBuilder('o')
             ->select('COUNT(o)')
-            ->andWhere('o.mailchimpCartId IS NULL')
             ->getQuery()
             ->getSingleScalarResult()
         ;
@@ -70,9 +122,8 @@ trait OrderRepositoryTrait
 
     public function countMailchimpPendingOrders(): int
     {
-        return (int) $this->createQueryBuilder('o')
+        return (int) $this->createMailchimpOrderSyncNeededQueryBuilder('o')
             ->select('COUNT(o)')
-            ->andWhere('o.mailchimpOrderId IS NULL')
             ->getQuery()
             ->getSingleScalarResult()
         ;
@@ -85,7 +136,7 @@ trait OrderRepositoryTrait
             ->andWhere('o.customer = :customer')
             ->andWhere('o.state = :state')
             ->setParameter('customer', $customer)
-            ->setParameter('state', \Sylius\Component\Order\Model\OrderInterface::STATE_CART)
+            ->setParameter('state', OrderInterface::STATE_CART)
             ->orderBy('o.updatedAt', 'DESC')
             ->getQuery()
             ->getResult()

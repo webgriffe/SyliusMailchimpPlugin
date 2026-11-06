@@ -37,6 +37,8 @@ final class CartRecoveryController
 
         $this->cartStorage->setForChannel($channel, $order);
 
-        return new RedirectResponse($this->urlGenerator->generate('sylius_shop_cart_summary'));
+        $parameters = $order->getLocaleCode() !== null ? ['_locale' => $order->getLocaleCode()] : [];
+
+        return new RedirectResponse($this->urlGenerator->generate('sylius_shop_cart_summary', $parameters));
     }
 }

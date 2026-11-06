@@ -11,7 +11,9 @@ use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
+use Sylius\Component\Core\TokenAssigner\OrderTokenAssignerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Model\ChannelMailchimpAwareInterface;
@@ -31,6 +33,8 @@ final class CartCreateHandler
         private readonly MailchimpClientInterface $mailchimpClient,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
+        private readonly OrderSyncEligibilityCheckerInterface $eligibilityChecker,
+        private readonly OrderTokenAssignerInterface $orderTokenAssigner,
     ) {
     }
 
@@ -39,6 +43,12 @@ final class CartCreateHandler
         $order = $this->orderRepository->find($message->orderId);
         if (!$order instanceof OrderInterface || !$order instanceof MailchimpOrderAwareInterface) {
             $this->logger->warning('[Mailchimp] Order #{id} not found or not Mailchimp-aware, skipping CartCreate.', ['id' => $message->orderId]);
+
+            return;
+        }
+
+        if (!$this->eligibilityChecker->isSyncableAsCart($order)) {
+            $this->logger->info('[Mailchimp] Order #{id} is not eligible to be synced as cart anymore, skipping CartCreate.', ['id' => $message->orderId]);
 
             return;
         }
@@ -55,6 +65,7 @@ final class CartCreateHandler
             $audience = $this->audienceProvider->getAudience($channel, $locale);
             $storeId = $this->storeIdentifierResolver->resolve($audience);
             $this->upsertCartProducts($order, $storeId, $channel, $locale);
+            $this->orderTokenAssigner->assignTokenValueIfNotSet($order);
 
             $this->mailchimpClient->upsertCart($storeId, $order, $channel);
             $order->setMailchimpCartId(IdSanitizer::sanitize((string) $order->getId()));
@@ -95,7 +106,7 @@ final class CartCreateHandler
             }
 
             $productId = $product->getId();
-            if ($productId === null || isset($syncedProductIds[$productId])) {
+            if (!is_int($productId) || isset($syncedProductIds[$productId])) {
                 continue;
             }
 
