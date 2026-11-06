@@ -13,7 +13,6 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validation;
-use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Controller\NewsletterController;
@@ -46,7 +45,6 @@ final class NewsletterControllerTest extends TestCase
             $this->newsletterSubscriber,
             $this->audienceContext,
             new NullLogger(),
-            $this->createMock(Environment::class),
         );
     }
 

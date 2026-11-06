@@ -9,7 +9,6 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Twig\Environment;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ComplianceStateException;
 use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
@@ -24,18 +23,7 @@ final class NewsletterController
         private readonly NewsletterSubscriberInterface $newsletterSubscriber,
         private readonly AudienceContextInterface $audienceContext,
         private readonly LoggerInterface $logger,
-        private readonly Environment $twig,
     ) {
-    }
-
-    public function formAction(): Response
-    {
-        $form = $this->formFactory->create(NewsletterSubscribeType::class);
-
-        return new Response($this->twig->render(
-            '@WebgriffeSyliusMailchimpPlugin/shop/newsletter/subscribe_form.html.twig',
-            ['form' => $form->createView()],
-        ));
     }
 
     public function subscribeAction(Request $request): Response
