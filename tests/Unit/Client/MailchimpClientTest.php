@@ -256,6 +256,33 @@ final class MailchimpClientTest extends TestCase
         $this->client->updateMemberTags(self::LIST_ID, 'hash', ['VIP']);
     }
 
+    public function test_update_member_tags_sends_inactive_tags(): void
+    {
+        $response = $this->mockResponse(204, '');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('POST', $this->stringContains('/tags'), $this->callback(
+                static fn (array $opts): bool => $opts['json']['tags'] === [
+                    ['name' => 'VIP', 'status' => 'active'],
+                    ['name' => 'Old', 'status' => 'inactive'],
+                ],
+            ))
+            ->willReturn($response);
+
+        $this->client->updateMemberTags(self::LIST_ID, 'hash', ['VIP'], ['Old']);
+    }
+
+    public function test_update_member_tags_payload_has_only_active_tags_without_inactive_tags(): void
+    {
+        $response = $this->mockResponse(204, '');
+        $this->httpClient->expects($this->once())->method('request')
+            ->with('POST', $this->stringContains('/tags'), $this->callback(
+                static fn (array $opts): bool => $opts['json'] === ['tags' => [['name' => 'VIP', 'status' => 'active']]],
+            ))
+            ->willReturn($response);
+
+        $this->client->updateMemberTags(self::LIST_ID, 'hash', ['VIP']);
+    }
+
     public function test_ping_throws_client_exception_on_error(): void
     {
         $this->expectException(ClientException::class);

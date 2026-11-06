@@ -164,11 +164,14 @@ final class MailchimpClient implements MailchimpClientInterface
     }
 
     #[\Override]
-    public function updateMemberTags(string $listId, string $subscriberHash, array $tags): void
+    public function updateMemberTags(string $listId, string $subscriberHash, array $tags, array $inactiveTags = []): void
     {
         $url = sprintf('%slists/%s/members/%s/tags', $this->baseUrl, $listId, $subscriberHash);
         $payload = [
-            'tags' => array_map(static fn (string $tag): array => ['name' => $tag, 'status' => 'active'], $tags),
+            'tags' => [
+                ...array_map(static fn (string $tag): array => ['name' => $tag, 'status' => 'active'], $tags),
+                ...array_map(static fn (string $tag): array => ['name' => $tag, 'status' => 'inactive'], $inactiveTags),
+            ],
         ];
 
         $this->logger->debug('[Mailchimp] POST {url}', ['url' => $url, 'payload' => $payload]);
