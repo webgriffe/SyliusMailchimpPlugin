@@ -106,7 +106,7 @@ final class CartUpdateHandler
             }
 
             $productId = $product->getId();
-            if ($productId === null || isset($syncedProductIds[$productId])) {
+            if (!is_int($productId) || isset($syncedProductIds[$productId])) {
                 continue;
             }
 

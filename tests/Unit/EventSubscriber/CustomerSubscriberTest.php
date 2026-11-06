@@ -8,7 +8,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
@@ -38,7 +37,6 @@ final class CustomerSubscriberTest extends TestCase
         $this->subscriber = new CustomerSubscriber(
             $this->memberEnqueuer,
             $this->entityManager,
-            new NullLogger(),
         );
     }
 

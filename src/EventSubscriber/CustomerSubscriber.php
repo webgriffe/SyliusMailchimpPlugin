@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Webgriffe\SyliusMailchimpPlugin\EventSubscriber;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\CustomerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
@@ -19,7 +18,6 @@ final class CustomerSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly MemberEnqueuerInterface $memberEnqueuer,
         private readonly EntityManagerInterface $entityManager,
-        private readonly LoggerInterface $logger,
     ) {
     }
 

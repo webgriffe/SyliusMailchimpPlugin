@@ -30,6 +30,7 @@ final class NewsletterSubscriber implements NewsletterSubscriberInterface
     ) {
     }
 
+    #[\Override]
     public function subscribe(string $email, string $listId): void
     {
         $member = new Member(

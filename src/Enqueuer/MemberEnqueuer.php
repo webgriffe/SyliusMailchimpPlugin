@@ -108,7 +108,7 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
 
         $this->enqueueRemoval($context['customerId'], $context['listId'], $oldEmail);
 
-        if (!$this->canBeEnqueued($customer)) {
+        if (!$customer instanceof MailchimpAwareInterface || !$this->canBeEnqueued($customer)) {
             $this->logger->debug('[Mailchimp] Skipping enqueue for customer #{id}: mailchimp id null or not subscribed to newsletter.', [
                 'id' => $customer->getId(),
             ]);
@@ -181,7 +181,7 @@ final class MemberEnqueuer implements MemberEnqueuerInterface
     /**
      * Do not sync customer never synced with Mailchimp or actually subscribed to NL
      */
-    private function canBeEnqueued(MailchimpAwareInterface|CustomerInterface $customer): bool
+    private function canBeEnqueued(MailchimpAwareInterface&CustomerInterface $customer): bool
     {
         return $customer->getMailchimpId() !== null || $customer->isSubscribedToNewsletter();
     }
