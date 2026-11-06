@@ -10,12 +10,18 @@ use Sylius\Component\Order\Model\OrderInterface;
 
 trait OrderRepositoryTrait
 {
-    public function createMailchimpCartSyncNeededQueryBuilder(string $alias): QueryBuilder
+    public function createMailchimpCartSyncableQueryBuilder(string $alias): QueryBuilder
     {
         return $this->createQueryBuilder($alias)
-            ->andWhere(sprintf('%s.mailchimpCartId IS NULL', $alias))
             ->andWhere(sprintf('%s.state = :cartState', $alias))
             ->setParameter('cartState', OrderInterface::STATE_CART)
+        ;
+    }
+
+    public function createMailchimpCartSyncNeededQueryBuilder(string $alias): QueryBuilder
+    {
+        return $this->createMailchimpCartSyncableQueryBuilder($alias)
+            ->andWhere(sprintf('%s.mailchimpCartId IS NULL', $alias))
         ;
     }
 
@@ -35,15 +41,23 @@ trait OrderRepositoryTrait
     }
 
     /** @return object[] */
-    public function findMailchimpCartSyncNeeded(): array
+    public function findMailchimpCartSyncNeeded(bool $includeFailed = false): array
     {
-        return $this->createMailchimpCartSyncNeededQueryBuilder('o')->getQuery()->getResult();
+        $queryBuilder = $this->createMailchimpCartSyncNeededQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpCartError IS NULL');
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /** @return object[] */
-    public function findMailchimpOrderSyncNeeded(?\DateTimeInterface $updatedSince = null): array
+    public function findMailchimpOrderSyncNeeded(?\DateTimeInterface $updatedSince = null, bool $includeFailed = false): array
     {
         $queryBuilder = $this->createMailchimpOrderSyncNeededQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpOrderError IS NULL');
+        }
         if ($updatedSince !== null) {
             $queryBuilder
                 ->andWhere('o.updatedAt >= :since')
@@ -55,18 +69,23 @@ trait OrderRepositoryTrait
     }
 
     /** @return object[] */
-    public function findMailchimpOrderSyncable(): array
+    public function findMailchimpOrderSyncable(bool $includeFailed = false): array
     {
-        return $this->createMailchimpOrderSyncableQueryBuilder('o')->getQuery()->getResult();
+        $queryBuilder = $this->createMailchimpOrderSyncableQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpOrderError IS NULL');
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /** @return object[] */
-    public function findMailchimpCartSyncNeededUpdatedSince(\DateTimeInterface $since): array
+    public function findMailchimpCartSyncNeededUpdatedSince(\DateTimeInterface $since, bool $includeFailed = false): array
     {
-        $queryBuilder = $this->createQueryBuilder('o')
-            ->andWhere('o.state = :cartState')
-            ->setParameter('cartState', OrderInterface::STATE_CART)
-        ;
+        $queryBuilder = $this->createMailchimpCartSyncableQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpCartError IS NULL');
+        }
 
         return $queryBuilder
             ->andWhere($queryBuilder->expr()->orX('o.mailchimpCartId IS NULL', 'o.updatedAt >= :since'))
@@ -77,9 +96,12 @@ trait OrderRepositoryTrait
     }
 
     /** @return object[] */
-    public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since): array
+    public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since, bool $includeFailed = false): array
     {
         $queryBuilder = $this->createMailchimpOrderSyncableQueryBuilder('o');
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpOrderError IS NULL');
+        }
 
         return $queryBuilder
             ->andWhere($queryBuilder->expr()->orX('o.mailchimpOrderId IS NULL', 'o.updatedAt >= :since'))

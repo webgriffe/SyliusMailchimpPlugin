@@ -36,12 +36,19 @@ final class SyncCartsCommand extends Command
     #[\Override]
     protected function configure(): void
     {
-        $this->addOption(
-            'updated-last-days',
-            null,
-            InputOption::VALUE_REQUIRED,
-            'Only sync carts updated in the last N days.',
-        );
+        $this
+            ->addOption(
+                'updated-last-days',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Only sync carts updated in the last N days.',
+            )
+            ->addOption(
+                'retry-failed',
+                null,
+                InputOption::VALUE_NONE,
+                'Also retry records whose last sync failed permanently.',
+            );
     }
 
     #[\Override]
@@ -55,7 +62,7 @@ final class SyncCartsCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
 
-        $orders = $this->resolveOrders($input);
+        $orders = $this->resolveOrders($input, $input->getOption('retry-failed') === true);
         $total = count($orders);
         $io->writeln(sprintf('[Mailchimp] Syncing %d cart(s)…', $total));
 
@@ -90,7 +97,7 @@ final class SyncCartsCommand extends Command
     }
 
     /** @return object[] */
-    private function resolveOrders(InputInterface $input): array
+    private function resolveOrders(InputInterface $input, bool $includeFailed): array
     {
         $updatedLastDays = $input->getOption('updated-last-days');
 
@@ -98,9 +105,9 @@ final class SyncCartsCommand extends Command
             /** @phpstan-ignore-next-line */
             $since = new \DateTimeImmutable(sprintf('-%d days', (int) $updatedLastDays));
 
-            return $this->orderRepository->findMailchimpCartSyncNeededUpdatedSince($since);
+            return $this->orderRepository->findMailchimpCartSyncNeededUpdatedSince($since, $includeFailed);
         }
 
-        return $this->orderRepository->findMailchimpCartSyncNeeded();
+        return $this->orderRepository->findMailchimpCartSyncNeeded($includeFailed);
     }
 }

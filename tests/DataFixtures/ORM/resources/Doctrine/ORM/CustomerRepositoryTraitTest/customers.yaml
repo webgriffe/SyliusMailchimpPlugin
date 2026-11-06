@@ -1,0 +1,11 @@
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    subscribed_never_synced:
+        email: 'subscribed-never-synced@test.com'
+        subscribedToNewsletter: true
+    subscribed_failed:
+        email: 'subscribed-failed@test.com'
+        subscribedToNewsletter: true
+        mailchimpError: 'Bad Request'
+    unsubscribed_never_synced:
+        email: 'unsubscribed-never-synced@test.com'
+        subscribedToNewsletter: false

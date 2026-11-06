@@ -75,6 +75,23 @@ final class OrderCreateHandlerTest extends KernelTestCase
         self::assertNotNull($order->getMailchimpOrderError());
     }
 
+    public function test_order_create_clears_a_previous_error_on_success(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $order->setMailchimpOrderError('Bad Request');
+        $em->flush();
+
+        $handler = self::getContainer()->get(OrderCreateHandler::class);
+        $handler(new OrderCreate($order->getId()));
+
+        $em->refresh($order);
+        self::assertNull($order->getMailchimpOrderError());
+        self::assertNotNull($order->getMailchimpOrderId());
+    }
+
     public function test_order_create_skips_when_order_not_found(): void
     {
         $this->fixtureLoader->load([]);

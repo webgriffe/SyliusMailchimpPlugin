@@ -9,10 +9,10 @@ use Sylius\Component\Core\Repository\CustomerRepositoryInterface;
 interface MailchimpCustomerRepositoryInterface extends CustomerRepositoryInterface
 {
     /** @return object[] */
-    public function findMailchimpSyncNeeded(): array;
+    public function findMailchimpSyncNeeded(bool $includeFailed = false): array;
 
     /** @return object[] */
-    public function findMailchimpSyncNeededSince(\DateTimeInterface $since): array;
+    public function findMailchimpSyncNeededSince(\DateTimeInterface $since, bool $includeFailed = false): array;
 
     /**
      * @param int[] $ids

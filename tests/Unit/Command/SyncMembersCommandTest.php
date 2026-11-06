@@ -103,4 +103,16 @@ final class SyncMembersCommandTest extends TestCase
 
         $this->assertSame(0, $tester->getStatusCode());
     }
+
+    public function test_retry_failed_option_includes_failed_records(): void
+    {
+        $this->customerRepository->expects($this->once())->method('findMailchimpSyncNeeded')
+            ->with(true)
+            ->willReturn([]);
+
+        $tester = new CommandTester($this->command);
+        $tester->execute(['--retry-failed' => true]);
+
+        $this->assertSame(0, $tester->getStatusCode());
+    }
 }

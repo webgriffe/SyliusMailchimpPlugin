@@ -66,8 +66,51 @@ final class OrderRepositoryTraitTest extends KernelTestCase
 
     public function test_pending_counts_ignore_records_in_the_other_state(): void
     {
-        self::assertSame(1, $this->repository->countMailchimpPendingCarts());
-        self::assertSame(1, $this->repository->countMailchimpPendingOrders());
+        self::assertSame(2, $this->repository->countMailchimpPendingCarts());
+        self::assertSame(2, $this->repository->countMailchimpPendingOrders());
+    }
+
+    public function test_order_sync_queries_skip_failed_orders_by_default(): void
+    {
+        $since = new \DateTimeImmutable('-1 day');
+
+        self::assertNotContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncNeeded()));
+        self::assertNotContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncNeeded($since)));
+        self::assertNotContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncNeededUpdatedSince($since)));
+        self::assertNotContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncable()));
+    }
+
+    public function test_order_sync_queries_include_failed_orders_on_request(): void
+    {
+        $since = new \DateTimeImmutable('-1 day');
+
+        self::assertContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncNeeded(includeFailed: true)));
+        self::assertContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncNeeded($since, true)));
+        self::assertContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncNeededUpdatedSince($since, true)));
+        self::assertContains($this->idOf('completed_failed'), $this->idsFromResult($this->repository->findMailchimpOrderSyncable(true)));
+    }
+
+    public function test_cart_sync_queries_skip_failed_carts_by_default(): void
+    {
+        self::assertNotContains($this->idOf('cart_failed'), $this->idsFromResult($this->repository->findMailchimpCartSyncNeeded()));
+        self::assertNotContains(
+            $this->idOf('cart_failed'),
+            $this->idsFromResult($this->repository->findMailchimpCartSyncNeededUpdatedSince(new \DateTimeImmutable('-1 day'))),
+        );
+    }
+
+    public function test_cart_sync_queries_include_failed_carts_on_request(): void
+    {
+        self::assertContains($this->idOf('cart_failed'), $this->idsFromResult($this->repository->findMailchimpCartSyncNeeded(true)));
+        self::assertContains(
+            $this->idOf('cart_failed'),
+            $this->idsFromResult($this->repository->findMailchimpCartSyncNeededUpdatedSince(new \DateTimeImmutable('-1 day'), true)),
+        );
+    }
+
+    private function idOf(string $key): int
+    {
+        return $this->fixtures[$key]->getId();
     }
 
     /** @return list<int> */

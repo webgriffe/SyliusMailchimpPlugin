@@ -29,27 +29,38 @@ trait CustomerRepositoryTrait
     }
 
     /** @return object[] */
-    public function findMailchimpSyncNeeded(): array
+    public function findMailchimpSyncNeeded(bool $includeFailed = false): array
     {
-        return $this->createMailchimpSyncNeededQueryBuilder('o')
+        $queryBuilder = $this->createMailchimpSyncNeededQueryBuilder('o')
             ->andWhere('o.subscribedToNewsletter = :subscribed')
             ->setParameter('subscribed', true)
-            ->getQuery()
-            ->getResult()
         ;
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpError IS NULL');
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /** @return object[] */
-    public function findMailchimpSyncNeededSince(\DateTimeInterface $since): array
+    public function findMailchimpSyncNeededSince(\DateTimeInterface $since, bool $includeFailed = false): array
     {
-        return $this->createMailchimpSyncNeededQueryBuilder('o')
-            ->orWhere('o.updatedAt >= :since')
+        $queryBuilder = $this->createQueryBuilder('o');
+        $queryBuilder
+            ->andWhere($queryBuilder->expr()->orX(
+                'o.mailchimpId IS NULL',
+                'o.mailchimpSyncedAt IS NULL',
+                'o.updatedAt >= :since',
+            ))
             ->andWhere('o.subscribedToNewsletter = :subscribed')
             ->setParameter('since', $since)
             ->setParameter('subscribed', true)
-            ->getQuery()
-            ->getResult()
         ;
+        if (!$includeFailed) {
+            $queryBuilder->andWhere('o.mailchimpError IS NULL');
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**

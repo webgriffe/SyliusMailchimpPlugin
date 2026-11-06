@@ -48,6 +48,12 @@ final class SyncOrdersCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Only enqueue orders that have never been synced (skip updates).',
+            )
+            ->addOption(
+                'retry-failed',
+                null,
+                InputOption::VALUE_NONE,
+                'Also retry records whose last sync failed permanently.',
             );
     }
 
@@ -63,7 +69,7 @@ final class SyncOrdersCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $createOnly = $input->getOption('create-only') === true;
-        $orders = $this->resolveOrders($input, $createOnly);
+        $orders = $this->resolveOrders($input, $createOnly, $input->getOption('retry-failed') === true);
         $total = count($orders);
         $io->writeln(sprintf('[Mailchimp] Syncing %d order(s)…', $total));
 
@@ -98,7 +104,7 @@ final class SyncOrdersCommand extends Command
     }
 
     /** @return object[] */
-    private function resolveOrders(InputInterface $input, bool $createOnly): array
+    private function resolveOrders(InputInterface $input, bool $createOnly, bool $includeFailed): array
     {
         $updatedLastDays = $input->getOption('updated-last-days');
         $since = null;
@@ -108,13 +114,13 @@ final class SyncOrdersCommand extends Command
         }
 
         if ($createOnly) {
-            return $this->orderRepository->findMailchimpOrderSyncNeeded($since);
+            return $this->orderRepository->findMailchimpOrderSyncNeeded($since, $includeFailed);
         }
 
         if ($since !== null) {
-            return $this->orderRepository->findMailchimpOrderSyncNeededUpdatedSince($since);
+            return $this->orderRepository->findMailchimpOrderSyncNeededUpdatedSince($since, $includeFailed);
         }
 
-        return $this->orderRepository->findMailchimpOrderSyncable();
+        return $this->orderRepository->findMailchimpOrderSyncable($includeFailed);
     }
 }

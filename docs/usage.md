@@ -45,7 +45,7 @@ The Mailchimp List Member is the equivalent of the Sylius Customer, kept in the 
   "successfully enqueued" one. See [ADR 0002](adr/0002-newsletter-subscribe-is-synchronous-in-process.md).
   A Mailchimp "compliance state" rejection (a previously unsubscribed/complained address) is surfaced to the
   shopper as a 422 with a resubscribe URL, instead of a generic error.
-- Bulk sync command: `webgriffe:sylius-mailchimp:sync-members`.
+- Bulk sync command: `webgriffe:sylius-mailchimp:sync-members [--updated-last-days=N] [--customer-ids=ID ...] [--retry-failed]`.
 
 ## Store
 
@@ -80,12 +80,12 @@ that channel's Products, Carts and Orders on Mailchimp.
   scheduled `sync-carts` command running every 1–5 minutes as the real sync path.
 - When a cart is converted into a completed order, the Order payload sets Mailchimp's `cart_id` to the Sylius
   order id, telling Mailchimp the tracked cart was purchased (instead of deleting it).
-- Bulk sync command: `webgriffe:sylius-mailchimp:sync-carts [--updated-last-days=N]`.
+- Bulk sync command: `webgriffe:sylius-mailchimp:sync-carts [--updated-last-days=N] [--retry-failed]`.
 
 ## Order
 
 - Enqueued on `sylius.order.post_complete`.
-- Bulk sync command: `webgriffe:sylius-mailchimp:sync-orders [--updated-last-days=N] [--create-only]`
+- Bulk sync command: `webgriffe:sylius-mailchimp:sync-orders [--updated-last-days=N] [--create-only] [--retry-failed]`
   (`--create-only` skips orders already synced, syncing only never-synced ones).
 
 ## Ecommerce Customer
@@ -118,6 +118,11 @@ php bin/console webgriffe:sylius-mailchimp:sync-all
 This runs, in order: members, stores, products, carts, orders — stopping at the first command that fails.
 Each command also accepts being run on its own (see above for their specific options); this is what you should
 schedule on a cron for ongoing reconciliation, especially for carts (see [ADR 0003](adr/0003-cart-synchronization-strategy.md)).
+
+Records whose last sync failed permanently (an error is recorded on the Customer, Cart or Order) are skipped
+by scheduled `sync-members`, `sync-carts` and `sync-orders` runs. Fix the cause, then run the command once with
+`--retry-failed` to include them; a successful sync clears the recorded error. `sync-members --customer-ids`
+always retries the given customers.
 
 All commands (except `sync-all`) are wrapped with Symfony's `LockableTrait`, controlled by the
 `command_lock_enable` configuration flag, to prevent overlapping runs from cron.

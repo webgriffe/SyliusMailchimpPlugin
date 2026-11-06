@@ -49,7 +49,13 @@ final class SyncMembersCommand extends Command
                 'customer-ids',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                'Only sync customers with these IDs.',
+                'Only sync customers with these IDs (also retries failed ones).',
+            )
+            ->addOption(
+                'retry-failed',
+                null,
+                InputOption::VALUE_NONE,
+                'Also retry records whose last sync failed permanently.',
             );
     }
 
@@ -64,7 +70,7 @@ final class SyncMembersCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
 
-        $customers = $this->resolveCustomers($input);
+        $customers = $this->resolveCustomers($input, $input->getOption('retry-failed') === true);
         $total = count($customers);
         $io->writeln(sprintf('[Mailchimp] Syncing %d customer(s)…', $total));
 
@@ -103,7 +109,7 @@ final class SyncMembersCommand extends Command
     }
 
     /** @return object[] */
-    private function resolveCustomers(InputInterface $input): array
+    private function resolveCustomers(InputInterface $input, bool $includeFailed): array
     {
         /** @var string[]|null $customerIds */
         $customerIds = $input->getOption('customer-ids');
@@ -118,9 +124,9 @@ final class SyncMembersCommand extends Command
             /** @phpstan-ignore-next-line */
             $since = new \DateTimeImmutable(sprintf('-%d days', (int) $updatedLastDays));
 
-            return $this->customerRepository->findMailchimpSyncNeededSince($since);
+            return $this->customerRepository->findMailchimpSyncNeededSince($since, $includeFailed);
         }
 
-        return $this->customerRepository->findMailchimpSyncNeeded();
+        return $this->customerRepository->findMailchimpSyncNeeded($includeFailed);
     }
 }
