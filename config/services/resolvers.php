@@ -8,6 +8,8 @@ use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContext;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\ChannelAudienceProvider;
+use Webgriffe\SyliusMailchimpPlugin\Provider\CustomerAudienceResolver;
+use Webgriffe\SyliusMailchimpPlugin\Provider\CustomerAudienceResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\AddressMergeFieldsProvider;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\ContactInfoMergeFieldsProvider;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\FnameLnameMergeFieldsProvider;
@@ -31,6 +33,13 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$channelContext', service('sylius.context.channel'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class));
     $services->alias(AudienceContextInterface::class, AudienceContext::class);
+
+    $services->set(CustomerAudienceResolver::class)
+        ->arg('$channelContext', service('sylius.context.channel'))
+        ->arg('$audienceProvider', service(AudienceProviderInterface::class))
+        ->arg('$orderRepository', service('sylius.repository.order'))
+        ->arg('$logger', service('monolog.logger.mailchimp'));
+    $services->alias(CustomerAudienceResolverInterface::class, CustomerAudienceResolver::class);
 
     // Store identifier
     $services->set(StoreIdentifierResolver::class);

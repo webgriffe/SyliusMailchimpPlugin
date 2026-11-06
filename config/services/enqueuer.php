@@ -16,6 +16,7 @@ use Webgriffe\SyliusMailchimpPlugin\Enqueuer\ProductEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\StoreEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceProviderInterface;
+use Webgriffe\SyliusMailchimpPlugin\Provider\CustomerAudienceResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\Resolver\StoreIdentifierResolverInterface;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -23,7 +24,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(MemberEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
-        ->arg('$audienceContext', service('Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface'))
+        ->arg('$customerAudienceResolver', service(CustomerAudienceResolverInterface::class))
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$logger', service('monolog.logger.mailchimp'));
     $services->alias(MemberEnqueuerInterface::class, MemberEnqueuer::class);

@@ -1,0 +1,70 @@
+Sylius\Component\Locale\Model\Locale:
+    locale_en_us:
+        code: 'en_US'
+
+Sylius\Component\Currency\Model\Currency:
+    currency_usd:
+        code: 'USD'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel:
+    channel_a:
+        code: 'AUDIENCE_RESOLVER_A'
+        name: 'Audience Resolver A'
+        hostname: 'a.audience-resolver.test'
+        mailchimpAudienceId: 'audience-a'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+    channel_b:
+        code: 'AUDIENCE_RESOLVER_B'
+        name: 'Audience Resolver B'
+        hostname: 'b.audience-resolver.test'
+        mailchimpAudienceId: 'audience-b'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+    channel_without_audience:
+        code: 'AUDIENCE_RESOLVER_NONE'
+        name: 'Audience Resolver None'
+        hostname: 'none.audience-resolver.test'
+        taxCalculationStrategy: 'order_items_based'
+        defaultLocale: '@locale_en_us'
+        baseCurrency: '@currency_usd'
+        __calls:
+            - addLocale: ['@locale_en_us']
+            - addCurrency: ['@currency_usd']
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer:
+    customer_with_orders:
+        email: 'audience-resolver@test.com'
+    customer_without_orders:
+        email: 'audience-resolver-no-orders@test.com'
+
+Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order:
+    order_on_channel_a:
+        channel: '@channel_a'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        customer: '@customer_with_orders'
+        checkoutState: 'completed'
+        checkoutCompletedAt: '<(new \DateTime("2026-01-01"))>'
+    order_on_channel_b:
+        channel: '@channel_b'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        customer: '@customer_with_orders'
+        checkoutState: 'completed'
+        checkoutCompletedAt: '<(new \DateTime("2026-02-01"))>'
+    order_on_channel_a_not_completed:
+        channel: '@channel_a'
+        currencyCode: 'USD'
+        localeCode: 'en_US'
+        customer: '@customer_with_orders'
+        checkoutState: 'cart'
+        checkoutCompletedAt: null

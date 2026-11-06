@@ -28,6 +28,10 @@ The Mailchimp List Member is the equivalent of the Sylius Customer, kept in the 
 - **Sync is gated by newsletter consent**: a Member is only created if the customer
   `isSubscribedToNewsletter()`; if the customer already has a `mailchimpId`, updates are still sent even if
   they later unsubscribe (so the "unsubscribed" status itself can be pushed to Mailchimp).
+- The Audience of a customer is resolved by `CustomerAudienceResolverInterface`: the current channel's Audience,
+  or, when there is no channel context (CLI commands, with several channels), the one of the channel of the
+  customer's latest completed order. If none can be resolved the customer is skipped. Alias the interface to your
+  own service to choose the Audience differently (e.g. always by the customer's order channel).
 - New members are subscribed with the status configured via `member_default_status` (`subscribed` for single
   opt-in, `pending` for double opt-in — see [Configuration reference](#configuration-reference)).
 - **Email change**: since a Mailchimp List Member id is derived from the email address, changing a customer's

@@ -15,12 +15,11 @@ use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
 use Webgriffe\SyliusMailchimpPlugin\Client\Exception\ClientException;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
-use Webgriffe\SyliusMailchimpPlugin\Exception\AudienceNotFoundException;
 use Webgriffe\SyliusMailchimpPlugin\Message\EcommerceCustomer\EcommerceCustomerEmailChange;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Member\MemberUpdate;
-use Webgriffe\SyliusMailchimpPlugin\Provider\AudienceContextInterface;
+use Webgriffe\SyliusMailchimpPlugin\Provider\CustomerAudienceResolverInterface;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\Member;
 use Webgriffe\SyliusMailchimpPlugin\ValueObject\MergeFields;
 
@@ -30,7 +29,7 @@ final class MemberEnqueuerTest extends TestCase
 
     private MockObject&MessageBusInterface $messageBus;
 
-    private MockObject&AudienceContextInterface $audienceContext;
+    private MockObject&CustomerAudienceResolverInterface $audienceResolver;
 
     private MockObject&MailchimpClientInterface $mailchimpClient;
 
@@ -39,12 +38,12 @@ final class MemberEnqueuerTest extends TestCase
     protected function setUp(): void
     {
         $this->messageBus = $this->createMock(MessageBusInterface::class);
-        $this->audienceContext = $this->createMock(AudienceContextInterface::class);
+        $this->audienceResolver = $this->createMock(CustomerAudienceResolverInterface::class);
         $this->mailchimpClient = $this->createMock(MailchimpClientInterface::class);
 
         $this->enqueuer = new MemberEnqueuer(
             $this->messageBus,
-            $this->audienceContext,
+            $this->audienceResolver,
             $this->mailchimpClient,
             new NullLogger(),
         );
@@ -78,11 +77,10 @@ final class MemberEnqueuerTest extends TestCase
         $this->enqueuer->enqueue($customer);
     }
 
-    public function test_skips_when_audience_not_found(): void
+    public function test_it_skips_when_no_audience_is_resolved(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null);
-        $this->audienceContext->method('getAudienceId')
-            ->willThrowException(new AudienceNotFoundException('No audience'));
+        $this->audienceResolver->method('resolveAudienceId')->willReturn(null);
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($customer);
@@ -91,7 +89,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_skips_when_customer_has_no_mailchimp_id_and_is_not_subscribed_to_nl(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null, false);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $this->messageBus->expects($this->never())->method('dispatch');
 
         $this->enqueuer->enqueue($customer);
@@ -100,7 +98,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_dispatches_member_create_when_no_mailchimp_id_and_no_remote_member(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $this->mailchimpClient->method('getMember')->willReturn(null);
 
         $this->messageBus->expects($this->once())
@@ -114,7 +112,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_falls_back_to_member_create_when_get_member_fails(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $this->mailchimpClient->method('getMember')
             ->willThrowException(ClientException::fromResponse(500, 'Server error'));
 
@@ -129,7 +127,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_dispatches_member_update_when_no_mailchimp_id_but_remote_member_exists(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $remoteMember = new Member('test@example.com', 'subscribed', new MergeFields('', ''));
         $this->mailchimpClient->method('getMember')->willReturn($remoteMember);
 
@@ -144,7 +142,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_dispatches_member_update_when_mailchimp_id_already_set_and_not_subscribed_to_nl(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', 'existing-mailchimp-id', false);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -157,7 +155,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_dispatches_member_update_when_mailchimp_id_already_set_and_subscribed_to_nl(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', 'existing-mailchimp-id');
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -170,7 +168,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_enqueue_email_change_dispatches_remove_and_create_when_subscribed(): void
     {
         $customer = $this->buildCustomer(1, 'new@example.com', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $this->mailchimpClient->method('getMember')->willReturn(null);
 
         $dispatched = [];
@@ -191,7 +189,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_enqueue_email_change_dispatches_ecommerce_customer_email_change_with_customer_id(): void
     {
         $customer = $this->buildCustomer(42, 'new@example.com', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $this->mailchimpClient->method('getMember')->willReturn(null);
 
         $dispatched = [];
@@ -211,7 +209,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_enqueue_email_change_dispatches_only_remove_when_not_subscribed(): void
     {
         $customer = $this->buildCustomer(1, 'new@example.com', null, false);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
 
         $dispatched = [];
         $this->messageBus->expects($this->exactly(2))->method('dispatch')
@@ -230,7 +228,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_enqueue_email_change_dispatches_only_remove_when_new_email_is_empty(): void
     {
         $customer = $this->buildCustomer(1, '', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
 
         $dispatched = [];
         $this->messageBus->expects($this->exactly(2))->method('dispatch')
@@ -249,8 +247,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_enqueue_email_change_dispatches_ecommerce_customer_email_change_even_when_audience_not_found(): void
     {
         $customer = $this->buildCustomer(1, 'new@example.com', null);
-        $this->audienceContext->method('getAudienceId')
-            ->willThrowException(new AudienceNotFoundException('No audience'));
+        $this->audienceResolver->method('resolveAudienceId')->willReturn(null);
 
         $this->messageBus->expects($this->once())
             ->method('dispatch')
@@ -263,7 +260,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_enqueue_does_not_throw_when_dispatch_fails(): void
     {
         $customer = $this->buildCustomer(1, 'test@example.com', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $this->mailchimpClient->method('getMember')->willReturn(null);
         $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
 
@@ -275,7 +272,7 @@ final class MemberEnqueuerTest extends TestCase
     public function test_enqueue_email_change_does_not_throw_when_dispatch_fails(): void
     {
         $customer = $this->buildCustomer(1, 'new@example.com', null);
-        $this->audienceContext->method('getAudienceId')->willReturn('list-abc');
+        $this->audienceResolver->method('resolveAudienceId')->willReturn('list-abc');
         $this->mailchimpClient->method('getMember')->willReturn(null);
         $this->messageBus->method('dispatch')->willThrowException(new \RuntimeException('Handler failed'));
 
