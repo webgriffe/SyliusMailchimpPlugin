@@ -560,14 +560,19 @@ final class MailchimpClient implements MailchimpClientInterface
         $payload = [
             'email_address' => $member->emailAddress,
             'status' => $member->status,
-            'merge_fields' => array_merge(
-                [
-                    'FNAME' => $member->mergeFields->firstName,
-                    'LNAME' => $member->mergeFields->lastName,
-                ],
-                $member->mergeFields->extra,
-            ),
         ];
+
+        $mergeFields = [];
+        if ($member->mergeFields->firstName !== null) {
+            $mergeFields['FNAME'] = $member->mergeFields->firstName;
+        }
+        if ($member->mergeFields->lastName !== null) {
+            $mergeFields['LNAME'] = $member->mergeFields->lastName;
+        }
+        $mergeFields = array_merge($mergeFields, $member->mergeFields->extra);
+        if ($mergeFields !== []) {
+            $payload['merge_fields'] = $mergeFields;
+        }
 
         if ($member->tags !== []) {
             $payload['tags'] = $member->tags;

@@ -34,11 +34,11 @@ final class NewsletterSubscriber implements NewsletterSubscriberInterface
         $member = new Member(
             emailAddress: $email,
             status: $this->memberDefaultStatus,
-            mergeFields: new MergeFields('', ''),
+            mergeFields: new MergeFields(),
             tags: [],
             interests: [],
             language: '',
-            ipSignup: '',
+            ipSignup: null,
         );
 
         $customer = $this->customerRepository->findOneBy(['email' => $email]);

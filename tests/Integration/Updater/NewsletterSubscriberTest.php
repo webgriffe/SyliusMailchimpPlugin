@@ -56,6 +56,18 @@ final class NewsletterSubscriberTest extends KernelTestCase
         self::assertCount(1, $this->stub->getUpsertMemberCalls());
     }
 
+    public function test_subscribe_does_not_send_names_or_ip_signup(): void
+    {
+        $this->fixtureLoader->load([]);
+
+        self::getContainer()->get(NewsletterSubscriberInterface::class)->subscribe('unknown@test.com', 'test-list-id');
+
+        $member = $this->stub->getUpsertMemberCalls()[0]['member'];
+        self::assertNull($member->mergeFields->firstName);
+        self::assertNull($member->mergeFields->lastName);
+        self::assertNull($member->ipSignup);
+    }
+
     public function test_it_rethrows_compliance_state_exception_without_updating_customer(): void
     {
         $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/customer.yaml']);
