@@ -8,6 +8,7 @@ Feature: Cart synchronization with Mailchimp
         Given the store operates on a single channel in "United States"
         And the channel is configured with Mailchimp audience "test-audience-id"
         And the store has a product "T-Shirt" priced at "$29.99"
+        And I am a logged in customer
 
     @ui @javascript
     Scenario: Cart is created in Mailchimp when a customer adds a product
