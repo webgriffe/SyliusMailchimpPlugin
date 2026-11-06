@@ -44,10 +44,10 @@ final class OrderSyncTest extends KernelTestCase
         $this->dispatcher->dispatch(new GenericEvent($order), 'sylius.order.post_complete');
 
         self::assertCount(1, $this->stub->getUpsertOrderCalls());
-        $mappedOrder = $this->stub->getLastUpsertOrderCall();
-        self::assertNotNull($mappedOrder);
-        self::assertSame((string) $order->getId(), $mappedOrder->id);
-        self::assertSame($cartId, $mappedOrder->cartId);
+        $syncedOrder = $this->stub->getLastUpsertOrderCall();
+        self::assertNotNull($syncedOrder);
+        self::assertSame($order->getId(), $syncedOrder->getId());
+        self::assertSame($cartId, $syncedOrder->getMailchimpCartId());
 
         $em->refresh($order);
         self::assertNotNull($order->getMailchimpOrderId());
@@ -67,8 +67,8 @@ final class OrderSyncTest extends KernelTestCase
         $this->dispatcher->dispatch(new GenericEvent($order), 'sylius.order.post_complete');
 
         self::assertCount(1, $this->stub->getUpsertOrderCalls());
-        $mappedOrder = $this->stub->getLastUpsertOrderCall();
-        self::assertNotNull($mappedOrder);
-        self::assertSame((string) $order->getId(), $mappedOrder->id);
+        $syncedOrder = $this->stub->getLastUpsertOrderCall();
+        self::assertNotNull($syncedOrder);
+        self::assertSame($order->getId(), $syncedOrder->getId());
     }
 }
