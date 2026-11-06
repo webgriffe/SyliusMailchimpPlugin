@@ -101,25 +101,20 @@ final class SyncOrdersCommand extends Command
     private function resolveOrders(InputInterface $input, bool $createOnly): array
     {
         $updatedLastDays = $input->getOption('updated-last-days');
-
-        if ($createOnly) {
-            if ($updatedLastDays !== null) {
-                /** @phpstan-ignore-next-line */
-                $since = new \DateTimeImmutable(sprintf('-%d days', (int) $updatedLastDays));
-
-                return $this->orderRepository->findMailchimpOrderSyncNeededUpdatedSince($since);
-            }
-
-            return $this->orderRepository->findMailchimpOrderSyncNeeded();
-        }
-
+        $since = null;
         if ($updatedLastDays !== null) {
             /** @phpstan-ignore-next-line */
             $since = new \DateTimeImmutable(sprintf('-%d days', (int) $updatedLastDays));
+        }
 
+        if ($createOnly) {
+            return $this->orderRepository->findMailchimpOrderSyncNeeded($since);
+        }
+
+        if ($since !== null) {
             return $this->orderRepository->findMailchimpOrderSyncNeededUpdatedSince($since);
         }
 
-        return $this->orderRepository->findAll();
+        return $this->orderRepository->findMailchimpOrderSyncable();
     }
 }

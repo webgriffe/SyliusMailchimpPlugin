@@ -6,6 +6,8 @@ namespace Tests\Webgriffe\SyliusMailchimpPlugin\Integration\MessageHandler\Order
 
 use Doctrine\ORM\EntityManagerInterface;
 use Fidry\AliceDataFixtures\LoaderInterface;
+use Sylius\Component\Core\OrderCheckoutStates;
+use Sylius\Component\Order\Model\OrderInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Stub\Mailchimp\StubMailchimpClient;
@@ -79,6 +81,22 @@ final class OrderCreateHandlerTest extends KernelTestCase
 
         $handler = self::getContainer()->get(OrderCreateHandler::class);
         $handler(new OrderCreate(99999));
+
+        self::assertCount(0, $this->stub->getUpsertOrderCalls());
+    }
+
+    public function test_order_create_skips_a_cart(): void
+    {
+        $this->fixtureLoader->load([self::FIXTURE_BASE_DIR . '/order.yaml']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $em->getRepository(Order::class)->findOneBy(['localeCode' => 'en_US']);
+        $order->setState(OrderInterface::STATE_CART);
+        $order->setCheckoutState(OrderCheckoutStates::STATE_CART);
+        $em->flush();
+
+        $handler = self::getContainer()->get(OrderCreateHandler::class);
+        $handler(new OrderCreate($order->getId()));
 
         self::assertCount(0, $this->stub->getUpsertOrderCalls());
     }

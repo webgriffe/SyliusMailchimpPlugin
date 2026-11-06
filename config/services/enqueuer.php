@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuer;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\CartEnqueuerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Enqueuer\MemberEnqueuer;
@@ -43,14 +44,16 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
-        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class));
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class));
     $services->alias(CartEnqueuerInterface::class, CartEnqueuer::class);
 
     $services->set(OrderEnqueuer::class)
         ->arg('$messageBus', service('messenger.default_bus'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$audienceProvider', service(AudienceProviderInterface::class))
-        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class));
+        ->arg('$storeIdentifierResolver', service(StoreIdentifierResolverInterface::class))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class));
     $services->alias(OrderEnqueuerInterface::class, OrderEnqueuer::class);
 };
 

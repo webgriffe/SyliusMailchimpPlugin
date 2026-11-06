@@ -15,6 +15,7 @@ use Sylius\Component\Core\Repository\OrderRepositoryInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityChecker;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartCreateHandler;
@@ -144,6 +145,7 @@ final class CartCreateHandlerTest extends TestCase
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
+            new OrderSyncEligibilityChecker(false),
         );
     }
 }

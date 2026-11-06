@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartCreateHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartRemoveHandler;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Cart\CartUpdateHandler;
@@ -102,6 +103,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class))
         ->tag('messenger.message_handler');
 
     $services->set(CartUpdateHandler::class)
@@ -111,6 +113,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class))
         ->tag('messenger.message_handler');
 
     $services->set(CartRemoveHandler::class)
@@ -125,6 +128,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class))
         ->tag('messenger.message_handler');
 
     $services->set(OrderUpdateHandler::class)
@@ -134,6 +138,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$mailchimpClient', service('Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface'))
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
+        ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class))
         ->tag('messenger.message_handler');
 
     $services->set(OrderRemoveHandler::class)

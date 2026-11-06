@@ -55,6 +55,8 @@
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Mapper\*" />
                 <!-- MessageHandler classes are invoked by Messenger -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\MessageHandler\*" />
+                <!-- Checker classes are wired via DI container -->
+                <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Checker\*" />
                 <!-- Enqueuer classes are wired via DI container -->
                 <referencedClass name="Webgriffe\SyliusMailchimpPlugin\Enqueuer\*" />
                 <!-- EventSubscriber classes are wired via DI container -->

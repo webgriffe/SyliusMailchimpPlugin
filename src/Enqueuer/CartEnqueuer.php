@@ -9,6 +9,7 @@ use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Cart\CartUpdate;
@@ -24,6 +25,7 @@ final class CartEnqueuer implements CartEnqueuerInterface
         private readonly LoggerInterface $logger,
         private readonly AudienceProviderInterface $audienceProvider,
         private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
+        private readonly OrderSyncEligibilityCheckerInterface $eligibilityChecker,
     ) {
     }
 
@@ -46,6 +48,12 @@ final class CartEnqueuer implements CartEnqueuerInterface
 
         if ($order->getCustomer()?->getEmail() === null) {
             $this->logger->debug('[Mailchimp] Order #{id} has no customer email yet, skipping CartEnqueuer.', ['id' => $orderId]);
+
+            return;
+        }
+
+        if (!$this->eligibilityChecker->isSyncableAsCart($order)) {
+            $this->logger->debug('[Mailchimp] Order #{id} is not eligible to be synced as cart, skipping CartEnqueuer.', ['id' => $orderId]);
 
             return;
         }

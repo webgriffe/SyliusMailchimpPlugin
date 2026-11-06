@@ -15,7 +15,10 @@ interface MailchimpOrderRepositoryInterface extends OrderRepositoryInterface
     public function findMailchimpCartSyncNeededUpdatedSince(\DateTimeInterface $since): array;
 
     /** @return object[] */
-    public function findMailchimpOrderSyncNeeded(): array;
+    public function findMailchimpOrderSyncNeeded(?\DateTimeInterface $updatedSince = null): array;
+
+    /** @return object[] */
+    public function findMailchimpOrderSyncable(): array;
 
     /** @return object[] */
     public function findMailchimpOrderSyncNeededUpdatedSince(\DateTimeInterface $since): array;

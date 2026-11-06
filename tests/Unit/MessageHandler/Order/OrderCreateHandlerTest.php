@@ -12,9 +12,11 @@ use Sylius\Component\Core\Model\OrderItem;
 use Sylius\Component\Core\Model\Product;
 use Sylius\Component\Core\Model\ProductVariant;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
+use Sylius\Component\Core\OrderCheckoutStates;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityChecker;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderCreate;
 use Webgriffe\SyliusMailchimpPlugin\MessageHandler\Order\OrderCreateHandler;
@@ -58,6 +60,7 @@ final class OrderCreateHandlerTest extends TestCase
     public function test_skips_when_channel_is_not_mailchimp_aware(): void
     {
         $order = new Order();
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
         $order->setChannel(new \Sylius\Component\Core\Model\Channel());
         $this->orderRepository->method('find')->with(1)->willReturn($order);
         $this->mailchimpClient->expects(self::never())->method('upsertOrder');
@@ -70,6 +73,7 @@ final class OrderCreateHandlerTest extends TestCase
     {
         $channel = new Channel();
         $order = new Order();
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
         self::setIdOnObject($order, 55);
         $order->setChannel($channel);
         $order->setLocaleCode('en_US');
@@ -92,6 +96,7 @@ final class OrderCreateHandlerTest extends TestCase
     {
         $channel = new Channel();
         $order = new Order();
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
         self::setIdOnObject($order, 55);
         $order->setChannel($channel);
         $order->setLocaleCode('en_US');
@@ -134,6 +139,7 @@ final class OrderCreateHandlerTest extends TestCase
         $itemADuplicate->setVariant($variantA);
 
         $order = new Order();
+        $order->setCheckoutState(OrderCheckoutStates::STATE_COMPLETED);
         self::setIdOnObject($order, 10);
         $order->setChannel($channel);
         $order->setLocaleCode('en_US');
@@ -162,6 +168,7 @@ final class OrderCreateHandlerTest extends TestCase
             $this->mailchimpClient,
             $this->entityManager,
             new NullLogger(),
+            new OrderSyncEligibilityChecker(false),
         );
     }
 }

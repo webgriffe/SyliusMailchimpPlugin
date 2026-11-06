@@ -8,6 +8,7 @@ use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderCreate;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderRemove;
 use Webgriffe\SyliusMailchimpPlugin\Message\Order\OrderUpdate;
@@ -23,6 +24,7 @@ final class OrderEnqueuer implements OrderEnqueuerInterface
         private readonly LoggerInterface $logger,
         private readonly AudienceProviderInterface $audienceProvider,
         private readonly StoreIdentifierResolverInterface $storeIdentifierResolver,
+        private readonly OrderSyncEligibilityCheckerInterface $eligibilityChecker,
     ) {
     }
 
@@ -39,6 +41,12 @@ final class OrderEnqueuer implements OrderEnqueuerInterface
         $channel = $order->getChannel();
         if (!$channel instanceof ChannelInterface || !$channel instanceof ChannelMailchimpAwareInterface) {
             $this->logger->warning('[Mailchimp] Order #{id} has no Mailchimp-aware channel, skipping OrderEnqueuer.', ['id' => $orderId]);
+
+            return;
+        }
+
+        if (!$this->eligibilityChecker->isSyncableAsOrder($order)) {
+            $this->logger->debug('[Mailchimp] Order #{id} is not eligible to be synced as order, skipping OrderEnqueuer.', ['id' => $orderId]);
 
             return;
         }
