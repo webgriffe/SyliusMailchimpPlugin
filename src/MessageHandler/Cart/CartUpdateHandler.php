@@ -11,6 +11,7 @@ use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
+use Sylius\Component\Core\TokenAssigner\OrderTokenAssignerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Webgriffe\SyliusMailchimpPlugin\Checker\OrderSyncEligibilityCheckerInterface;
 use Webgriffe\SyliusMailchimpPlugin\Client\MailchimpClientInterface;
@@ -33,6 +34,7 @@ final class CartUpdateHandler
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
         private readonly OrderSyncEligibilityCheckerInterface $eligibilityChecker,
+        private readonly OrderTokenAssignerInterface $orderTokenAssigner,
     ) {
     }
 
@@ -63,6 +65,7 @@ final class CartUpdateHandler
             $audience = $this->audienceProvider->getAudience($channel, $locale);
             $storeId = $this->storeIdentifierResolver->resolve($audience);
             $this->upsertCartProducts($order, $storeId, $channel, $locale);
+            $this->orderTokenAssigner->assignTokenValueIfNotSet($order);
 
             $this->mailchimpClient->upsertCart($storeId, $order, $channel);
             $order->setMailchimpCartId(IdSanitizer::sanitize((string) $order->getId()));

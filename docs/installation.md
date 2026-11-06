@@ -31,12 +31,15 @@
     ```yaml
     webgriffe_sylius_mailchimp_shop:
         resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/shop.yaml"
+        prefix: /{_locale}
+        requirements:
+            _locale: ^[a-z]{2}(?:_[A-Z]{2})?$
 
     webgriffe_sylius_mailchimp_admin:
         resource: "@WebgriffeSyliusMailchimpPlugin/config/routes/admin.yaml"
     ```
 
-   The shop routes expose the newsletter subscribe endpoint and the abandoned-cart recovery link. The admin routes expose the Mailchimp webhook endpoint and the admin "Mailchimp contact" pages.
+   The shop routes expose the newsletter subscribe endpoint and the abandoned-cart recovery link. Import them with the `/{_locale}` prefix, exactly like the `sylius_shop` routes, so the recovery URL sent to Mailchimp carries the cart locale in its path (`https://shop.example/it_IT/cart/restore/<token>`) and Sylius' locale context resolves it; without the prefix the locale is appended as a `_locale` query parameter instead. The admin routes expose the Mailchimp webhook endpoint and the admin "Mailchimp contact" pages.
 
 5. Extend your Sylius entities. The plugin stores its own sync state (Mailchimp id, last sync date, last error) directly on `Customer`, `Channel` and `Order` — there is no extra association entity to create.
 

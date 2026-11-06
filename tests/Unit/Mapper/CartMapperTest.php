@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Webgriffe\SyliusMailchimpPlugin\Unit\Mapper;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Sylius\Component\Core\Model\OrderItem;
 use Sylius\Component\Core\Model\Product;
 use Sylius\Component\Core\Model\ProductVariant;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Customer\Customer;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
@@ -19,11 +21,14 @@ final class CartMapperTest extends TestCase
 {
     use ReflectionIdTrait;
 
+    private MockObject&UrlGeneratorInterface $urlGenerator;
+
     private CartMapper $mapper;
 
     protected function setUp(): void
     {
-        $this->mapper = new CartMapper(new EcommerceCustomerMapper());
+        $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
+        $this->mapper = new CartMapper(new EcommerceCustomerMapper(), $this->urlGenerator);
     }
 
     public function test_maps_order_to_cart(): void
@@ -57,11 +62,15 @@ final class CartMapperTest extends TestCase
         $order->addItem($item);
         self::setTotal($order, 3998);
 
+        $order->setTokenValue('abc');
+        $order->setLocaleCode('it_IT');
+        $this->urlGenerator->method('generate')->willReturn('/it_IT/cart/restore/abc');
+
         $cart = $this->mapper->map($order, $channel);
 
         $this->assertSame('42', $cart['id']);
         $this->assertSame('john@example.com', $cart['customer']['email_address']);
-        $this->assertSame('https://example.com/checkout', $cart['checkout_url']);
+        $this->assertSame('https://example.com/it_IT/cart/restore/abc', $cart['checkout_url']);
         $this->assertSame('EUR', $cart['currency_code']);
         $this->assertSame(39.98, $cart['order_total']);
         $this->assertCount(1, $cart['lines']);
@@ -92,6 +101,73 @@ final class CartMapperTest extends TestCase
         $cart = $this->mapper->map($order, $channel);
 
         $this->assertCount(0, $cart['lines']);
+    }
+
+    public function test_checkout_url_is_the_absolute_restore_url_with_cart_locale(): void
+    {
+        $channel = new Channel();
+        $channel->setHostname('example.com');
+        $order = $this->buildOrder('abc', 'it_IT');
+
+        $this->urlGenerator
+            ->expects(self::once())
+            ->method('generate')
+            ->with('webgriffe_sylius_mailchimp_cart_restore', ['tokenValue' => 'abc', '_locale' => 'it_IT'], UrlGeneratorInterface::ABSOLUTE_PATH)
+            ->willReturn('/it_IT/cart/restore/abc')
+        ;
+
+        $cart = $this->mapper->map($order, $channel);
+
+        $this->assertSame('https://example.com/it_IT/cart/restore/abc', $cart['checkout_url']);
+    }
+
+    public function test_checkout_url_keeps_the_scheme_of_the_hostname(): void
+    {
+        $channel = new Channel();
+        $channel->setHostname('http://shop.test/');
+        $order = $this->buildOrder('abc', 'it_IT');
+
+        $this->urlGenerator->method('generate')->willReturn('/it_IT/cart/restore/abc');
+
+        $cart = $this->mapper->map($order, $channel);
+
+        $this->assertSame('http://shop.test/it_IT/cart/restore/abc', $cart['checkout_url']);
+    }
+
+    public function test_checkout_url_omits_the_locale_when_the_cart_has_none(): void
+    {
+        $channel = new Channel();
+        $channel->setHostname('example.com');
+        $order = $this->buildOrder('abc', null);
+
+        $this->urlGenerator
+            ->expects(self::once())
+            ->method('generate')
+            ->with('webgriffe_sylius_mailchimp_cart_restore', ['tokenValue' => 'abc'], UrlGeneratorInterface::ABSOLUTE_PATH)
+            ->willReturn('/cart/restore/abc')
+        ;
+
+        $cart = $this->mapper->map($order, $channel);
+
+        $this->assertSame('https://example.com/cart/restore/abc', $cart['checkout_url']);
+    }
+
+    private function buildOrder(string $token, ?string $locale): Order
+    {
+        $customer = new Customer();
+        self::setIdOnObject($customer, 1);
+        $customer->setEmail('x@example.com');
+
+        $order = new Order();
+        self::setIdOnObject($order, 5);
+        $order->setCustomer($customer);
+        $order->setCurrencyCode('EUR');
+        $order->setTokenValue($token);
+        if ($locale !== null) {
+            $order->setLocaleCode($locale);
+        }
+
+        return $order;
     }
 
     private static function setQuantity(OrderItem $item, int $quantity): void

@@ -104,6 +104,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class))
+        ->arg('$orderTokenAssigner', service('sylius.assigner.order_token.unique_id_based'))
         ->tag('messenger.message_handler');
 
     $services->set(CartUpdateHandler::class)
@@ -114,6 +115,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg('$entityManager', service('doctrine.orm.default_entity_manager'))
         ->arg('$logger', service('monolog.logger.mailchimp'))
         ->arg('$eligibilityChecker', service(OrderSyncEligibilityCheckerInterface::class))
+        ->arg('$orderTokenAssigner', service('sylius.assigner.order_token.unique_id_based'))
         ->tag('messenger.message_handler');
 
     $services->set(CartRemoveHandler::class)

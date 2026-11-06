@@ -58,6 +58,26 @@ final class CartRecoveryControllerTest extends TestCase
         self::assertSame('/cart', $response->getTargetUrl());
     }
 
+    public function test_it_redirects_to_the_cart_summary_in_the_cart_locale(): void
+    {
+        $order = new Order();
+        $order->setLocaleCode('it_IT');
+
+        $this->orderRepository->method('findCartByTokenValue')->willReturn($order);
+        $this->channelContext->method('getChannel')->willReturn(new Channel());
+        $this->urlGenerator
+            ->expects(self::once())
+            ->method('generate')
+            ->with('sylius_shop_cart_summary', ['_locale' => 'it_IT'])
+            ->willReturn('/it_IT/cart')
+        ;
+
+        $response = $this->controller->restoreAction('abc123');
+
+        self::assertInstanceOf(RedirectResponse::class, $response);
+        self::assertSame('/it_IT/cart', $response->getTargetUrl());
+    }
+
     public function test_redirects_to_homepage_when_order_not_found(): void
     {
         $this->orderRepository->method('findCartByTokenValue')->willReturn(null);

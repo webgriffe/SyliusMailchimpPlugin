@@ -12,6 +12,7 @@ use Sylius\Component\Core\Model\OrderItem;
 use Sylius\Component\Core\Model\Product;
 use Sylius\Component\Core\Model\ProductVariant;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
+use Sylius\Component\Core\TokenAssigner\OrderTokenAssignerInterface;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Channel\Channel;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Entity\Order\Order;
 use Tests\Webgriffe\SyliusMailchimpPlugin\Unit\ReflectionIdTrait;
@@ -38,6 +39,8 @@ final class CartUpdateHandlerTest extends TestCase
 
     private MockObject&EntityManagerInterface $entityManager;
 
+    private MockObject&OrderTokenAssignerInterface $orderTokenAssigner;
+
     protected function setUp(): void
     {
         $this->orderRepository = $this->createMock(OrderRepositoryInterface::class);
@@ -45,6 +48,7 @@ final class CartUpdateHandlerTest extends TestCase
         $this->storeIdentifierResolver = $this->createMock(StoreIdentifierResolverInterface::class);
         $this->mailchimpClient = $this->createMock(MailchimpClientInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->orderTokenAssigner = $this->createMock(OrderTokenAssignerInterface::class);
     }
 
     public function test_skips_when_order_not_found(): void
@@ -146,6 +150,7 @@ final class CartUpdateHandlerTest extends TestCase
             $this->entityManager,
             new NullLogger(),
             new OrderSyncEligibilityChecker(false),
+            $this->orderTokenAssigner,
         );
     }
 }
